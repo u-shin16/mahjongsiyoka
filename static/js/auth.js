@@ -25,6 +25,11 @@ var Auth = (function() {
     if (!configured()) return;   // 未設定ならログイン機能オフ
     firebase.initializeApp(FIREBASE_CONFIG);
     _db = firebase.firestore();
+    try {
+      _db.settings({ experimentalForceLongPolling: true, useFetchStreams: false });
+    } catch (e) {
+      console.warn('Firestore settings skipped', e);
+    }
     _enabled = true;
     firebase.auth().onAuthStateChanged(function(u) {
       // メール未確認のユーザーは「ログインしていない」扱いにする

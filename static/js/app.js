@@ -1592,17 +1592,59 @@ var App = {
       var getCode = function(requireCode) {
         var c = FriendGame.normalizeCode(document.getElementById('frCode').value);
         if (requireCode && !/^\d{6}$/.test(c)) { errEl.textContent = '6桁のルームIDを入力してください'; return null; }
+        if (!requireCode && c && !/^\d{6}$/.test(c)) { errEl.textContent = '作成時は空欄、または6桁のIDを入力してください'; return null; }
         return c;
+      };
+      var runRoomAction = function(btn, action, fallbackMessage, pendingLabel) {
+        errEl.textContent = '';
+        var originalLabel = btn ? btn.textContent : '';
+        if (btn) {
+          btn.disabled = true;
+          if (pendingLabel) btn.textContent = pendingLabel;
+        }
+        var timeout = null;
+        var restore = function() {
+          if (!btn) return;
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+        };
+        var done = function() {
+          if (timeout) clearTimeout(timeout);
+          restore();
+        };
+        timeout = setTimeout(function() {
+          restore();
+          var msg = '通信に時間がかかっています。ネットワークかFirestoreルールを確認してください。';
+          errEl.textContent = msg;
+          showToast(msg, 4200);
+        }, 25000);
+        try {
+          var p = action();
+          if (!p || typeof p.then !== 'function') p = Promise.resolve(p);
+          return p['catch'](function(e) {
+            var msg = FriendGame.errorMessage(e) || fallbackMessage;
+            errEl.textContent = msg;
+            showToast(msg, 4200);
+          }).then(done, function(e) {
+            done();
+            throw e;
+          });
+        } catch (e) {
+          done();
+          var msg = FriendGame.errorMessage(e) || fallbackMessage;
+          errEl.textContent = msg;
+          showToast(msg, 4200);
+          return Promise.resolve();
+        }
       };
       document.getElementById('btnFrCreate').addEventListener('click', function() {
         var c = getCode(false);
-        errEl.textContent = '';
-        FriendGame.createRoom(c, count)['catch'](function(e) { errEl.textContent = FriendGame.errorMessage(e) || '部屋を作れませんでした'; });
+        if (c === null) return;
+        runRoomAction(this, function() { return FriendGame.createRoom(c, count); }, '部屋を作れませんでした', '作成中...');
       });
       document.getElementById('btnFrJoin').addEventListener('click', function() {
         var c = getCode(true); if (!c) return;
-        errEl.textContent = '';
-        FriendGame.joinRoom(c)['catch'](function(e) { errEl.textContent = FriendGame.errorMessage(e) || '参加できませんでした'; });
+        runRoomAction(this, function() { return FriendGame.joinRoom(c); }, '参加できませんでした', '参加中...');
       });
       return;
     }

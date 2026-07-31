@@ -13,6 +13,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>まーじゃんしよか</title>
+  <meta name="description" content="まーじゃんしよかは、麻雀を初歩から段階的に学べるWeb麻雀学習アプリです。牌を選ぶ課題やクイズ、CPU対局、AI先生への相談で理解を試せます。">
+  <link rel="canonical" href="https://mahjong.webtool-labs.com/">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='icons/favicon-16x16.png') }}">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/favicon-32x32.png') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
@@ -26,7 +28,7 @@
   <header class="app-header" id="appHeader">
     <div class="header-inner">
       <button class="btn-back hidden" id="btnBack">← もどる</button>
-      <div class="header-title" id="headerTitle">🀄 まーじゃんしよか</div>
+      <h1 class="header-title" id="headerTitle">🀄 まーじゃんしよか</h1>
       <button class="btn-progress" id="btnProgress">📊 進捗</button>
       <button class="btn-progress btn-account" id="btnAccount">👤 ログイン</button>
     </div>
@@ -45,6 +47,10 @@
       <a href="https://webtool-labs.com/" target="_blank" rel="noopener noreferrer">RakuYade（他のWebアプリ一覧）</a>
       <span aria-hidden="true">・</span>
       <a href="https://docs.google.com/forms/d/e/1FAIpQLScIIbbvtUvgS6IkIx42QBsGalWYnBVXQYMgndMn4vGh8GFGOA/viewform?usp=header" target="_blank" rel="noopener noreferrer">お問い合わせ</a>
+      <span aria-hidden="true">・</span>
+      <a href="{{ url_for('terms') }}">利用規約</a>
+      <span aria-hidden="true">・</span>
+      <a href="{{ url_for('privacy') }}">プライバシーポリシー</a>
     </nav>
   </footer>
 

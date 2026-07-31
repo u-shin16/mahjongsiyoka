@@ -26,9 +26,11 @@ var FriendGame = (function() {
 
   var BASE_SCORES = [1000, 2000, 3900, 7700, 8000, 12000, 16000];
   var CPU_UID_PREFIX = 'cpu:';
-  var HEARTBEAT_MS = 4000;
-  var DISCONNECT_MS = 15000;
+  var HEARTBEAT_MS = 30000;
+  var DISCONNECT_MS = 90000;
   var HOST_TICK_MS = 700;
+  var FIRESTORE_TIMEOUT_MS = 8000;
+  var _lastHeartbeatAt = 0;
 
   function defaultRules(playerCount) {
     playerCount = playerCount === 3 ? 3 : 4;
@@ -105,14 +107,103 @@ var FriendGame = (function() {
   }
   function me() { return Auth.user(); }
   function roomRef(code) { return db().collection('rooms').doc(code); }
+  function withTimeout(promise, label) {
+    var timer = null;
+    return Promise.race([
+      promise,
+      new Promise(function(_, reject) {
+        timer = setTimeout(function() {
+          reject(new Error((label || 'Firestore通信') + 'がタイムアウトしました'));
+        }, FIRESTORE_TIMEOUT_MS);
+      })
+    ]).then(function(v) {
+      if (timer) clearTimeout(timer);
+      return v;
+    }, function(e) {
+      if (timer) clearTimeout(timer);
+      throw e;
+    });
+  }
   function _notify() {
     _listeners.forEach(function(cb) { try { cb(); } catch (e) {} });
+  }
+
+  function firestoreRestValue(value) {
+    if (value === null || value === undefined) return { nullValue: null };
+    if (value instanceof Date) return { timestampValue: value.toISOString() };
+    if (Array.isArray(value)) {
+      return {
+        arrayValue: value.length ? {
+          values: value.map(firestoreRestValue)
+        } : {}
+      };
+    }
+    if (typeof value === 'string') return { stringValue: value };
+    if (typeof value === 'boolean') return { booleanValue: value };
+    if (typeof value === 'number') {
+      if (Math.floor(value) === value) return { integerValue: String(value) };
+      return { doubleValue: value };
+    }
+    if (typeof value === 'object') {
+      var fields = {};
+      Object.keys(value).forEach(function(k) {
+        fields[k] = firestoreRestValue(value[k]);
+      });
+      return { mapValue: { fields: fields } };
+    }
+    return { stringValue: String(value) };
+  }
+
+  function firestoreRestFields(data) {
+    var fields = {};
+    Object.keys(data || {}).forEach(function(k) {
+      fields[k] = firestoreRestValue(data[k]);
+    });
+    return fields;
+  }
+
+  function restCreateRoom(candidate, data) {
+    if (!window.fetch || typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_CONFIG.projectId) {
+      return Promise.reject(new Error('Firestore RESTの接続設定が見つかりません'));
+    }
+    var current = firebase.auth().currentUser;
+    if (!current) return Promise.reject(new Error('ログインしてからルームを作成してください'));
+    var base = 'https://firestore.googleapis.com/v1/projects/' +
+      encodeURIComponent(FIREBASE_CONFIG.projectId) +
+      '/databases/(default)/documents/rooms/' + encodeURIComponent(candidate);
+    if (FIREBASE_CONFIG.apiKey) base += '?key=' + encodeURIComponent(FIREBASE_CONFIG.apiKey);
+    return current.getIdToken().then(function(token) {
+      return withTimeout(fetch(base, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fields: firestoreRestFields(data) }),
+      }), 'RESTルーム作成');
+    }).then(function(res) {
+      return res.text().then(function(text) {
+        var body = null;
+        try { body = text ? JSON.parse(text) : null; } catch (e) {}
+        if (!res.ok) {
+          var msg = body && body.error && body.error.message ? body.error.message : text;
+          throw new Error(msg || ('RESTルーム作成に失敗しました（' + res.status + '）'));
+        }
+        return body;
+      });
+    });
   }
 
   function errorMessage(e) {
     var msg = String((e && e.message) || '');
     if ((e && e.code === 'permission-denied') || msg.indexOf('Missing or insufficient permissions') >= 0) {
       return 'Firestoreのルールで友人戦が許可されていません。Firebase Console の Firestore ルールに firestore.rules の内容を反映してください。';
+    }
+    if ((e && e.code === 'resource-exhausted') || msg.indexOf('Quota exceeded') >= 0) {
+      return 'Firestoreの利用上限に達しています。しばらく待つか、Firebase ConsoleでFirestoreのクォータ/課金設定を確認してください。';
+    }
+    if (msg.indexOf('タイムアウト') >= 0) {
+      return 'Firestoreへの通信がタイムアウトしました。ブラウザをリロードして再ログインし、まだ続く場合はFirebaseの接続設定を確認してください。';
     }
     return msg || '通信エラーが発生しました';
   }
@@ -152,8 +243,11 @@ var FriendGame = (function() {
   function _sendHeartbeat() {
     if (!_code || !me() || !_room) return;
     if ((_room.playerUids || []).indexOf(me().uid) < 0) return;
+    var now = Date.now();
+    if (now - _lastHeartbeatAt < HEARTBEAT_MS - 1000) return;
+    _lastHeartbeatAt = now;
     var patch = {};
-    patch['presence.' + me().uid] = Date.now();
+    patch['presence.' + me().uid] = now;
     roomRef(_code).update(patch)['catch'](function(e) {
       _lastError = e;
     });
@@ -192,7 +286,6 @@ var FriendGame = (function() {
       if (!snap.exists) { _room = null; _game = null; _syncHostLoop(); _notify(); return; }
       _room = snap.data();
       _game = parseGame(_room.game);
-      _sendHeartbeat();
       _syncHostLoop();
       if (_room.hostUid === me().uid) _hostProcess();
       _notify();
@@ -209,6 +302,7 @@ var FriendGame = (function() {
     _game = null;
     _code = null;
     _lastProcessedSeq = -1;
+    _lastHeartbeatAt = 0;
     _stopHeartbeat();
     _syncHostLoop();
   }
@@ -216,13 +310,55 @@ var FriendGame = (function() {
   /* ---------- 部屋を作る / 参加する / 退出 ---------- */
   function createRoom(code, playerCount) {
     var u = me();
+    if (!u) return Promise.reject(new Error('ログインしてからルームを作成してください'));
     code = normalizeCode(code);
     playerCount = playerCount === 3 ? 3 : 4;
     var manualCode = !!code;
+    if (manualCode && !/^\d{6}$/.test(code)) {
+      return Promise.reject(new Error('ルームIDは6桁の数字で入力してください'));
+    }
+
+    function roomData(candidate, useRestTimestamp) {
+      var rules = defaultRules(playerCount);
+      var players = [{ uid: u.uid, name: playerName(u), isCpu: false }];
+      return {
+        code: candidate,
+        hostUid: u.uid,
+        playerCount: playerCount,
+        rules: rules,
+        readyMap: readyMapFor(players),
+        presence: {},
+        status: 'waiting',
+        players: players,
+        playerUids: [u.uid],
+        game: null,
+        action: null,
+        version: 3,
+        createdAt: useRestTimestamp ? new Date() : firebase.firestore.FieldValue.serverTimestamp(),
+      };
+    }
+
+    function finishCreate(candidate) {
+      var data = roomData(candidate, false);
+      return withTimeout(roomRef(candidate).set(data), 'ルーム作成')
+        .then(function() { _subscribe(candidate); })
+        ['catch'](function(e) {
+          if (String((e && e.message) || '').indexOf('タイムアウト') < 0) throw e;
+          var restData = roomData(candidate, true);
+          return restCreateRoom(candidate, restData).then(function() {
+            _subscribe(candidate);
+            _room = restData;
+            _game = null;
+            _notify();
+          });
+        });
+    }
 
     function tryCreate(candidate, remain) {
-      validateCode(candidate);
-      return roomRef(candidate).get().then(function(snap) {
+      try { validateCode(candidate); }
+      catch (e) { return Promise.reject(e); }
+      if (!manualCode) return finishCreate(candidate);
+      return withTimeout(roomRef(candidate).get(), 'ルーム確認').then(function(snap) {
         if (snap.exists) {
           var d = snap.data();
           if (d.status !== 'ended') {
@@ -230,24 +366,8 @@ var FriendGame = (function() {
             throw new Error('このルームIDの部屋はすでに使われています。別のIDにしてください');
           }
         }
-        var rules = defaultRules(playerCount);
-        var players = [{ uid: u.uid, name: playerName(u), isCpu: false }];
-        return roomRef(candidate).set({
-          code: candidate,
-          hostUid: u.uid,
-          playerCount: playerCount,
-          rules: rules,
-          readyMap: readyMapFor(players),
-          presence: {},
-          status: 'waiting',
-          players: players,
-          playerUids: [u.uid],
-          game: null,
-          action: null,
-          version: 3,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
-      }).then(function() { _subscribe(candidate); });
+        return finishCreate(candidate);
+      });
     }
 
     return tryCreate(code || randomRoomCode(), 8);
