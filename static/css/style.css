@@ -4595,22 +4595,22 @@ body.is-battle-page .app-main.battle-main {
 
    tile: 52×70px (box-sizing:border-box) → zoom 0.50 → 26×35px
    grid-cell: 26×36px (高さに1px余裕)
-   gap: 3px
-   RIVER_W = 26×6 + 3×5 = 171px
-   RIVER_H = 36×4 + 3×3 = 153px
+   gap: 6px（河に余裕を持たせるため 3px から拡大）
+   RIVER_W = 26×6 + 6×5 = 186px
+   RIVER_H = 36×4 + 6×3 = 162px
    ============================================================ */
 
 /* ── 全河共通ベース (全ての過去ルールを上書き) ── */
 .disc-river {
   position: absolute !important;
   display: grid !important;
-  /* 全員同一グリッド: 26px列×6 + 36px行×4 + gap 3px */
+  /* 全員同一グリッド: 26px列×6 + 36px行×4 + gap 6px */
   grid-template-columns: repeat(6, 26px) !important;
   grid-template-rows:    repeat(4, 36px) !important;
   /* 旧 gap: 1.5px を上書き（shorthand を先にリセット） */
-  gap: 3px 3px !important;
-  column-gap: 3px !important;
-  row-gap:    3px !important;
+  gap: 6px 6px !important;
+  column-gap: 6px !important;
+  row-gap:    6px !important;
   /* 左詰め・上詰め（RTL継承を無効化） */
   direction:       ltr   !important;
   writing-mode:    horizontal-tb !important;
@@ -4619,8 +4619,8 @@ body.is-battle-page .app-main.battle-main {
   justify-items:   start !important;
   align-items:     start !important;
   /* 固定サイズ */
-  width:   171px !important;   /* 26×6 + 3×5 */
-  height:  153px !important;   /* 36×4 + 3×3 */
+  width:   186px !important;   /* 26×6 + 6×5 */
+  height:  162px !important;   /* 36×4 + 6×3 */
   overflow: visible !important;
   z-index:  4 !important;
   /* transform / top / left は positionDiscardRivers() が設定 */
@@ -4635,6 +4635,11 @@ body.is-battle-page .app-main.battle-main {
 /* ── 全河共通: 牌サイズ（全員 zoom 0.50 で統一） ── */
 .disc-river .river-tile {
   zoom: 0.50 !important;
+}
+
+/* ── 捨て牌に立体感を追加：卓に浮いているような影を強める ── */
+.disc-river .rtile-wrap {
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.5)) drop-shadow(0 1px 0 rgba(255, 255, 255, 0.08));
 }
 
 /* ── self: デフォルト向き（追加回転なし） ── */
@@ -5688,10 +5693,10 @@ body.is-battle-page {
 /* ── FIX: 上家・下家の副露エリアが CPU の名前・点数バッジに重なる問題
    （.jt-seat-left/.jt-seat-right のアバター＋名前バッジの下まで下げる） ── */
 .player-meld-area.seat-left {
-  top: calc(16% + 116px) !important;
+  top: calc(16% + 176px) !important;
 }
 .player-meld-area.seat-right {
-  top: calc(25% + 116px) !important;
+  top: calc(25% + 176px) !important;
 }
 
 /* ── 7. 手牌エリアのpaddingをわずかに詰める ── */
@@ -5955,25 +5960,29 @@ body.is-battle-page {
   line-height: 17px;
   text-shadow: 0 1px 3px rgba(0,0,0,0.7);
 }
+/* 雀卓の全面を覆うフルスクリーン表示（背景を暗くしてアガリ結果に集中させる） */
 .fr-result-float {
   position: absolute;
   z-index: 1200;
-  left: 50%;
-  top: 50%;
-  width: min(92vw, 480px);
-  max-height: min(82vh, 620px);
-  transform: translate(-50%, -50%);
-  overflow-y: auto;
-  border-radius: 10px;
-  box-shadow: 0 18px 48px rgba(0,0,0,0.55);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(4, 10, 8, 0.82);
 }
 .fr-result-float .fr-panel {
+  width: min(92vw, 480px);
+  max-height: min(88vh, 660px);
+  overflow-y: auto;
   margin-bottom: 0;
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.55);
   background: linear-gradient(145deg, #1a3a24, #0f2518);
   border-color: rgba(232,184,75,0.4);
 }
-.fr-result-float-win {
-  width: min(96vw, 680px);
+.fr-result-float-win .fr-panel {
+  width: min(96vw, 720px);
 }
 .fr-result-hand-row {
   display: flex;

@@ -789,11 +789,187 @@ var FriendGame = (function() {
     if (state.wall.length > 1) state.kanDoraInds.push(state.wall.shift());
   }
 
-  function _finishHand(state, winner, winType, fromSeat) {
+  /* ---------- 役判定 ---------- */
+  function isHonorTile(t) { return t.suit === 'wind' || t.suit === 'dragon'; }
+  function isTerminalTile(t) { return (t.suit === 'man' || t.suit === 'pin' || t.suit === 'sou') && (t.num === 1 || t.num === 9); }
+  function isTerminalOrHonor(t) { return isHonorTile(t) || isTerminalTile(t); }
+
+  function seatWindNum(state, seat) {
+    var dealerSeat = (state.round - 1) % state.playerCount;
+    return ((seat - dealerSeat + state.playerCount) % state.playerCount) + 1;
+  }
+  function roundWindNum(state) {
+    return state.round <= state.playerCount ? 1 : 2;
+  }
+
+  // 手牌（面子・雀頭）を役判定用のグループ配列に組み立てる。
+  // 副露（ポン・チー・カン・暗カン）も含めて全ての面子を統一形式で返す。
+  function buildHandGroups(state, winner) {
+    var hand = state.hands[winner] || [];
+    var openMelds = state.melds[winner] || [];
+    var decomp = Agari.decomposeWinningHand(hand);
+    if (!decomp) return null;
+
+    if (decomp.type === 'chiitoitsu') {
+      return {
+        chiitoitsu: true,
+        pair: null,
+        groups: decomp.groups.map(function(g) { return { kind: 'pair', tiles: g, concealed: true, isKan: false }; }),
+      };
+    }
+
+    var groups = decomp.melds.map(function(m) {
+      var nums = m.map(function(t) { return t.num; }).slice().sort(function(a, b) { return a - b; });
+      var isTriplet = nums[0] === nums[1] && nums[1] === nums[2];
+      return { kind: isTriplet ? 'triplet' : 'sequence', tiles: m, concealed: true, isKan: false };
+    });
+    openMelds.forEach(function(m) {
+      groups.push({
+        kind: m.type === 'chi' ? 'sequence' : 'triplet',
+        tiles: m.tiles.slice(0, 3),
+        concealed: m.type === 'ankan',
+        isKan: (m.type === 'kan' || m.type === 'ankan'),
+      });
+    });
+    return { chiitoitsu: false, pair: decomp.pair, groups: groups };
+  }
+
+  // 和了形から成立する役（形に依存するもの）を判定する。
+  // 立直・門前清自摸和・ドラ類・抜き北は _finishHand 側で別途加算する。
+  function computeShapeYaku(state, winner, winType, fromSeat, winningTile) {
+    var yaku = [];
+    var open = !isClosed(state, winner);
+    var shape = buildHandGroups(state, winner);
+    if (!shape) return yaku;
+
+    if (shape.chiitoitsu) {
+      yaku.push({ name: '七対子', han: 2 });
+      var suits7 = {};
+      var hasHonor7 = false;
+      shape.groups.forEach(function(g) {
+        if (isHonorTile(g.tiles[0])) hasHonor7 = true;
+        else suits7[g.tiles[0].suit] = true;
+      });
+      if (Object.keys(suits7).length === 1) {
+        if (hasHonor7) yaku.push({ name: '混一色', han: open ? 2 : 3 });
+        else yaku.push({ name: '清一色', han: open ? 5 : 6 });
+      }
+      if (shape.groups.every(function(g) { return isTerminalOrHonor(g.tiles[0]); })) {
+        yaku.push({ name: '混老頭', han: 2 });
+      }
+      return yaku;
+    }
+
+    var groups = shape.groups;
+    var pair = shape.pair;
+    var allTiles = groups.reduce(function(acc, g) { return acc.concat(g.tiles); }, []).concat(pair);
+
+    if (allTiles.every(function(t) { return !isTerminalOrHonor(t); })) {
+      yaku.push({ name: '断幺九', han: 1 });
+    }
+
+    var allTriplet = groups.every(function(g) { return g.kind === 'triplet'; });
+    if (allTriplet) yaku.push({ name: '対々和', han: 2 });
+    if (allTiles.every(isTerminalOrHonor)) yaku.push({ name: '混老頭', han: 2 });
+
+    var everyGroupTouchesTerminalOrHonor = groups.every(function(g) {
+      return g.tiles.some(isTerminalOrHonor);
+    }) && isTerminalOrHonor(pair[0]);
+    if (everyGroupTouchesTerminalOrHonor) {
+      if (allTiles.some(isHonorTile)) yaku.push({ name: '混全帯幺九', han: open ? 1 : 2 });
+      else yaku.push({ name: '純全帯幺九', han: open ? 2 : 3 });
+    }
+
+    var numberSuits = {};
+    var honorUsed = false;
+    allTiles.forEach(function(t) {
+      if (isHonorTile(t)) honorUsed = true;
+      else numberSuits[t.suit] = true;
+    });
+    if (Object.keys(numberSuits).length === 1) {
+      if (honorUsed) yaku.push({ name: '混一色', han: open ? 2 : 3 });
+      else yaku.push({ name: '清一色', han: open ? 5 : 6 });
+    }
+
+    var seatW = seatWindNum(state, winner);
+    var roundW = roundWindNum(state);
+    groups.forEach(function(g) {
+      if (g.kind !== 'triplet') return;
+      var t = g.tiles[0];
+      if (t.suit === 'dragon') {
+        yaku.push({ name: '役牌', han: 1 });
+      } else if (t.suit === 'wind') {
+        var isSeat = t.num === seatW;
+        var isRound = t.num === roundW;
+        if (isSeat && isRound) yaku.push({ name: '連風牌', han: 2 });
+        else if (isSeat || isRound) yaku.push({ name: '役牌', han: 1 });
+      }
+    });
+
+    var dragonTriplets = groups.filter(function(g) { return g.kind === 'triplet' && g.tiles[0].suit === 'dragon'; }).length;
+    if (dragonTriplets === 2 && pair[0].suit === 'dragon') {
+      yaku.push({ name: '小三元', han: 2 });
+    }
+
+    var seqBySuit = { man: {}, pin: {}, sou: {} };
+    var tripBySuit = { man: {}, pin: {}, sou: {} };
+    groups.forEach(function(g) {
+      var suit = g.tiles[0].suit;
+      if (suit !== 'man' && suit !== 'pin' && suit !== 'sou') return;
+      var startNum = g.tiles.map(function(t) { return t.num; }).slice().sort(function(a, b) { return a - b; })[0];
+      if (g.kind === 'sequence') seqBySuit[suit][startNum] = true;
+      else tripBySuit[suit][g.tiles[0].num] = true;
+    });
+    for (var sn = 1; sn <= 7; sn++) {
+      if (seqBySuit.man[sn] && seqBySuit.pin[sn] && seqBySuit.sou[sn]) {
+        yaku.push({ name: '三色同順', han: open ? 1 : 2 });
+        break;
+      }
+    }
+    for (var tn = 1; tn <= 9; tn++) {
+      if (tripBySuit.man[tn] && tripBySuit.pin[tn] && tripBySuit.sou[tn]) {
+        yaku.push({ name: '三色同刻', han: 2 });
+        break;
+      }
+    }
+    ['man', 'pin', 'sou'].forEach(function(suit) {
+      if (seqBySuit[suit][1] && seqBySuit[suit][4] && seqBySuit[suit][7]) {
+        yaku.push({ name: '一気通貫', han: open ? 1 : 2 });
+      }
+    });
+
+    var kanCount = groups.filter(function(g) { return g.isKan; }).length;
+    if (kanCount >= 3) yaku.push({ name: '三槓子', han: 2 });
+
+    var ankouCount = groups.filter(function(g) {
+      if (g.kind !== 'triplet' || !g.concealed) return false;
+      if (winType === 'ron' && winningTile && g.tiles.some(function(t) { return t.id === winningTile.id; })) return false;
+      return true;
+    }).length;
+    if (ankouCount >= 3) yaku.push({ name: '三暗刻', han: 2 });
+
+    if (!open) {
+      var seqCounts = {};
+      groups.forEach(function(g) {
+        if (g.kind !== 'sequence') return;
+        var nums = g.tiles.map(function(t) { return t.num; }).slice().sort(function(a, b) { return a - b; });
+        var key = g.tiles[0].suit + '_' + nums.join('');
+        seqCounts[key] = (seqCounts[key] || 0) + 1;
+      });
+      var pairedSeqSets = Object.keys(seqCounts).filter(function(k) { return seqCounts[k] >= 2; }).length;
+      if (pairedSeqSets >= 2) yaku.push({ name: '二盃口', han: 3 });
+      else if (pairedSeqSets === 1) yaku.push({ name: '一盃口', han: 1 });
+    }
+
+    return yaku;
+  }
+
+  function _finishHand(state, winner, winType, fromSeat, winningTile) {
     var hand = state.hands[winner];
     var scoringTiles = getScoringTiles(state, winner);
-    var yaku = [];
     var closed = isClosed(state, winner);
+    var resolvedWinTile = winningTile || (winType === 'tsumo' ? hand.find(function(t) { return t.id === state.drawnId; }) : null);
+    var yaku = computeShapeYaku(state, winner, winType, fromSeat, resolvedWinTile);
     if (state.riichi[winner]) yaku.push({ name: '立直', han: 1 });
     if (winType === 'tsumo' && closed) yaku.push({ name: '門前清自摸和', han: 1 });
 
@@ -944,7 +1120,7 @@ var FriendGame = (function() {
       var autoWinner = ronCandidates.find(function(c) { return shouldAutoAgari(state, c); });
       if (autoWinner != null) {
         state.hands[autoWinner] = Tiles.sortTiles(state.hands[autoWinner].concat([tile]));
-        _finishHand(state, autoWinner, 'ron', seat);
+        _finishHand(state, autoWinner, 'ron', seat, tile);
         return;
       }
       state.phase = 'ron_wait';
@@ -1046,7 +1222,7 @@ var FriendGame = (function() {
       var autoWinner = ronCandidates.find(function(c) { return shouldAutoAgari(state, c); });
       if (autoWinner != null) {
         state.hands[autoWinner] = Tiles.sortTiles(state.hands[autoWinner].concat([addedTile]));
-        _finishHand(state, autoWinner, 'ron', seat);
+        _finishHand(state, autoWinner, 'ron', seat, addedTile);
         return true;
       }
       _clearTurnTimer(state);
@@ -1085,7 +1261,7 @@ var FriendGame = (function() {
       var autoWinner = ronCandidates.find(function(c) { return shouldAutoAgari(state, c); });
       if (autoWinner != null) {
         state.hands[autoWinner] = Tiles.sortTiles(state.hands[autoWinner].concat([tile]));
-        _finishHand(state, autoWinner, 'ron', seat);
+        _finishHand(state, autoWinner, 'ron', seat, tile);
         state.result.yaku = (state.result.yaku || []).filter(function(y) { return y.name !== '槍槓'; });
         return true;
       }
@@ -1202,7 +1378,7 @@ var FriendGame = (function() {
         var rc = state.ron.candidates[r];
         if (shouldAutoAgari(state, rc)) {
           state.hands[rc] = Tiles.sortTiles(state.hands[rc].concat([state.ron.tile]));
-          _finishHand(state, rc, 'ron', state.ron.from);
+          _finishHand(state, rc, 'ron', state.ron.from, state.ron.tile);
           return true;
         }
       }
@@ -1316,7 +1492,7 @@ var FriendGame = (function() {
         if (state.phase === 'ron_wait' && state.ron && state.ron.candidates.indexOf(seat) >= 0) {
           if (a.type === 'ron') {
             state.hands[seat] = Tiles.sortTiles(state.hands[seat].concat([state.ron.tile]));
-            _finishHand(state, seat, 'ron', state.ron.from);
+            _finishHand(state, seat, 'ron', state.ron.from, state.ron.tile);
             ok = true;
           } else {
             state.ron.responses[seat] = 'pass';
