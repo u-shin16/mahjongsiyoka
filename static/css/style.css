@@ -4629,9 +4629,9 @@ body.is-battle-page .app-main.battle-main {
 .disc-river .rtile-wrap {
   display: block;
   overflow: visible;
-  /* gap:0でも隣接牌の間に0.5px程度のサブピクセル/縁取りの隙間が
-     見えることがあるため、右・下方向に1pxだけ重ねて隙間を完全に消す */
-  margin: 0 -1px -1px 0;
+  /* gap:0でも隣接牌の間にサブピクセル/縁取りの隙間が見えるとの
+     指摘のため、1px→2pxに重なりを増やして隙間を完全に消す */
+  margin: 0 -2px -2px 0;
 }
 
 /* ── 全河共通: 牌サイズ（全員 zoom 0.50 で統一） ── */
