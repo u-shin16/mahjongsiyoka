@@ -1893,6 +1893,7 @@ var App = {
       this._frRonSent = false;
       this._frResponseSent = false;
       this._frSelectedIdx = -1;
+      this._frShowWaits = false;
     }
     main.classList.add('battle-main');
     document.body.classList.add('is-battle-page');
@@ -1997,6 +1998,13 @@ var App = {
     });
     var displayEntries = sortedEntries.concat(drawnEntry ? [drawnEntry] : []);
 
+    var standingHandTiles = sortedEntries.map(function(e) { return e.tile; });
+    var myWaits = [];
+    if (standingHandTiles.length % 3 === 1) {
+      myWaits = Agari.getTenpaiWaits(standingHandTiles);
+      if (g.isSanma) myWaits = myWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+    }
+
     var myMelds = (g.melds && g.melds[my]) || [];
     var isClosed = myMelds.every(function(m) { return m.type === 'ankan'; });
     var ankanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkAnkan(my) : [];
@@ -2031,6 +2039,20 @@ var App = {
       });
       actionBtns += '<button class="btn-battle btn-skip-call" id="btnFrPass">スルー</button>';
     }
+    var waitsBtnHtml = '';
+    if (myWaits.length > 0) {
+      var waitsTilesHtml = myWaits.map(function(w) {
+        return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xxs' });
+      }).join('');
+      waitsBtnHtml = '<div class="fr-waits-fab-wrap' + (this._frShowWaits ? ' open' : '') + '">' +
+        '<div class="fr-waits-panel">' +
+          '<div class="fr-waits-panel-title">待ち牌</div>' +
+          '<div class="fr-waits-panel-tiles">' + waitsTilesHtml + '</div>' +
+        '</div>' +
+        '<button type="button" class="fr-waits-fab" id="btnFrShowWaits">' + (this._frShowWaits ? '✕ 閉じる' : '待ちを表示') + '</button>' +
+      '</div>';
+    }
+
     var endHtml = '';
     if (g.phase === 'hand_end' || g.phase === 'match_end') {
       var r = g.result;
@@ -2053,12 +2075,12 @@ var App = {
           ? (resultDecomp.type === 'chiitoitsu' ? resultDecomp.groups.slice() : resultDecomp.melds.concat([resultDecomp.pair]))
           : [Tiles.sortTiles(resultHandTiles)];
         var resultHandHtml = resultGroups.map(function(grp) {
-          return '<span class="agr-tile-group">' + grp.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</span>';
+          return '<span class="agr-tile-group">' + grp.map(function(t) { return Tiles.renderTile(t, { noHover: true, small: true }); }).join('') + '</span>';
         }).join('');
-        endHtml = '<div class="fr-result-float"><div class="fr-panel" style="border-color:var(--gold)">' +
+        endHtml = '<div class="fr-result-float fr-result-float-win"><div class="fr-panel" style="border-color:var(--gold)">' +
           '<div style="font-size:1.1rem;font-weight:900;color:var(--gold);margin-bottom:6px">' +
             esc(names[r.winner]) + ' の' + (r.type === 'tsumo' ? 'ツモ' : 'ロン') + '！</div>' +
-          '<div class="fr-river" style="margin-bottom:8px">' + resultHandHtml + '</div>' +
+          '<div class="fr-result-hand-row" style="margin-bottom:8px">' + resultHandHtml + '</div>' +
           (r.melds && r.melds.length ? '<div class="fr-melds">' + meldSetHtml(r.melds) + '</div>' : '') +
           (r.nuki && r.nuki.length ? '<div class="fr-nuki-row"><span>抜き北</span>' + r.nuki.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</div>' : '') +
           r.yaku.map(function(y) { return '<div class="fr-row"><span>' + esc(y.name) + '</span><span class="fr-score">' + y.han + '翻</span></div>'; }).join('') +
@@ -2209,6 +2231,7 @@ var App = {
           '</div>' +
           perPlayerMeldsHtml +
           endHtml +
+          waitsBtnHtml +
         '</div>' +
         '<div class="jt-side"></div>' +
       '</div>' +
@@ -2270,6 +2293,11 @@ var App = {
         });
       });
     }
+    var waitsBtn = document.getElementById('btnFrShowWaits');
+    if (waitsBtn) waitsBtn.addEventListener('click', function() {
+      self._frShowWaits = !self._frShowWaits;
+      self._render('friend', {});
+    });
     var tsumoBtn = document.getElementById('btnFrTsumo');
     if (tsumoBtn) tsumoBtn.addEventListener('click', function() { sendFrAction('tsumo'); });
     var nukiBtn = document.getElementById('btnFrNuki');

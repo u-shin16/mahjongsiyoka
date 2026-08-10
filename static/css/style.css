@@ -5089,6 +5089,59 @@ body.is-battle-page .app-main.battle-main {
 }
 
 /* ============================================================
+   FR-WAITS-FAB: 待ち牌表示ボタン（友人戦・右下固定）
+   ============================================================ */
+.fr-waits-fab-wrap {
+  position: fixed;
+  right: 8px;
+  bottom: 8px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.fr-waits-fab {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--gold-dark, #a07a2a);
+  background: rgba(232,184,75,0.92);
+  color: #2a1e04;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  cursor: pointer;
+}
+.fr-waits-fab-wrap.open .fr-waits-fab {
+  background: rgba(232,184,75,0.55);
+  color: #fff6e0;
+}
+.fr-waits-panel {
+  display: none;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--gold-dark, #a07a2a);
+  background: rgba(6, 22, 13, 0.94);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+  max-width: 220px;
+}
+.fr-waits-fab-wrap.open .fr-waits-panel {
+  display: block;
+}
+.fr-waits-panel-title {
+  color: var(--gold, #f0c060);
+  font-size: 0.72rem;
+  font-weight: 900;
+  margin-bottom: 5px;
+}
+.fr-waits-panel-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* ============================================================
    ALL-MELDS-PANEL: 全プレイヤー副露（右下固定）
    ============================================================ */
 .all-melds-panel {
@@ -5934,6 +5987,17 @@ body.is-battle-page {
   margin-bottom: 0;
   background: linear-gradient(145deg, #1a3a24, #0f2518);
   border-color: rgba(232,184,75,0.4);
+}
+.fr-result-float-win {
+  width: min(96vw, 680px);
+}
+.fr-result-hand-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 3px;
+  overflow-x: auto;
+  padding: 4px 2px 6px;
 }
 @media (max-width: 520px) {
   .fr-wrap { max-width: none; }
