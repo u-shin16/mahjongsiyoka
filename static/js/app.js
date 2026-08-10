@@ -2010,8 +2010,17 @@ var App = {
     ankanCands.forEach(function(c, ci) {
       actionBtns += '<button class="btn-battle btn-ankan" data-ankan-idx="' + ci + '">暗カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
     });
-    if (myTurn && g.phase === 'turn' && isClosed && !g.riichi[my] && g.scores[my] >= 1000 && myHand.length % 3 === 2)
-      actionBtns += '<button class="btn-battle btn-riichi" id="btnFrRiichi">リーチ</button>';
+    var canRiichi = false;
+    if (myTurn && g.phase === 'turn' && isClosed && !g.riichi[my] && g.scores[my] >= 1000 && myHand.length % 3 === 2) {
+      // どれか1枚を切ればテンパイになる手かどうかを確認してからボタンを出す
+      for (var ri = 0; ri < myHand.length; ri++) {
+        var restHand = myHand.filter(function(_, ii) { return ii !== ri; });
+        var riichiWaits = Agari.getTenpaiWaits(restHand);
+        if (g.isSanma) riichiWaits = riichiWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+        if (riichiWaits.length > 0) { canRiichi = true; break; }
+      }
+    }
+    if (canRiichi) actionBtns += '<button class="btn-battle btn-riichi" id="btnFrRiichi">リーチ</button>';
     if (g.phase === 'ron_wait' && g.ron && g.ron.candidates.indexOf(my) >= 0 && !this._frResponseSent) {
       actionBtns += '<button class="btn-battle btn-ron" id="btnFrRon">ロン！</button>' +
               '<button class="btn-battle btn-skip" id="btnFrPass">スルー</button>';
