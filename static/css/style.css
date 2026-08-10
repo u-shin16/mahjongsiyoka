@@ -5301,7 +5301,8 @@ body.is-battle-page .app-main.battle-main {
   top: 52px;
   left: 50%;
   transform: translateX(-50%);
-  flex-direction: row;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* ── 左家（left）: 左側・上半分の右端 ── */
@@ -5591,6 +5592,14 @@ body.is-battle-page {
 .player-meld-area .meld-set {
   padding: 1px 3px 2px !important;
   gap: 0 !important;
+}
+
+/* 抜き北の牌も副露牌と同じ大きさにそろえる（サイズ差で重なって見えるのを防ぐ） */
+.player-meld-area .fr-nuki-row .tile {
+  zoom: 0.48 !important;
+}
+.player-meld-area .fr-nuki-row {
+  margin-top: 5px !important;
 }
 
 /* ── 6. 副露エリア位置の微調整 ── */
@@ -5911,6 +5920,8 @@ body.is-battle-page {
 }
 .fr-result-float .fr-panel {
   margin-bottom: 0;
+  background: linear-gradient(145deg, #1a3a24, #0f2518);
+  border-color: rgba(232,184,75,0.4);
 }
 @media (max-width: 520px) {
   .fr-wrap { max-width: none; }

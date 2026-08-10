@@ -1883,11 +1883,8 @@ var App = {
       });
       actionBtns += '<button class="btn-battle btn-skip-call" id="btnFrPass">スルー</button>';
     }
-    var myFlags = FriendGame.autoFlags(my);
+    // 和了/ツモ切り/鳴きなしの自動化トグルは正しく動作していなかったため一旦削除（理牌のみ残す）
     var autoControls = '<div class="fr-auto-controls">' +
-      '<button class="fr-toggle ' + (myFlags.agari ? 'active' : '') + '" data-fr-auto="agari">和了</button>' +
-      '<button class="fr-toggle ' + (myFlags.tsumogiri ? 'active' : '') + '" data-fr-auto="tsumogiri">ツモ切り</button>' +
-      '<button class="fr-toggle ' + (myFlags.noCalls ? 'active' : '') + '" data-fr-auto="noCalls">鳴きなし</button>' +
       '<button class="fr-toggle ' + (this._frSortTiles ? 'active' : '') + '" id="btnFrSortTiles">理牌</button>' +
     '</div>';
 
@@ -2079,17 +2076,6 @@ var App = {
     if (scoreToggle) scoreToggle.addEventListener('click', function() {
       self._frShowDiffUntil = Date.now() + 5000;
       self._render('friend', {});
-    });
-    document.querySelectorAll('[data-fr-auto]').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var next = {
-          agari: !!myFlags.agari,
-          tsumogiri: !!myFlags.tsumogiri,
-          noCalls: !!myFlags.noCalls,
-        };
-        next[btn.dataset.frAuto] = !next[btn.dataset.frAuto];
-        sendFrAction('auto_flags', { flags: next });
-      });
     });
     var sortBtn = document.getElementById('btnFrSortTiles');
     if (sortBtn) sortBtn.addEventListener('click', function() {
