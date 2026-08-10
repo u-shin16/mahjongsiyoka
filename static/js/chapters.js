@@ -348,6 +348,23 @@ const Chapters = (() => {
           },
         ],
       },
+      {
+        type: 'yn',
+        title: 'ミニゲーム④　平和の頭になれる？',
+        instruction: 'この2枚の頭（雀頭）は<strong>平和</strong>に使える？（場風:東、自風:南。三元牌と場風・自風の風牌はNG）',
+        yesLabel: '○ 使える', noLabel: '✕ 使えない',
+        passNeeded: 6,
+        questions: [
+          { tiles: [{suit:'pin',num:5},{suit:'pin',num:5}], answer: true, fb: '数牌の頭はいつでもOK！平和の頭に使える。' },
+          { tiles: [{suit:'dragon',num:1},{suit:'dragon',num:1}], answer: false, fb: '白（三元牌）の頭は役牌になるからNG。平和は頭が役牌だと成立しない。' },
+          { tiles: [{suit:'man',num:3},{suit:'man',num:3}], answer: true, fb: '3萬は数牌。頭にしてもOK！' },
+          { tiles: [{suit:'wind',num:1},{suit:'wind',num:1}], answer: false, fb: '東は場風！場風・自風の頭は役牌になるからNG。' },
+          { tiles: [{suit:'wind',num:2},{suit:'wind',num:2}], answer: false, fb: '南は自風！自分の風の頭も役牌になるからNG。' },
+          { tiles: [{suit:'dragon',num:2},{suit:'dragon',num:2}], answer: false, fb: '發（三元牌）もNG。白・發・中はいつでも役牌になる。' },
+          { tiles: [{suit:'wind',num:3},{suit:'wind',num:3}], answer: true, fb: '西は場風でも自風でもないからOK！役牌にならない風牌なら頭に使える。' },
+          { tiles: [{suit:'sou',num:9},{suit:'sou',num:9}], answer: true, fb: '9索は数牌。1・9でも頭ならタンヤオと違ってOK！平和は頭の数字を問わない。' },
+        ],
+      },
     ],
   };
 
