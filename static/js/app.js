@@ -667,7 +667,7 @@ function renderYakuExampleBoard(y) {
 //
 // 牌の枚数が変わっても点数板側の端は固定、外側へ広がる。
 function positionDiscardRivers() {
-  var RIVER_GAP = 10; // 全4方向で統一 (px)
+  var RIVER_GAP = 26; // 全4方向で統一 (px) — 点数板と河の間に余裕を持たせる
 
   var cpEl    = document.querySelector('.jt-center-panel');
   var tableEl = document.querySelector('.jt-table');
