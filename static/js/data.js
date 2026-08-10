@@ -16,7 +16,7 @@ var GameData = (function() {
     { id:5, title:'役牌を作ってみよう', short:'役牌', diff:2, min:4, topics:['三元牌（白・發・中）','風牌','役牌の判定'] },
     { id:6, title:'鳴きを使ってみよう', short:'ポン・チー', diff:3, min:4, topics:['ポンの判定','チーの判定','鳴けない場合の判定'] },
     { id:7, title:'復習テスト\n道場チャレンジ', short:'道場チャレンジ', diff:2, min:10, topics:['全章復習','10問テスト','段位評価'] },
-    { id:8, title:'初心者向けの役', short:'役を覚えよう', diff:3, min:18, topics:['立直','タンヤオ','平和','門前清自摸和'] },
+    { id:8, title:'初心者向けの役', short:'役を覚えよう', diff:3, min:21, topics:['立直','タンヤオ','平和','門前清自摸和','一発'] },
     { id:9, title:'翻を数えてみよう', short:'翻計算', diff:3, min:10, topics:['翻数','ドラ','点数'] },
     { id:10, title:'中級者向けの役', short:'中級役', diff:3, min:22, topics:['一盃口','対々和','一気通貫','三暗刻'] },
     { id:11, title:'上級者向けの役', short:'上級役', diff:3, min:20, topics:['清一色','混一色','純全帯幺九'] },
