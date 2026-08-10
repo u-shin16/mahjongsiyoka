@@ -797,21 +797,46 @@ function positionMeldAreas() {
     set(selfArea, (cp.bottom + MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translateX(-50%)');
   }
 
-  // 対面（上の角から上へ）
+  // 対面・上家・下家も、自分と同じ考え方で「その席の伏せ手牌(jt-hidden-hand)の
+  // 隣」に配置する（ダイヤモンドの角だとバッジ・河と競合するため）
+  var HAND_GAP = 8; // 伏せ手牌からの隙間(px)
+
+  // 対面（上の伏せ手牌の左隣）
   var oppArea = document.querySelector('.player-meld-area.seat-opposite');
-  if (oppArea) {
+  var oppHand = document.querySelector('.jt-hidden-top');
+  if (oppArea && oppHand) {
+    var ohr = oppHand.getBoundingClientRect();
+    set(oppArea,
+      (ohr.top + ohr.height / 2) + 'px',
+      (ohr.left - HAND_GAP) + 'px',
+      'auto', 'auto', 'translate(-100%, -50%)');
+  } else if (oppArea) {
     set(oppArea, (cp.top - MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translate(-50%, -100%)');
   }
 
-  // 上家（左の角から左へ）
+  // 上家（左の伏せ手牌の下）
   var leftArea = document.querySelector('.player-meld-area.seat-left');
-  if (leftArea) {
+  var leftHand = document.querySelector('.jt-hidden-left');
+  if (leftArea && leftHand) {
+    var lhr = leftHand.getBoundingClientRect();
+    set(leftArea,
+      (lhr.bottom + HAND_GAP) + 'px',
+      (lhr.left + lhr.width / 2) + 'px',
+      'auto', 'auto', 'translateX(-50%)');
+  } else if (leftArea) {
     set(leftArea, pCenterY + 'px', (cp.left - MELD_GAP) + 'px', 'auto', 'auto', 'translate(-100%, -50%)');
   }
 
-  // 下家（右の角から右へ）
+  // 下家（右の伏せ手牌の下）
   var rightArea = document.querySelector('.player-meld-area.seat-right');
-  if (rightArea) {
+  var rightHand = document.querySelector('.jt-hidden-right');
+  if (rightArea && rightHand) {
+    var rhr = rightHand.getBoundingClientRect();
+    set(rightArea,
+      (rhr.bottom + HAND_GAP) + 'px',
+      (rhr.left + rhr.width / 2) + 'px',
+      'auto', 'auto', 'translateX(-50%)');
+  } else if (rightArea) {
     set(rightArea, pCenterY + 'px', (cp.right + MELD_GAP) + 'px', 'auto', 'auto', 'translateY(-50%)');
   }
 }
