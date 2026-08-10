@@ -3397,13 +3397,25 @@ var App = {
           }).join('');
         };
 
+        // 抜き北パネルHTML生成ヘルパー（実際の牌画像を表示）
+        var buildNukiTiles = function(pi) {
+          var tiles = (s.nuki && s.nuki[pi]) || [];
+          if (!tiles.length) return '';
+          return '<div class="fr-nuki-row"><span>抜き北</span>' + tiles.map(function(t, ti) {
+            return Tiles.renderTile(t, {noHover:true, extraClass:'meld-tile'});
+          }).join('') + '</div>';
+        };
+
         for (var pi = 0; pi < s.playerCount; pi++) {
-          if (!s.melds[pi] || s.melds[pi].length === 0) continue;
+          var hasMelds = s.melds[pi] && s.melds[pi].length > 0;
+          var hasNuki  = isSanma && s.nuki && s.nuki[pi] && s.nuki[pi].length > 0;
+          if (!hasMelds && !hasNuki) continue;
           var cls = seatCls[pi];
           if (!cls) continue;
           perPlayerMeldsHtml +=
             '<div class="player-meld-area '+cls+'">' +
-              buildMeldSets(pi) +
+              (hasMelds ? buildMeldSets(pi) : '') +
+              (hasNuki ? buildNukiTiles(pi) : '') +
             '</div>';
         }
       })();
