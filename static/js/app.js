@@ -67,7 +67,6 @@ function shuffledChoices(originalChoices, isSameFn) {
 }
 
 // ===== 章のミニゲーム番号選択（クリア済みの章で「①から」「②から」を選べるようにする） =====
-var CIRCLED_NUMS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮'];
 var CH_MG_KEYS = {
   1: ['mg1', 'mg2', 'mg3'],
   2: ['mg1', 'mg2'],
@@ -911,10 +910,12 @@ var App = {
           var mgTitles = chMgTitles(c.id);
           if (mgTitles.length > 1) {
             mgPicker = '<div class="chapter-mg-picker">' +
-              '<span class="chapter-mg-picker-label">やりたい問題から始める：</span>' +
-              mgTitles.map(function(t, i) {
-                return '<button class="chapter-mg-btn" data-mg="'+(i+1)+'" title="'+esc(t)+'">'+(CIRCLED_NUMS[i]||(i+1))+'</button>';
-              }).join('') +
+              '<select class="chapter-mg-select" data-chapter-id="'+c.id+'">' +
+                '<option value="">やりたい問題から始める▼</option>' +
+                mgTitles.map(function(t, i) {
+                  return '<option value="'+(i+1)+'">'+esc(t)+'</option>';
+                }).join('') +
+              '</select>' +
             '</div>';
           }
         }
@@ -939,11 +940,12 @@ var App = {
         self.navigate('chapter', { id: parseInt(el.dataset.id, 10) });
       });
     });
-    document.querySelectorAll('#chList .chapter-mg-btn').forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
+    document.querySelectorAll('#chList .chapter-mg-select').forEach(function(sel) {
+      sel.addEventListener('click', function(e) { e.stopPropagation(); });
+      sel.addEventListener('change', function(e) {
         e.stopPropagation();
-        var card = btn.closest('.chapter-card');
-        self.navigate('chapter', { id: parseInt(card.dataset.id, 10), startMg: parseInt(btn.dataset.mg, 10) });
+        if (!sel.value) return;
+        self.navigate('chapter', { id: parseInt(sel.dataset.chapterId, 10), startMg: parseInt(sel.value, 10) });
       });
     });
   },

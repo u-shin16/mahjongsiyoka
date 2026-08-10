@@ -256,34 +256,27 @@ button { font-family: inherit; cursor: pointer; }
   background: rgba(39,174,96,0.35);
 }
 
-/* クリア済み章：ミニゲーム番号から始める */
+/* クリア済み章：やりたい問題から始める（プルダウン） */
 .chapter-mg-picker {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px;
   margin-top: 7px;
 }
-.chapter-mg-picker-label {
-  font-size: 0.68rem;
-  color: #8ab89c;
-  margin-right: 2px;
-}
-.chapter-mg-btn {
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border-radius: 50%;
+.chapter-mg-select {
+  width: 100%;
+  max-width: 320px;
+  padding: 6px 10px;
+  border-radius: 6px;
   border: 1px solid rgba(232,184,75,0.4);
   background: rgba(232,184,75,0.12);
   color: var(--gold);
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
 }
-.chapter-mg-btn:hover { background: rgba(232,184,75,0.3); transform: scale(1.08); }
-.chapter-mg-btn:active { transform: scale(0.95); }
+.chapter-mg-select:hover { background: rgba(232,184,75,0.22); }
+.chapter-mg-select option {
+  color: #1a3a24;
+  font-weight: 500;
+}
 
 /* ===== Game Screen ===== */
 .game-wrap {
