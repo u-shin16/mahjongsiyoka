@@ -184,6 +184,8 @@ button { font-family: inherit; cursor: pointer; }
 }
 .chapter-list { display: flex; flex-direction: column; gap: 12px; }
 .chapter-card {
+  position: relative;
+  z-index: 1;
   background: linear-gradient(145deg, #2a5c3c, #1e4530);
   border: 1px solid rgba(232,184,75,0.25);
   border-radius: var(--radius);
@@ -196,6 +198,8 @@ button { font-family: inherit; cursor: pointer; }
   gap: 14px;
 }
 .chapter-card:hover { transform: translateX(4px); border-color: var(--gold); }
+/* プルダウンを開いた章カードを他のカードより前面に出す */
+.chapter-card.mg-dropdown-open { z-index: 20; }
 .chapter-card.locked { opacity: 0.45; cursor: not-allowed; }
 .chapter-card.locked:hover { transform: none; }
 .chapter-card.cleared { border-color: rgba(39,174,96,0.5); }

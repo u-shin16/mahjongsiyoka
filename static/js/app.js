@@ -380,10 +380,10 @@ var CH_INTROS = {
     icon: '🀄',
     points: [
       '<strong>三暗刻</strong>＝暗刻（自分でツモって作った刻子）を3つそろえる役',
-      'ロンで完成した面子は暗刻にならないので、ここでは<strong>ツモ和了</strong>を前提に考えよう',
-      '刻子が3つあるかどうかを数えてみよう',
+      '対々和との違いに注意：対々和は「4つとも刻子であればOK（作り方は問わない）」、三暗刻は「3つが鳴かずに自分で作った刻子であること」が条件',
+      'ロンで完成した面子や、ポンして作った面子は暗刻にならないので、ここでは<strong>ツモ和了</strong>を前提に考えよう',
     ],
-    example: '✅ 刻子が3つ＋順子1つ＋頭\n❌ 刻子が2つ以下（残りは順子）',
+    example: '✅ 刻子が3つ＋順子1つ＋頭（4つ目は順子でもOK）\n❌ 刻子が2つ以下（残りは順子）\n💡 4つとも刻子なら対々和も同時に成立することが多い',
     tip: '💡 「ツモ和了なら、暗刻が3つある？」を○✕で答えよう！',
   },
   ch10_7: {
@@ -932,6 +932,7 @@ var App = {
     });
     var closeAllMgDropdowns = function() {
       document.querySelectorAll('#chList .chapter-mg-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+      document.querySelectorAll('#chList .chapter-card.mg-dropdown-open').forEach(function(c) { c.classList.remove('mg-dropdown-open'); });
     };
     document.querySelectorAll('#chList .chapter-mg-trigger').forEach(function(btn) {
       btn.addEventListener('click', function(e) {
@@ -939,7 +940,10 @@ var App = {
         var dd = btn.closest('.chapter-mg-dropdown');
         var wasOpen = dd.classList.contains('open');
         closeAllMgDropdowns();
-        if (!wasOpen) dd.classList.add('open');
+        if (!wasOpen) {
+          dd.classList.add('open');
+          btn.closest('.chapter-card').classList.add('mg-dropdown-open');
+        }
       });
     });
     document.querySelectorAll('#chList .chapter-mg-option').forEach(function(opt) {
