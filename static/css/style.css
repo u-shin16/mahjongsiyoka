@@ -5352,7 +5352,7 @@ body.is-battle-page .app-main.battle-main {
   z-index: 50;
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 0px; /* 2セット以上鳴いたときに空欄ができるとの指摘のため3px→0pxに縮小 */
   pointer-events: none;
 }
 /* 副露セット内牌を小さく */
