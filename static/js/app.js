@@ -782,13 +782,14 @@ function positionMeldAreas() {
   // 自分：ダイヤモンドの角ではなく自分の手牌の右隣に配置
   // （角に置くと点数バッジ・自河と場所が競合するため、じゃんたま同様
   //   自分の副露だけは手牌基準にする）
-  var SELF_GAP = 10; // 手牌の右端からの隙間(px)
+  var SELF_GAP    = 10; // 手牌の右端からの隙間(px)
+  var SELF_LIFT   = 18; // 手牌中央からさらに上へのオフセット(px)
   var selfArea = document.querySelector('.player-meld-area.seat-self');
   var handRow  = document.querySelector('.jt-hand-tiles-row');
   if (selfArea && handRow) {
     var hr = handRow.getBoundingClientRect();
     set(selfArea,
-      (hr.top + hr.height / 2) + 'px',
+      (hr.top + hr.height / 2 - SELF_LIFT) + 'px',
       (hr.right + SELF_GAP) + 'px',
       'auto', 'auto', 'translateY(-50%)');
   } else if (selfArea) {
