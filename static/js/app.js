@@ -1604,8 +1604,9 @@ var App = {
       var tilesHtml = '';
       if (q.tiles) {
         var smallT = q.tiles.length > 7;
-        tilesHtml = '<div class="tiles-row">' + q.tiles.map(function(t) {
-          return Tiles.renderTile(Tiles.make(t.suit, t.num), {noHover: true, small: smallT});
+        var sortedQTiles = Tiles.sortTiles(q.tiles.map(function(t) { return Tiles.make(t.suit, t.num); }));
+        tilesHtml = '<div class="tiles-row">' + sortedQTiles.map(function(t) {
+          return Tiles.renderTile(t, {noHover: true, small: smallT});
         }).join('') + '</div>';
       }
 
