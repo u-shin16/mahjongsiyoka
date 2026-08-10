@@ -3901,172 +3901,82 @@ var App = {
         loserLine = '<div class="agr-loser">← '+esc(loserName)+' の捨て牌</div>';
       }
 
-      // 手牌 HTML (14枚、和了牌を区別。面子・対子ごとに理牌して表示する)
-      var hand = (s.hands[winner] || []).slice();
-      var handHtml = '';
-      if (hand.length > 0) {
-        var winningTile = s.winTile || hand[hand.length - 1];
+      // 手牌 HTML（友人戦の結果パネルと同じ形式：面子・雀頭ごとに理牌して1行に並べる）
+      var resultHandTiles = (s.hands[winner] || []).slice();
+      var resultDecomp = Agari.decomposeWinningHand(resultHandTiles);
+      var resultGroups = resultDecomp
+        ? (resultDecomp.type === 'chiitoitsu' ? resultDecomp.groups.slice() : resultDecomp.melds.concat([resultDecomp.pair]))
+        : [Tiles.sortTiles(resultHandTiles)];
+      var handHtml = resultGroups.map(function(g) {
+        return '<span class="agr-tile-group">' + g.map(function(t) {
+          return Tiles.renderTile(t, { noHover: true, small: true });
+        }).join('') + '</span>';
+      }).join('');
 
-        // 面子・雀頭（七対子なら対子7組）ごとにグループ分けする。
-        // 分解できない場合は今まで通りの一括ソートにフォールバックする。
-        var decomposition = Agari.decomposeWinningHand(hand);
-        var groups = decomposition
-          ? (decomposition.type === 'chiitoitsu' ? decomposition.groups.slice() : decomposition.melds.concat([decomposition.pair]))
-          : [Tiles.sortTiles(hand)];
+      // 副露（鳴き牌）
+      var winnerMelds = (s.melds && s.melds[winner]) || [];
+      var meldsHtml = winnerMelds.length ? '<div class="fr-melds">' + winnerMelds.map(function(m) {
+        var typeLabel = m.type === 'pon' ? 'ポン' : m.type === 'chi' ? 'チー' : m.type === 'kan' ? 'カン' : '暗カン';
+        var mTiles = (m.tiles || []).map(function(t, ti) {
+          var isCalled = m.calledTile && Tiles.isSame(t, m.calledTile) && ti === m.tiles.length - 1;
+          var isHidden = m.type === 'ankan' && (ti === 0 || ti === 3);
+          if (isHidden) return Tiles.renderTile({suit:'back',num:0,id:'agrh_'+ti}, {faceDown:true, noHover:true, extraClass:'xxs'});
+          return Tiles.renderTile(t, {noHover:true, extraClass:'xxs'+(isCalled?' meld-called':'')});
+        }).join('');
+        return '<div class="fr-meld-set meld-set meld-'+m.type+'"><span class="meld-type-label">'+typeLabel+'</span>'+mTiles+'</div>';
+      }).join('') + '</div>' : '';
 
-        // 和了牌をどれか1つの組から取り除く（＋の後ろに別枠で表示するため）
-        var winRemoved = false;
-        var mainGroups = groups.map(function(g) {
-          if (winRemoved) return g;
-          var idx = winningTile ? g.findIndex(function(t) { return t.id === winningTile.id; }) : -1;
-          if (idx === -1 && winningTile) idx = g.findIndex(function(t) { return Tiles.isSame(t, winningTile); });
-          if (idx === -1) return g;
-          winRemoved = true;
-          return g.filter(function(_, i) { return i !== idx; });
-        }).filter(function(g) { return g.length > 0; });
+      // 抜き北
+      var winnerNuki = (s.nuki && s.nuki[winner]) || [];
+      var nukiResultHtml = winnerNuki.length ? '<div class="fr-nuki-row"><span>抜き北</span>' + winnerNuki.map(function(t) {
+        return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
+      }).join('') + '</div>' : '';
 
-        handHtml =
-          '<div class="agr-hand">' +
-            '<div class="agr-tiles">' +
-              mainGroups.map(function(g) {
-                return '<span class="agr-tile-group">' + g.map(function(t) {
-                  return Tiles.renderTile(t, { noHover: true, extraClass: 'agr-tile' });
-                }).join('') + '</span>';
-              }).join('') +
-            '</div>' +
-            '<div class="agr-sep">＋</div>' +
-            '<div class="agr-win-tile">' +
-              Tiles.renderTile(winningTile, { noHover: true, extraClass: 'agr-tile agr-tile-win' }) +
-            '</div>' +
-          '</div>';
-      }
-
-      // ドラ表示牌
-      var doraInd    = s.doraIndicator;
-      var doraActual = doraInd ? getDoraFromIndicator(doraInd) : null;
-      var doraHtml = '';
-      if (doraInd) {
-        doraHtml =
-          '<div class="agr-dora-row">' +
-            '<span class="agr-dora-label">ドラ表示牌</span>' +
-            Tiles.renderTile(doraInd, { noHover: true, extraClass: 'agr-tile agr-tile-dora-ind' }) +
-            '<span class="agr-dora-arrow">→</span>' +
-            (doraActual ? Tiles.renderTile(doraActual, { noHover: true, extraClass: 'agr-tile agr-tile-dora' }) : '') +
-          '</div>';
-      }
-      // 裏ドラ表示牌（リーチしてアガったときだけめくって見せる）
+      // 裏ドラ・カンドラ表示牌（リーチ時の裏ドラは和了時のみめくって見せる）
       var uraInd = s.uraDoraIndicator;
-      if (uraInd && s.riichi && s.riichi[winner]) {
-        var uraActual = getDoraFromIndicator(uraInd);
-        doraHtml +=
-          '<div class="agr-dora-row">' +
-            '<span class="agr-dora-label">裏ドラ表示牌</span>' +
-            Tiles.renderTile(uraInd, { noHover: true, extraClass: 'agr-tile agr-tile-dora-ind' }) +
-            '<span class="agr-dora-arrow">→</span>' +
-            (uraActual ? Tiles.renderTile(uraActual, { noHover: true, extraClass: 'agr-tile agr-tile-dora' }) : '') +
-          '</div>';
-      }
+      var uraRowHtml = (uraInd && s.riichi && s.riichi[winner])
+        ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">裏ドラ表示牌</span>' + Tiles.renderTile(uraInd, { noHover: true, extraClass: 'xxs' }) + '</div>'
+        : '';
+      var kanDoraInds = s.kanDoraIndicators || [];
+      var kanDoraRowHtml = kanDoraInds.length
+        ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">カンドラ表示牌</span>' + kanDoraInds.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</div>'
+        : '';
 
       // 役一覧 HTML
-      var totalHanFromYaku = yakuList.reduce(function(acc, y){ return acc + y.han; }, 0);
       var yakuHtml = yakuList.map(function(y) {
-        return '<div class="agr-yaku-row">' +
-          '<span class="agr-yaku-name">'+esc(y.name)+'</span>' +
-          '<span class="agr-yaku-han">'+y.han+'翻</span>' +
-        '</div>';
+        return '<div class="fr-row"><span>'+esc(y.name)+'</span><span class="fr-score">'+y.han+'翻</span></div>';
       }).join('');
 
       // 点数ラベル
-      var scaleName = sc ? getScaleName(sc.han) : '';
-      var ptsText   = sc ? sc.pts.toLocaleString() + '点' : '—';
-      var hanText   = sc ? sc.han + '翻' : '—';
+      var ptsText = sc ? sc.pts.toLocaleString() + '点' : '—';
+      var hanText = sc ? sc.han + '翻' : '—';
 
       // 点数移動
-      var deltaHtml = '';
-      if (sc && sc.deltas) {
-        deltaHtml =
-          '<div class="agr-deltas">' +
-            Battle.PLAYER_NAMES.map(function(nm, i) {
-              var d    = sc.deltas[i];
-              var sign = d > 0 ? '+' : '';
-              var cls  = i === winner ? 'agr-delta-winner' : (d < 0 ? 'agr-delta-minus' : 'agr-delta-zero');
-              return '<div class="agr-delta-row '+cls+'">' +
-                '<span class="agr-delta-name">'+esc(nm)+'</span>' +
-                '<span class="agr-delta-pts">'+(d === 0 ? '±0' : sign+d.toLocaleString())+'</span>' +
-              '</div>';
-            }).join('') +
-          '</div>';
-      }
+      var deltaHtml = (sc && sc.deltas) ? Battle.PLAYER_NAMES.map(function(nm, i) {
+        var d = sc.deltas[i];
+        return d !== 0 ? '<div class="fr-row"><span>'+esc(nm)+'</span><span style="color:'+(d > 0 ? 'var(--gold)' : '#ff9a8a')+'">'+(d > 0 ? '+' : '')+d.toLocaleString()+'</span></div>' : '';
+      }).join('') : '';
 
-      // 最終スコア
-      var finalHtml =
-        '<div class="agr-final-scores">' +
-          Battle.PLAYER_NAMES.map(function(nm, i) {
-            return '<div class="agr-final-row '+(i===winner?'agr-final-winner':'')+'">' +
-              '<span class="agr-final-wind">'+Battle.WIND_NAMES[i]+'</span>' +
-              '<span class="agr-final-name">'+esc(nm)+'</span>' +
-              '<span class="agr-final-pts">'+s.scores[i].toLocaleString()+'点</span>' +
-            '</div>';
-          }).join('') +
-        '</div>';
-
-      // 組み立て
+      // 組み立て（友人戦の和了結果パネルと同じ構成・デザインに統一）
       main.innerHTML =
-        '<div class="agari-result-wrap">' +
-          '<div class="agari-result-card">' +
-
-            // ── ヘッダー ──
-            '<div class="agr-header agr-header-'+(isPlayer?'self':'cpu')+'">' +
-              '<div class="agr-win-type">'+winTypeLabel+'</div>' +
-              '<div class="agr-winner-name">'+esc(winnerName)+'</div>' +
-              loserLine +
-              '<div class="agr-round-label">'+Battle.getRoundLabel()+'</div>' +
-            '</div>' +
-
-            // ── 手牌 ──
-            '<div class="agr-section">' +
-              '<div class="agr-section-title">和了手牌</div>' +
-              handHtml +
-            '</div>' +
-
-            // ── ドラ表示牌 ──
-            (doraHtml ? '<div class="agr-section">'+doraHtml+'</div>' : '') +
-
-            // ── 役一覧 ──
-            '<div class="agr-section agr-yaku-section">' +
-              '<div class="agr-section-title">役</div>' +
-              '<div class="agr-yaku-list">'+yakuHtml+'</div>' +
-            '</div>' +
-
-            // ── 翻・点数 ──
-            '<div class="agr-score-section">' +
-              '<div class="agr-han-pts">' +
-                '<span class="agr-han-val">'+hanText+'</span>' +
-                '<span class="agr-pts-val">'+ptsText+'</span>' +
-              '</div>' +
-              (scaleName ? '<div class="agr-scale-name">'+scaleName+'</div>' : '') +
-            '</div>' +
-
-            // ── 点数移動 ──
-            '<div class="agr-section">' +
-              '<div class="agr-section-title">点数移動</div>' +
-              deltaHtml +
-            '</div>' +
-
-            // ── 現在点数 ──
-            '<div class="agr-section">' +
-              '<div class="agr-section-title">現在点数'+(matchOver?' ／ 対局終了':'')+'</div>' +
-              finalHtml +
-            '</div>' +
-
-            // ── ボタン ──
-            '<div class="agr-btn-row">' +
+        '<div class="fr-result-float fr-result-float-win">' +
+          '<div class="fr-panel" style="border-color:var(--gold)">' +
+            '<div style="font-size:1.1rem;font-weight:900;color:var(--gold);margin-bottom:6px">' +
+              esc(winnerName) + ' の' + winTypeLabel + '！</div>' +
+            '<div class="fr-result-hand-row" style="margin-bottom:8px">' + handHtml + '</div>' +
+            meldsHtml +
+            nukiResultHtml +
+            yakuHtml +
+            '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + hanText + ' ' + ptsText + '</div>' +
+            uraRowHtml +
+            kanDoraRowHtml +
+            deltaHtml +
+            '<div class="btn-row" style="margin-top:10px">' +
               (matchOver
                 ? '<button class="btn btn-primary" id="btnPlayAgain">再戦</button>'
-                : '<button class="btn btn-primary" id="btnNextRound">次の局へ →</button>') +
+                : '<button class="btn btn-primary" id="btnNextRound">次の局へ</button>') +
               '<button class="btn btn-secondary" id="btnBHome">ホームへ</button>' +
             '</div>' +
-
           '</div>' +
         '</div>';
 
