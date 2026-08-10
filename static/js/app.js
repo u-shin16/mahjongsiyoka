@@ -779,10 +779,15 @@ function positionMeldAreas() {
     el.style.setProperty('transform', transform, 'important');
   };
 
-  // 自分（下の角から下へ）
+  // 自分（下の角から、さらに右下へずらす）
+  var SELF_OFFSET_X = 60; // 右へのオフセット(px)
+  var SELF_OFFSET_Y = 24; // 下へのオフセット(px)
   var selfArea = document.querySelector('.player-meld-area.seat-self');
   if (selfArea) {
-    set(selfArea, (cp.bottom + MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translateX(-50%)');
+    set(selfArea,
+      (cp.bottom + MELD_GAP + SELF_OFFSET_Y) + 'px',
+      (pCenterX + SELF_OFFSET_X) + 'px',
+      'auto', 'auto', 'translateX(-50%)');
   }
 
   // 対面（上の角から上へ）
