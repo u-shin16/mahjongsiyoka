@@ -783,7 +783,7 @@ function positionMeldAreas() {
   // （角に置くと点数バッジ・自河と場所が競合するため、じゃんたま同様
   //   自分の副露だけは手牌基準にする）
   var SELF_GAP    = 10; // 手牌の右端からの隙間(px)
-  var SELF_LIFT   = 36; // 手牌中央からさらに上へのオフセット(px)
+  var SELF_LIFT   = 54; // 手牌中央からさらに上へのオフセット(px)
   var selfArea = document.querySelector('.player-meld-area.seat-self');
   var handRow  = document.querySelector('.jt-hand-tiles-row');
   if (selfArea && handRow) {

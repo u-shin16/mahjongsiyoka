@@ -6250,3 +6250,16 @@ body.is-battle-page {
   .jt-diamond-edge { font-size: 0.5rem; padding: 1px 4px; }
   .jt-diamond-edge .wind { font-size: 0.54rem; }
 }
+
+/* ============================================================
+   MELD SET CLEANUP: ポン/チー/カンのテキストラベルを非表示にし、
+   カード同士の残り隙間を詰める
+   （※ .player-meld-area はフレンド対戦画面の副露パネルとも共有の
+      クラスのため、この変更はフレンド対戦画面にも影響する）
+   ============================================================ */
+.player-meld-area .meld-type-label {
+  display: none !important;
+}
+.player-meld-area .meld-set {
+  margin: 0 -1px -1px 0 !important;
+}
