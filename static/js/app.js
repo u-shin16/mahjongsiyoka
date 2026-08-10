@@ -909,13 +909,13 @@ var App = {
         if (cleared) {
           var mgTitles = chMgTitles(c.id);
           if (mgTitles.length > 1) {
-            mgPicker = '<div class="chapter-mg-picker">' +
-              '<select class="chapter-mg-select" data-chapter-id="'+c.id+'">' +
-                '<option value="">やりたい問題から始める</option>' +
+            mgPicker = '<div class="chapter-mg-dropdown" data-chapter-id="'+c.id+'">' +
+              '<button type="button" class="chapter-mg-trigger">やりたい問題から始める</button>' +
+              '<div class="chapter-mg-menu">' +
                 mgTitles.map(function(t, i) {
-                  return '<option value="'+(i+1)+'">'+esc(t)+'</option>';
+                  return '<div class="chapter-mg-option" data-mg="'+(i+1)+'">'+esc(t)+'</div>';
                 }).join('') +
-              '</select>' +
+              '</div>' +
             '</div>';
           }
         }
@@ -940,14 +940,30 @@ var App = {
         self.navigate('chapter', { id: parseInt(el.dataset.id, 10) });
       });
     });
-    document.querySelectorAll('#chList .chapter-mg-select').forEach(function(sel) {
-      sel.addEventListener('click', function(e) { e.stopPropagation(); });
-      sel.addEventListener('change', function(e) {
+    var closeAllMgDropdowns = function() {
+      document.querySelectorAll('#chList .chapter-mg-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    };
+    document.querySelectorAll('#chList .chapter-mg-trigger').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (!sel.value) return;
-        self.navigate('chapter', { id: parseInt(sel.dataset.chapterId, 10), startMg: parseInt(sel.value, 10) });
+        var dd = btn.closest('.chapter-mg-dropdown');
+        var wasOpen = dd.classList.contains('open');
+        closeAllMgDropdowns();
+        if (!wasOpen) dd.classList.add('open');
       });
     });
+    document.querySelectorAll('#chList .chapter-mg-option').forEach(function(opt) {
+      opt.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var dd = opt.closest('.chapter-mg-dropdown');
+        self.navigate('chapter', { id: parseInt(dd.dataset.chapterId, 10), startMg: parseInt(opt.dataset.mg, 10) });
+      });
+    });
+    if (this._chMgOutsideHandler) document.removeEventListener('click', this._chMgOutsideHandler);
+    this._chMgOutsideHandler = function(e) {
+      if (!e.target.closest('.chapter-mg-dropdown')) closeAllMgDropdowns();
+    };
+    document.addEventListener('click', this._chMgOutsideHandler);
   },
 
   // ===== Chapter Router =====

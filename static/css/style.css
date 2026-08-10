@@ -256,16 +256,16 @@ button { font-family: inherit; cursor: pointer; }
   background: rgba(39,174,96,0.35);
 }
 
-/* クリア済み章：やりたい問題から始める（プルダウン） */
-.chapter-mg-picker {
+/* クリア済み章：やりたい問題から始める（自作プルダウン。ネイティブselectは
+   開いたときの見た目をCSSで制御できない端末があるため自前実装） */
+.chapter-mg-dropdown {
+  position: relative;
   margin-top: 7px;
-}
-.chapter-mg-select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  width: 100%;
   max-width: 320px;
+}
+.chapter-mg-trigger {
+  width: 100%;
+  text-align: left;
   padding: 7px 30px 7px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--gold-dark);
@@ -281,17 +281,36 @@ button { font-family: inherit; cursor: pointer; }
   cursor: pointer;
   transition: background-color 0.15s, border-color 0.15s;
 }
-.chapter-mg-select:hover { background-color: rgba(232,184,75,0.24); border-color: var(--gold); }
-.chapter-mg-select:focus {
-  outline: none;
+.chapter-mg-trigger:hover { background-color: rgba(232,184,75,0.24); border-color: var(--gold); }
+.chapter-mg-dropdown.open .chapter-mg-trigger {
   border-color: var(--gold);
   box-shadow: 0 0 0 2px rgba(232,184,75,0.25);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 7l5-5 5 5' stroke='%23e8b84b' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
-.chapter-mg-select option {
+.chapter-mg-menu {
+  display: none;
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gold-dark);
   background: #1e4530;
-  color: var(--cream);
-  font-weight: 500;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.45);
 }
+.chapter-mg-dropdown.open .chapter-mg-menu { display: block; }
+.chapter-mg-option {
+  padding: 9px 12px;
+  font-size: 0.8rem;
+  color: var(--cream);
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.chapter-mg-option:last-child { border-bottom: none; }
+.chapter-mg-option:hover { background: rgba(232,184,75,0.18); color: var(--gold); }
 
 /* ===== Game Screen ===== */
 .game-wrap {
