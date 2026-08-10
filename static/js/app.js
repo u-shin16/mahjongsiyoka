@@ -184,16 +184,6 @@ var CH_INTROS = {
     example: '✅ 白・白・白（三元牌はいつでも役牌！）\n✅ 中・中・中（三元牌はいつでも役牌！）\n❌ 西・西・西（場の風でも自風でもない場合）',
     tip: '💡 この問題では「場風=東、自風=南」で考えてね！',
   },
-  ch5_1: {
-    icon: '🏁',
-    points: [
-      '役牌の刻子を含む手でアガリ牌を選ぼう',
-      '役牌があれば、あとは形を整えるだけ',
-      '未完成の面子に足りない牌を探してね',
-    ],
-    example: '役牌の刻子＋完成セット＋頭を確認して、残った2枚に足りない牌を選ぼう！',
-    tip: '💡 役牌（白・發・中など）がセットに入っているか確認しよう！',
-  },
   // Chapter 6
   ch6_0: {
     icon: '📢',
@@ -204,26 +194,6 @@ var CH_INTROS = {
     ],
     example: '手牌に5萬5萬 → 誰かが5萬を捨てたら「ポン！」\n手牌に3萬4萬 → 左の人が5萬を捨てたら「チー！」\n手牌に2萬6萬 → 4萬が来ても順子にならない → 鳴けない',
     tip: '💡 3択（ポン・チー・鳴けない）から正しい行動を選ぼう！',
-  },
-  ch6_1: {
-    icon: '🤔',
-    points: [
-      'ポン・チーができても<strong>スルー（パス）</strong>という選択もある',
-      '役がなくなる場合はスルーが正解なことも',
-      'ポン・チー・スルーの3択から最善を選ぼう',
-    ],
-    example: '役牌の対子があるならポンを狙おう！\n順子が作れるならチーも有効。\n関係ない牌なら迷わずスルー！',
-    tip: '💡 ポン・チー・スルーから状況に合った行動を選ぼう！',
-  },
-  ch6_2: {
-    icon: '🎰',
-    points: [
-      '鳴きを使って手を完成させた後の最終アガリ牌を選ぼう',
-      '副露（鳴いた面子）は表示されているよ',
-      '残りの手牌に足りない面子の1枚を探そう',
-    ],
-    example: '副露あり → 手牌は通常より少ない\n残りの2枚組に足して3枚セットが完成する牌を選ぼう！',
-    tip: '💡 副露牌＋手牌で「あと何が来ればアガリ？」を考えよう！',
   },
   // Chapter 7
   ch7: {
@@ -1144,7 +1114,7 @@ var App = {
 
   // ===== CHAPTER 5 =====
   _ch5: function(main) {
-    var mgs=[Chapters.ch5.mg2,Chapters.ch5.mg3];
+    var mgs=[Chapters.ch5.mg2];
     var mgIdx=0,qIdx=0,correct=0,showingFb=false;
     var qBank={},introShown={};
     var render=function(){
@@ -1157,52 +1127,39 @@ var App = {
         if(CH_INTROS[introKey]){showMgIntro(main,'第5章 役牌を作ろう',mg5.title,CH_INTROS[introKey],render);return;}
       }
 
-      if(mgIdx===0){
-        var mg=mgs[0];var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
-        var ch5mg2Hints = [
-          'この問題は「同じ牌3枚の刻子が役牌になれるか？」を問うもの。役牌とは<strong>刻子を作ると役（得点の権利）になる特定の牌</strong>のこと',
-          '役牌になれる牌は決まっている：<strong>白・發・中（三元牌）</strong>と、<strong>場の風牌</strong>と<strong>自分の風牌</strong>。それ以外の牌の刻子は役牌にならないよ',
-        ];
-        var hLvCh5 = 0;
-        main.innerHTML=chHeader('第5章 役牌を作ろう',mg.title,pct,correct,mg.passNeeded)+
-          '<div class="game-instruction">'+mg.instruction+'</div>'+
-          '<div class="game-area"><div class="tiles-row">'+q.tiles.map(function(t){return Tiles.renderTile(Tiles.make(t.suit,t.num),{noHover:true});}).join('')+'</div>'+
-          '<div class="yn-panel" style="margin-top:14px"><button class="btn btn-yes" id="btnY">○ 役牌</button><button class="btn btn-no" id="btnN">✕ 役牌でない</button></div>'+
-          '<div id="feedback"></div></div>'+
-          '<div class="btn-row"><button class="btn btn-hint" id="btnHintCh5">💡 ヒントを見る</button></div>'+
-          '<div class="hint-box" id="hintBoxCh5"></div>';
-        var handleYN=function(ch){if(showingFb)return;showingFb=true;var ok=ch===q.answer;if(ok)correct++;
-          showFeedback(ok,q.fb,function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){mgIdx=1;qIdx=0;correct=0;showMgClear(0,render);}else render();});};
-        document.getElementById('btnY').addEventListener('click',function(){handleYN(true);});
-        document.getElementById('btnN').addEventListener('click',function(){handleYN(false);});
-        document.getElementById('btnHintCh5').addEventListener('click', function() {
-          var hb=document.getElementById('hintBoxCh5'), btn=document.getElementById('btnHintCh5');
-          hLvCh5=Math.min(hLvCh5+1,ch5mg2Hints.length);
-          hb.innerHTML='<span style="font-size:0.72rem;color:var(--gold);font-weight:700;display:block;margin-bottom:4px">ヒント'+hLvCh5+'</span>'+ch5mg2Hints[hLvCh5-1];
-          hb.classList.add('visible');
-          if(hLvCh5>=ch5mg2Hints.length){btn.textContent='💡 ヒントはここまで';btn.disabled=true;}
-          else btn.textContent='💡 もっとヒント（'+(hLvCh5+1)+'/'+ch5mg2Hints.length+'）';
-        });
-
-      }else{
-        var mg=mgs[1];var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
-        var sc5=shuffledChoices(q.choices, Tiles.isSame.bind(Tiles));
-        var handTiles=q.hand.map(function(t){return Tiles.make(t.suit,t.num);});
-        main.innerHTML=chHeader('第5章 役牌を作ろう',mg.title,pct,correct,mg.passNeeded)+
-          '<div class="game-instruction">'+mg.instruction+'</div>'+
-          '<div class="game-area"><div class="tiles-label">手牌</div><div class="tiles-row">'+handTiles.map(function(t){return Tiles.renderTile(t,{noHover:true,small:true});}).join('')+'</div>'+
-          '<div class="yn-tiles" id="choiceRow" style="margin-top:12px">'+sc5.choices.map(function(ch,ci){return '<div class="choice-tile" data-ci="'+ci+'">'+Tiles.renderTile(Tiles.make(ch.suit,ch.num),{})+'</div>';}).join('')+'</div><div id="feedback"></div></div>';
-        bindChoiceTiles('#choiceRow .choice-tile',function(ci){if(showingFb)return;showingFb=true;var ok=sc5.findOk(ci,q.answer);if(ok)correct++;
-          showFeedback(ok,q.fb,function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded)showClear(5,3);else render();});});
-      }
+      var mg=mgs[0];var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
+      var ch5mg2Hints = [
+        'この問題は「同じ牌3枚の刻子が役牌になれるか？」を問うもの。役牌とは<strong>刻子を作ると役（得点の権利）になる特定の牌</strong>のこと',
+        '役牌になれる牌は決まっている：<strong>白・發・中（三元牌）</strong>と、<strong>場の風牌</strong>と<strong>自分の風牌</strong>。それ以外の牌の刻子は役牌にならないよ',
+      ];
+      var hLvCh5 = 0;
+      main.innerHTML=chHeader('第5章 役牌を作ろう',mg.title,pct,correct,mg.passNeeded)+
+        '<div class="game-instruction">'+mg.instruction+'</div>'+
+        '<div class="game-area"><div class="tiles-row">'+q.tiles.map(function(t){return Tiles.renderTile(Tiles.make(t.suit,t.num),{noHover:true});}).join('')+'</div>'+
+        '<div class="yn-panel" style="margin-top:14px"><button class="btn btn-yes" id="btnY">○ 役牌</button><button class="btn btn-no" id="btnN">✕ 役牌でない</button></div>'+
+        '<div id="feedback"></div></div>'+
+        '<div class="btn-row"><button class="btn btn-hint" id="btnHintCh5">💡 ヒントを見る</button></div>'+
+        '<div class="hint-box" id="hintBoxCh5"></div>';
+      var handleYN=function(ch){if(showingFb)return;showingFb=true;var ok=ch===q.answer;if(ok)correct++;
+        showFeedback(ok,q.fb,function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){showClear(5,3);}else render();});};
+      document.getElementById('btnY').addEventListener('click',function(){handleYN(true);});
+      document.getElementById('btnN').addEventListener('click',function(){handleYN(false);});
+      document.getElementById('btnHintCh5').addEventListener('click', function() {
+        var hb=document.getElementById('hintBoxCh5'), btn=document.getElementById('btnHintCh5');
+        hLvCh5=Math.min(hLvCh5+1,ch5mg2Hints.length);
+        hb.innerHTML='<span style="font-size:0.72rem;color:var(--gold);font-weight:700;display:block;margin-bottom:4px">ヒント'+hLvCh5+'</span>'+ch5mg2Hints[hLvCh5-1];
+        hb.classList.add('visible');
+        if(hLvCh5>=ch5mg2Hints.length){btn.textContent='💡 ヒントはここまで';btn.disabled=true;}
+        else btn.textContent='💡 もっとヒント（'+(hLvCh5+1)+'/'+ch5mg2Hints.length+'）';
+      });
     };
     render();
   },
 
   // ===== CHAPTER 6 =====
   _ch6: function(main) {
-    // MG1: ポン・チー・鳴けない 3択  MG2: ポン・チー・スルー選択  MG3: 鳴いてアガろう
-    var mgs = [Chapters.ch6.mg1, Chapters.ch6.mg3, Chapters.ch6.mg4];
+    // MG1: ポン・チー・鳴けない 3択
+    var mgs = [Chapters.ch6.mg1];
     var mgIdx = 0, qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
 
@@ -1219,7 +1176,7 @@ var App = {
       }
 
       // ── MG1: ポン・チー・鳴けない 3択 ──
-      if (mgIdx === 0) {
+      {
         var q = getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
         var handTiles = q.hand.map(function(t) { return Tiles.make(t.suit, t.num); });
         var disc = Tiles.make(q.discard.suit, q.discard.num);
@@ -1272,73 +1229,9 @@ var App = {
             if (ok) correct++;
             showFeedback(ok, q.fb, function() {
               showingFb = false; qIdx++;
-              if (correct >= mg.passNeeded) { mgIdx++; qIdx = 0; correct = 0; showMgClear(0, render); }
+              if (correct >= mg.passNeeded) { showClear(6, 3); }
               else render();
             });
-          });
-        });
-
-      // ── MG2 (旧MG3): ポン・チー・スルー ──
-      } else if (mgIdx === 1) {
-        var q = getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
-        var handTiles = q.hand.map(function(t) { return Tiles.make(t.suit, t.num); });
-        var disc = Tiles.make(q.discard.suit, q.discard.num);
-        var lbls = { pon:'ポン', chi:'チー', skip:'スルー' };
-        var fromLabel = q.from === 'left' ? '上家（左）' : '相手';
-        // ボタン順シャッフル
-        var actOrder = Tiles.shuffle(q.choices.slice());
-
-        main.innerHTML = chHeader('第6章 鳴きを覚えよう', mg.title, pct, correct, mg.passNeeded) +
-          '<div class="game-instruction">' + mg.instruction + '</div>' +
-          '<div class="game-area">' +
-            '<div class="tiles-label">自分の手牌（一部）</div>' +
-            '<div class="tiles-row">' + handTiles.map(function(t) { return Tiles.renderTile(t, {noHover:true}); }).join('') + '</div>' +
-            '<div class="tiles-label" style="margin-top:10px">' + fromLabel + 'の捨て牌</div>' +
-            '<div class="tiles-row">' + Tiles.renderTile(disc, {noHover:true}) + '</div>' +
-            '<div class="btn-row" id="actBtns" style="margin-top:14px">' +
-            actOrder.map(function(a) {
-              var style = a==='pon' ? 'background:#c0392b;color:#fff' : a==='chi' ? 'background:#2471a3;color:#fff' : '';
-              return '<button class="btn btn-secondary" style="'+style+'" data-action="'+a+'">'+lbls[a]+'</button>';
-            }).join('') +
-            '</div><div id="feedback"></div></div>';
-
-        document.querySelectorAll('#actBtns .btn').forEach(function(el) {
-          el.addEventListener('click', function() {
-            if (showingFb) return; showingFb = true;
-            var ok = el.dataset.action === q.correctAction; if (ok) correct++;
-            showFeedback(ok, q.fb, function() {
-              showingFb = false; qIdx++;
-              if (correct >= mg.passNeeded) { mgIdx++; qIdx = 0; correct = 0; showMgClear(1, render); }
-              else render();
-            });
-          });
-        });
-
-      // ── MG3 (旧MG4): 鳴いてアガろう ──
-      } else {
-        var q = getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
-        var sc6 = shuffledChoices(q.choices, Tiles.isSame.bind(Tiles));
-        var handTiles = q.hand.map(function(t) { return Tiles.make(t.suit, t.num); });
-        main.innerHTML = chHeader('第6章 鳴きを覚えよう', mg.title, pct, correct, mg.passNeeded) +
-          '<div class="game-instruction">' + mg.instruction + '</div>' +
-          '<div class="game-area">' +
-          q.calledMelds.map(function(m) {
-            return '<div class="tiles-row">' + m.map(function(t) { return Tiles.renderTile(Tiles.make(t.suit, t.num), {noHover:true}); }).join('') + '</div>';
-          }).join('') +
-          '<div class="tiles-label" style="margin-top:10px">手牌</div>' +
-          '<div class="tiles-row">' + handTiles.map(function(t) { return Tiles.renderTile(t, {noHover:true, small:true}); }).join('') + '</div>' +
-          '<div class="yn-tiles" id="choiceRow" style="margin-top:10px">' +
-          sc6.choices.map(function(ch, ci) {
-            return '<div class="choice-tile" data-ci="' + ci + '">' + Tiles.renderTile(Tiles.make(ch.suit, ch.num), {}) + '</div>';
-          }).join('') +
-          '</div><div id="feedback"></div></div>';
-
-        bindChoiceTiles('#choiceRow .choice-tile', function(ci) {
-          if (showingFb) return; showingFb = true;
-          var ok = sc6.findOk(ci, q.answer); if (ok) correct++;
-          showFeedback(ok, q.fb, function() {
-            showingFb = false; qIdx++;
-            if (correct >= mg.passNeeded) showClear(6, 3); else render();
           });
         });
       }

@@ -183,23 +183,7 @@ const Chapters = (() => {
       ],
       passNeeded: 5,
     },
-    mg3: {
-      title: 'ミニゲーム②　役牌でアガろう',
-      instruction: 'あと1枚引けばアガリ！役牌を含む形でアガリ牌を選ぼう。',
-      questions: [
-        {
-          hand: [{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'man',num:2},{suit:'man',num:3},{suit:'man',num:4},{suit:'pin',num:6},{suit:'pin',num:7},{suit:'pin',num:8},{suit:'sou',num:5},{suit:'sou',num:5},{suit:'man',num:6},{suit:'man',num:8}],
-          answer: {suit:'man',num:7}, choices: [{suit:'man',num:7},{suit:'man',num:6},{suit:'man',num:8},{suit:'sou',num:5}],
-          fb: '7萬を引くと6・7・8萬の順子ができる！中の刻子と5索の頭でアガリ。',
-        },
-        {
-          hand: [{suit:'dragon',num:1},{suit:'dragon',num:1},{suit:'dragon',num:1},{suit:'pin',num:3},{suit:'pin',num:4},{suit:'pin',num:5},{suit:'sou',num:7},{suit:'sou',num:8},{suit:'sou',num:9},{suit:'man',num:4},{suit:'man',num:4},{suit:'pin',num:7},{suit:'pin',num:9}],
-          answer: {suit:'pin',num:8}, choices: [{suit:'pin',num:8},{suit:'pin',num:7},{suit:'pin',num:9},{suit:'man',num:4}],
-          fb: '8筒を引くと7・8・9筒の順子ができる！白の刻子と4萬の頭でアガリ。',
-        },
-      ],
-      passNeeded: 2,
-    },
+    mg3: null,
   };
 
   // ===== Chapter 6: Naki (Pon/Chi) =====
@@ -290,36 +274,8 @@ const Chapters = (() => {
       passNeeded: 8,
     },
     mg2: null,
-    mg3: {
-      title: 'ミニゲーム③　ポン？チー？スルー？',
-      instruction: '捨て牌に対してどう行動する？',
-      questions: [
-        { hand: [{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'man',num:2},{suit:'man',num:3}], discard: {suit:'dragon',num:3}, from: 'right', correctAction: 'pon', fb: '中が2枚あるからポンしよう！役牌の刻子完成。', choices: ['pon','chi','skip'] },
-        { hand: [{suit:'man',num:4},{suit:'man',num:5},{suit:'pin',num:7},{suit:'sou',num:3}], discard: {suit:'man',num:6}, from: 'left', correctAction: 'chi', fb: '4萬・5萬があるから左の人の6萬でチー！4-5-6萬の順子完成。', choices: ['pon','chi','skip'] },
-        { hand: [{suit:'pin',num:2},{suit:'sou',num:8},{suit:'man',num:1},{suit:'wind',num:3}], discard: {suit:'man',num:5}, from: 'right', correctAction: 'skip', fb: '手牌に5萬と関連する牌がないからスルーが正解。チーは左の人からのみ可能。', choices: ['pon','chi','skip'] },
-        { hand: [{suit:'sou',num:6},{suit:'sou',num:6},{suit:'pin',num:3},{suit:'man',num:8}], discard: {suit:'sou',num:6}, from: 'left', correctAction: 'pon', fb: '6索が2枚あるからポンしよう！刻子完成。', choices: ['pon','chi','skip'] },
-      ],
-      passNeeded: 3,
-    },
-    mg4: {
-      title: 'ミニゲーム④　鳴いてアガろう',
-      instruction: '鳴きを使って手を完成させよう！アガリ牌を選んでね。',
-      questions: [
-        {
-          calledMelds: [[{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'dragon',num:3}]],
-          hand: [{suit:'man',num:2},{suit:'man',num:3},{suit:'man',num:4},{suit:'pin',num:5},{suit:'pin',num:6},{suit:'pin',num:7},{suit:'sou',num:8},{suit:'sou',num:8},{suit:'man',num:6},{suit:'man',num:8}],
-          answer: {suit:'man',num:7}, choices: [{suit:'man',num:7},{suit:'man',num:6},{suit:'man',num:8},{suit:'sou',num:8}],
-          fb: '7萬を引くと6・7・8萬の順子が完成！中の役牌ポンと8索の頭でアガリ。',
-        },
-        {
-          calledMelds: [[{suit:'man',num:7},{suit:'man',num:8},{suit:'man',num:9}]],
-          hand: [{suit:'dragon',num:2},{suit:'dragon',num:2},{suit:'pin',num:1},{suit:'pin',num:2},{suit:'pin',num:3},{suit:'sou',num:4},{suit:'sou',num:5},{suit:'sou',num:6},{suit:'pin',num:7},{suit:'pin',num:9}],
-          answer: {suit:'pin',num:8}, choices: [{suit:'pin',num:8},{suit:'pin',num:7},{suit:'pin',num:9},{suit:'sou',num:8}],
-          fb: '8筒を引くと7・8・9筒の順子が完成！發の頭と7-8-9萬の副露でアガリ。',
-        },
-      ],
-      passNeeded: 2,
-    },
+    mg3: null,
+    mg4: null,
   };
 
   // ===== Chapter 7: Review test =====
