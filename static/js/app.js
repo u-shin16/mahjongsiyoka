@@ -66,6 +66,24 @@ function shuffledChoices(originalChoices, isSameFn) {
   };
 }
 
+// ===== 章のミニゲーム番号選択（クリア済みの章で「①から」「②から」を選べるようにする） =====
+var CIRCLED_NUMS = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+var CH_MG_KEYS = {
+  1: ['mg1', 'mg2', 'mg3'],
+  2: ['mg1', 'mg2'],
+  3: ['mg1', 'mg2'],
+  4: ['mg1', 'mg2', 'mg3'],
+  5: ['mg2'],
+  6: ['mg1'],
+};
+function chMgTitles(id) {
+  if (CH_MG_KEYS[id]) {
+    return CH_MG_KEYS[id].map(function(k) { return (Chapters['ch' + id] && Chapters['ch' + id][k] && Chapters['ch' + id][k].title) || ''; });
+  }
+  var def = Chapters['ch' + id];
+  return (def && def.mgs) ? def.mgs.map(function(m) { return m.title; }) : [];
+}
+
 // ===== Mini-game Intro Data =====
 var CH_INTROS = {
   // Chapter 1
@@ -690,7 +708,7 @@ var App = {
     document.getElementById('btnBack').classList.toggle('hidden', page === 'home');
     if      (page === 'home')          this._renderHome(main);
     else if (page === 'chapters')      this._renderChapters(main);
-    else if (page === 'chapter')       this._renderChapterGame(main, params.id);
+    else if (page === 'chapter')       this._renderChapterGame(main, params.id, params.startMg);
     else if (page === 'yaku')          this._renderYaku(main, params.filter || 'all');
     else if (page === 'yaku_detail')   this._renderYakuDetail(main, params.id);
     else if (page === 'terms')         this._renderTerms(main);
@@ -759,12 +777,25 @@ var App = {
         } else {
           rightCol = '<span class="chapter-badge">▶ プレイ</span>';
         }
+        var mgPicker = '';
+        if (cleared) {
+          var mgTitles = chMgTitles(c.id);
+          if (mgTitles.length > 1) {
+            mgPicker = '<div class="chapter-mg-picker">' +
+              '<span class="chapter-mg-picker-label">やりたい問題から始める：</span>' +
+              mgTitles.map(function(t, i) {
+                return '<button class="chapter-mg-btn" data-mg="'+(i+1)+'" title="'+esc(t)+'">'+(CIRCLED_NUMS[i]||(i+1))+'</button>';
+              }).join('') +
+            '</div>';
+          }
+        }
         return '<div class="chapter-card '+(cleared?'cleared':'')+' '+(locked?'locked':'')+'" data-id="'+c.id+'" data-locked="'+locked+'">' +
           '<div class="chapter-num">'+c.id+'</div>' +
           '<div class="chapter-info">' +
           '<div class="chapter-title">'+c.short+'</div>' +
           '<div class="chapter-meta">⏱ 約'+c.min+'分 ・ 難易度'+'⭐'.repeat(c.diff)+'</div>' +
           '<div class="chapter-meta">'+c.topics.join(' / ')+'</div>' +
+          mgPicker +
           '</div>' +
           rightCol + '</div>';
       }).join('') + '</div>';
@@ -779,10 +810,17 @@ var App = {
         self.navigate('chapter', { id: parseInt(el.dataset.id, 10) });
       });
     });
+    document.querySelectorAll('#chList .chapter-mg-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var card = btn.closest('.chapter-card');
+        self.navigate('chapter', { id: parseInt(card.dataset.id, 10), startMg: parseInt(btn.dataset.mg, 10) });
+      });
+    });
   },
 
   // ===== Chapter Router =====
-  _renderChapterGame: function(main, id) {
+  _renderChapterGame: function(main, id, startMg) {
     var ch = GameData.CHAPTERS.find(function(c) { return c.id === id; });
     if (!ch) { main.innerHTML = '<p style="color:red">章が見つかりません</p>'; return; }
     // 前の章をクリアしていない章はロック（直接遷移もブロック）
@@ -798,13 +836,13 @@ var App = {
     var engines = [null,this._ch1.bind(this),this._ch2.bind(this),this._ch3.bind(this),
                    this._ch4.bind(this),this._ch5.bind(this),this._ch6.bind(this),this._ch7.bind(this)];
     var engine = engines[id] || this._chQuiz.bind(this);
-    engine(main, ch);
+    engine(main, ch, startMg);
   },
 
   // ===== CHAPTER 1 =====
-  _ch1: function(main) {
+  _ch1: function(main, ch, startMg) {
     var mgs = [Chapters.ch1.mg1, Chapters.ch1.mg2, Chapters.ch1.mg3];
-    var mgIdx = 0, qIdx = 0, correct = 0, showingFb = false, selected = [];
+    var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false, selected = [];
     var qBank = {}, introShown = {};
 
     var render = function() {
@@ -940,9 +978,9 @@ var App = {
   },
 
   // ===== CHAPTER 2 =====
-  _ch2: function(main) {
+  _ch2: function(main, ch, startMg) {
     var mgs = [Chapters.ch2.mg1, Chapters.ch2.mg2];
-    var mgIdx = 0, qIdx = 0, correct = 0, showingFb = false;
+    var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
 
     var render = function() {
@@ -999,9 +1037,9 @@ var App = {
   },
 
   // ===== CHAPTER 3 =====
-  _ch3: function(main) {
+  _ch3: function(main, ch, startMg) {
     var mgs = [Chapters.ch3.mg1, Chapters.ch3.mg2];
-    var mgIdx = 0, qIdx = 0, correct = 0, showingFb = false;
+    var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
     var render = function() {
       if (mgIdx >= mgs.length) { showClear(3,3); return; }
@@ -1052,9 +1090,9 @@ var App = {
   },
 
   // ===== CHAPTER 4 =====
-  _ch4: function(main) {
+  _ch4: function(main, ch, startMg) {
     var mgs = [Chapters.ch4.mg1, Chapters.ch4.mg2, Chapters.ch4.mg3];
-    var mgIdx = 0, qIdx = 0, correct = 0, showingFb = false;
+    var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
     var render = function() {
       if (mgIdx >= mgs.length) { showClear(4,3); return; }
@@ -1163,9 +1201,9 @@ var App = {
   },
 
   // ===== CHAPTER 5 =====
-  _ch5: function(main) {
+  _ch5: function(main, ch, startMg) {
     var mgs=[Chapters.ch5.mg2];
-    var mgIdx=0,qIdx=0,correct=0,showingFb=false;
+    var mgIdx=Math.min(Math.max(0,(startMg||1)-1), mgs.length-1),qIdx=0,correct=0,showingFb=false;
     var qBank={},introShown={};
     var render=function(){
       if(mgIdx>=mgs.length){showClear(5,3);return;}
@@ -1207,10 +1245,10 @@ var App = {
   },
 
   // ===== CHAPTER 6 =====
-  _ch6: function(main) {
+  _ch6: function(main, ch, startMg) {
     // MG1: ポン・チー・鳴けない 3択
     var mgs = [Chapters.ch6.mg1];
-    var mgIdx = 0, qIdx = 0, correct = 0, showingFb = false;
+    var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
 
     var FROM_LABEL = { right:'右（下家）', left:'上家（左）', opposite:'対面', left_only:'上家（左）' };
@@ -1382,12 +1420,12 @@ var App = {
   // ===== Generic quiz-style chapter engine (Ch 8-12) =====
   // Data shape: Chapters['ch'+id] = { mgs: [ { type:'yn'|'choice'|'agari', title, instruction,
   //   passNeeded, yesLabel?, noLabel?, handLabel?, questions:[...] } ] }
-  _chQuiz: function(main, ch) {
+  _chQuiz: function(main, ch, startMg) {
     var def = Chapters['ch' + ch.id];
     if (!def || !def.mgs) { main.innerHTML = '<p style="color:red">章データが見つかりません</p>'; return; }
     var mgs = def.mgs;
     var navTitle = '第' + ch.id + '章 ' + ch.short;
-    var mgIdx = 0, qIdx = 0, correct = 0, showingFb = false;
+    var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
 
     var render = function() {
