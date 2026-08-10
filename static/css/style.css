@@ -5931,3 +5931,59 @@ body.is-battle-page {
 .legal-page ul { padding-left: 20px; }
 .legal-page a { color: var(--gold); }
 .legal-page .btn { display: inline-block; text-decoration: none; margin-top: 8px; }
+
+/* ============================================================
+   雀卓（対局画面）は横向き専用レイアウトのため、スマホの縦画面では
+   崩れて表示されてしまう。縦画面の間はゲーム本体を隠し、
+   「横画面にしてください」の案内だけを出して操作できないようにする。
+   ============================================================ */
+.rotate-lock-overlay {
+  display: none;
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  body.is-battle-page .app-header,
+  body.is-battle-page .app-main,
+  body.is-battle-page .app-footer {
+    display: none !important;
+  }
+
+  body.is-battle-page .rotate-lock-overlay {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: #071320;
+    color: #f5efe0;
+    text-align: center;
+    padding: 24px;
+  }
+}
+
+.rotate-lock-inner {
+  max-width: 320px;
+}
+.rotate-lock-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  animation: rotateLockSpin 1.8s ease-in-out infinite;
+  display: inline-block;
+}
+.rotate-lock-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+.rotate-lock-sub {
+  color: #9fb3c8;
+  font-size: 0.85rem;
+  margin: 0;
+  line-height: 1.6;
+}
+@keyframes rotateLockSpin {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+}
