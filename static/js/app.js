@@ -864,7 +864,6 @@ var App = {
       { label:'単語クイズ',   icon:'📝', sub:'用語・役をランダム出題', page:'quiz_select' },
       { label:'AI先生',        icon:'💡', sub:'質問・手牌相談', page:'ai_coach' },
       { label:'友人戦',        icon:'👥', sub:'6桁IDでオンライン対戦', page:'friend' },
-      { label:'三人麻雀',      icon:'🀄', sub:'北抜きありCPU対局', page:'battle_setup', params:{playerCount:3} },
       { label:'役一覧',        icon:'📖', sub:'全役を確認', page:'yaku' },
       { label:'麻雀用語',      icon:'💬', sub:'用語集', page:'terms' },
       { label:'役満モード',    icon:'🏆', sub:'test（近日公開）', disabled:true },
