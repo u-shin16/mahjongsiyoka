@@ -911,7 +911,7 @@ var App = {
           if (mgTitles.length > 1) {
             mgPicker = '<div class="chapter-mg-picker">' +
               '<select class="chapter-mg-select" data-chapter-id="'+c.id+'">' +
-                '<option value="">やりたい問題から始める▼</option>' +
+                '<option value="">やりたい問題から始める</option>' +
                 mgTitles.map(function(t, i) {
                   return '<option value="'+(i+1)+'">'+esc(t)+'</option>';
                 }).join('') +
