@@ -5861,6 +5861,9 @@ body.is-battle-page {
   user-select: none;
   transition: transform 0.12s ease;
 }
+.fr-table-hand .fr-tile-wrap.fr-tile-riichi-blocked {
+  opacity: 0.45;
+}
 .fr-table-msg {
   color: #8ab89c;
   font-size: 0.84rem;
@@ -5869,28 +5872,6 @@ body.is-battle-page {
 }
 .fr-table-actions {
   justify-content: center;
-}
-.fr-auto-controls {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin: 4px 0 0;
-}
-.fr-toggle {
-  min-height: 28px;
-  padding: 4px 9px;
-  border-radius: 6px;
-  border: 1px solid rgba(150,180,220,0.24);
-  background: rgba(4,12,22,0.62);
-  color: rgba(220,232,245,0.72);
-  font-size: 0.72rem;
-  font-weight: 900;
-}
-.fr-toggle.active {
-  border-color: rgba(232,184,75,0.62);
-  background: rgba(99,78,24,0.62);
-  color: #ffdf8a;
 }
 .fr-disconnect-mark {
   color: #ffd46e;

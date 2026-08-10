@@ -1894,7 +1894,6 @@ var App = {
       this._frResponseSent = false;
       this._frSelectedIdx = -1;
     }
-    if (this._frSortTiles == null) this._frSortTiles = localStorage.getItem('mj_friend_sort_tiles') !== '0';
     main.classList.add('battle-main');
     document.body.classList.add('is-battle-page');
 
@@ -1988,16 +1987,14 @@ var App = {
         t.num || 0,
       ];
     };
-    if (this._frSortTiles) {
-      sortedEntries.sort(function(a, b) {
-        var ak = friendTileSortKey(a.tile);
-        var bk = friendTileSortKey(b.tile);
-        for (var si = 0; si < ak.length; si++) {
-          if (ak[si] !== bk[si]) return ak[si] - bk[si];
-        }
-        return 0;
-      });
-    }
+    sortedEntries.sort(function(a, b) {
+      var ak = friendTileSortKey(a.tile);
+      var bk = friendTileSortKey(b.tile);
+      for (var si = 0; si < ak.length; si++) {
+        if (ak[si] !== bk[si]) return ak[si] - bk[si];
+      }
+      return 0;
+    });
     var displayEntries = sortedEntries.concat(drawnEntry ? [drawnEntry] : []);
 
     var myMelds = (g.melds && g.melds[my]) || [];
@@ -2034,11 +2031,6 @@ var App = {
       });
       actionBtns += '<button class="btn-battle btn-skip-call" id="btnFrPass">スルー</button>';
     }
-    // 和了/ツモ切り/鳴きなしの自動化トグルは正しく動作していなかったため一旦削除（理牌のみ残す）
-    var autoControls = '<div class="fr-auto-controls">' +
-      '<button class="fr-toggle ' + (this._frSortTiles ? 'active' : '') + '" id="btnFrSortTiles">理牌</button>' +
-    '</div>';
-
     var endHtml = '';
     if (g.phase === 'hand_end' || g.phase === 'match_end') {
       var r = g.result;
@@ -2146,11 +2138,19 @@ var App = {
         return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
       }).join('') : '') +
     '</div>';
+    var riichiBlockedIdx = {};
+    if (this._frRiichiSel) {
+      myHand.forEach(function(t, i) {
+        var rest = myHand.filter(function(_, ii) { return ii !== i; });
+        if (!FriendGame.isTenpai13(rest)) riichiBlockedIdx[i] = true;
+      });
+    }
     var handTilesHtml = displayEntries.map(function(entry) {
       var isDrawn = drawnEntry && entry.idx === drawnEntry.idx;
       var isSelected = self._frSelectedIdx === entry.idx;
+      var isRiichiBlocked = !!riichiBlockedIdx[entry.idx];
       return (isDrawn ? '<span class="fr-drawn-gap"></span>' : '') +
-        '<span data-idx="' + entry.idx + '" class="fr-tile-wrap">' +
+        '<span data-idx="' + entry.idx + '" class="fr-tile-wrap' + (isRiichiBlocked ? ' fr-tile-riichi-blocked' : '') + '">' +
           Tiles.renderTile(entry.tile, { noHover: !myTurn, selected: isSelected }) +
         '</span>';
     }).join('');
@@ -2205,7 +2205,6 @@ var App = {
               (isDisconnected(my) ? '<span class="fr-disconnect-mark">⚡ 切断扱い</span>' : '') +
             '</div>' +
             '<div class="jt-hand-tiles-row fr-table-hand" id="frHand"><div class="mj-sorted-tiles">' + handTilesHtml + '</div></div>' +
-            autoControls +
             actionHtml +
           '</div>' +
           perPlayerMeldsHtml +
@@ -2226,12 +2225,6 @@ var App = {
     var scoreToggle = document.getElementById('frScoreToggle');
     if (scoreToggle) scoreToggle.addEventListener('click', function() {
       self._frShowDiffUntil = Date.now() + 5000;
-      self._render('friend', {});
-    });
-    var sortBtn = document.getElementById('btnFrSortTiles');
-    if (sortBtn) sortBtn.addEventListener('click', function() {
-      self._frSortTiles = !self._frSortTiles;
-      localStorage.setItem('mj_friend_sort_tiles', self._frSortTiles ? '1' : '0');
       self._render('friend', {});
     });
     var discardIdx = function(idx) {
