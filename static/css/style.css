@@ -4595,22 +4595,21 @@ body.is-battle-page .app-main.battle-main {
 
    tile: 52×70px (box-sizing:border-box) → zoom 0.50 → 26×35px
    grid-cell: 26×36px (高さに1px余裕)
-   gap: 6px（河に余裕を持たせるため 3px から拡大）
-   RIVER_W = 26×6 + 6×5 = 186px
-   RIVER_H = 36×4 + 6×3 = 162px
+   gap: 2px（牌同士の空白が気になるという指摘により 6px から縮小）
+   RIVER_W = 26×6 + 2×5 = 166px
+   RIVER_H = 36×4 + 2×3 = 150px
    ============================================================ */
 
 /* ── 全河共通ベース (全ての過去ルールを上書き) ── */
 .disc-river {
   position: absolute !important;
   display: grid !important;
-  /* 全員同一グリッド: 26px列×6 + 36px行×4 + gap 6px */
+  /* 全員同一グリッド: 26px列×6 + 36px行×4 + gap 2px */
   grid-template-columns: repeat(6, 26px) !important;
   grid-template-rows:    repeat(4, 36px) !important;
-  /* 旧 gap: 1.5px を上書き（shorthand を先にリセット） */
-  gap: 6px 6px !important;
-  column-gap: 6px !important;
-  row-gap:    6px !important;
+  gap: 2px 2px !important;
+  column-gap: 2px !important;
+  row-gap:    2px !important;
   /* 左詰め・上詰め（RTL継承を無効化） */
   direction:       ltr   !important;
   writing-mode:    horizontal-tb !important;
@@ -4619,8 +4618,8 @@ body.is-battle-page .app-main.battle-main {
   justify-items:   start !important;
   align-items:     start !important;
   /* 固定サイズ */
-  width:   186px !important;   /* 26×6 + 6×5 */
-  height:  162px !important;   /* 36×4 + 6×3 */
+  width:   166px !important;   /* 26×6 + 2×5 */
+  height:  150px !important;   /* 36×4 + 2×3 */
   overflow: visible !important;
   z-index:  4 !important;
   /* transform / top / left は positionDiscardRivers() が設定 */
