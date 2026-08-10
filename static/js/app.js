@@ -3308,21 +3308,31 @@ var App = {
       var doraHtml = '<div class="jt-table-dora">ドラ：' +
         (dora ? Tiles.renderTile(dora,{noHover:true,extraClass:'xxs'}) : '─') +
       '</div>';
-      var centerScoresHtml = '<div class="jt-center-score-list">' +
-        Battle.PLAYER_NAMES.map(function(nm, i) {
-          return '<div class="jt-center-score-item seat-'+i+' '+(i===0?'me':'')+'">' +
-            '<span class="wind">'+Battle.WIND_NAMES[i]+'</span>' +
-            '<span class="name">'+esc(nm)+'</span>' +
-            '<span class="pts">'+s.scores[i].toLocaleString()+'</span>' +
-            (s.riichi[i] ? '<span class="riichi">R</span>' : '') +
-            (isSanma && nukiCount(i) > 0 ? '<span class="nuki">北'+nukiCount(i)+'</span>' : '') +
-          '</div>';
-        }).join('') +
-      '</div>';
+      // seat index → ダイヤモンドの辺（自分=下、対面=上、下家=右、上家=左）
+      var seatEdgeCls = {};
+      seatEdgeCls[0] = 'bottom';
+      seatEdgeCls[T] = 'top';
+      seatEdgeCls[R] = 'right';
+      if (L >= 0) seatEdgeCls[L] = 'left';
+      var centerEdgesHtml = Battle.PLAYER_NAMES.map(function(nm, i) {
+        var edge = seatEdgeCls[i];
+        if (!edge) return ''; // 三麻は上家なし
+        return '<div class="jt-diamond-edge jt-diamond-edge-'+edge+' seat-'+i+' '+(i===0?'me':'')+'">' +
+          '<span class="wind">'+Battle.WIND_NAMES[i]+'</span>' +
+          '<span class="pts">'+s.scores[i].toLocaleString()+'</span>' +
+          (s.riichi[i] ? '<span class="riichi">R</span>' : '') +
+          (isSanma && nukiCount(i) > 0 ? '<span class="nuki">北'+nukiCount(i)+'</span>' : '') +
+        '</div>';
+      }).join('');
       var centerHtml = '<div class="jt-center">' +
-        '<div class="jt-center-panel">' +
-          '<div class="jt-center-roundline">'+Battle.getRoundLabel()+'<span>山'+s.wall.length+'枚</span></div>' +
-          centerScoresHtml +
+        '<div class="jt-center-panel jt-center-panel-diamond">' +
+          '<div class="jt-center-diamond">' +
+            '<div class="jt-center-diamond-inner">' +
+              '<div class="jt-diamond-roundline">'+Battle.getRoundLabel()+'</div>' +
+              '<div class="jt-diamond-wall">山'+s.wall.length+'枚</div>' +
+            '</div>' +
+          '</div>' +
+          centerEdgesHtml +
         '</div>' +
       '</div>';
 
