@@ -757,8 +757,56 @@ function positionDiscardRivers() {
   }
 }
 
+// ── 副露（鳴き牌・北抜き）エリアを中央ダイヤモンドの角に密着配置 ──
+// フレンド対戦画面（ダイヤモンド化していない）では .jt-center-panel-diamond が
+// 存在しないため何もしない
+function positionMeldAreas() {
+  var diamondEl = document.querySelector('.jt-center-panel-diamond');
+  if (!diamondEl) return;
+
+  var cp = diamondEl.getBoundingClientRect();
+  var pCenterX = (cp.left + cp.right) / 2;
+  var pCenterY = (cp.top + cp.bottom) / 2;
+  var MELD_GAP = 4; // ダイヤモンドの角からの隙間(px)
+
+  // .player-meld-area は position:fixed なのでビューポート基準の座標をそのまま使う
+  // top/left/right/bottom を毎回全指定し直す（CSS側の古い値を必ず打ち消す）
+  var set = function(el, top, left, right, bottom, transform) {
+    el.style.setProperty('top',       top,       'important');
+    el.style.setProperty('left',      left,      'important');
+    el.style.setProperty('right',     right,     'important');
+    el.style.setProperty('bottom',    bottom,    'important');
+    el.style.setProperty('transform', transform, 'important');
+  };
+
+  // 自分（下の角から下へ）
+  var selfArea = document.querySelector('.player-meld-area.seat-self');
+  if (selfArea) {
+    set(selfArea, (cp.bottom + MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translateX(-50%)');
+  }
+
+  // 対面（上の角から上へ）
+  var oppArea = document.querySelector('.player-meld-area.seat-opposite');
+  if (oppArea) {
+    set(oppArea, (cp.top - MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translate(-50%, -100%)');
+  }
+
+  // 上家（左の角から左へ）
+  var leftArea = document.querySelector('.player-meld-area.seat-left');
+  if (leftArea) {
+    set(leftArea, pCenterY + 'px', (cp.left - MELD_GAP) + 'px', 'auto', 'auto', 'translate(-100%, -50%)');
+  }
+
+  // 下家（右の角から右へ）
+  var rightArea = document.querySelector('.player-meld-area.seat-right');
+  if (rightArea) {
+    set(rightArea, pCenterY + 'px', (cp.right + MELD_GAP) + 'px', 'auto', 'auto', 'translateY(-50%)');
+  }
+}
+
 // ウィンドウリサイズ時も再配置
 window.addEventListener('resize', positionDiscardRivers);
+window.addEventListener('resize', positionMeldAreas);
 
 // ===== App =====
 var App = {
@@ -3563,6 +3611,7 @@ var App = {
       '</div>';
       // innerHTML 更新直後に同期配置（初回描画でも正しい位置に表示）
       positionDiscardRivers();
+      positionMeldAreas();
       if (window.scrollY) window.scrollTo(0, 0);
       var battleBack = document.getElementById('jtBattleBack');
       if (battleBack) battleBack.addEventListener('click', function() { self.goBack(); });
@@ -3789,6 +3838,7 @@ var App = {
 
       // 対面・左家の河を点数板 bounding box 基準で正確に配置
       requestAnimationFrame(positionDiscardRivers);
+      requestAnimationFrame(positionMeldAreas);
     };
 
     // ── 役一覧を組み立てる ──────────────────────────────────────
