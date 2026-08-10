@@ -5111,6 +5111,8 @@ body.is-battle-page .app-main.battle-main {
   font-weight: 900;
   box-shadow: 0 4px 14px rgba(0,0,0,0.35);
   cursor: pointer;
+  touch-action: none;
+  user-select: none;
 }
 .fr-waits-fab-wrap.open .fr-waits-fab {
   background: rgba(232,184,75,0.55);

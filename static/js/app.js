@@ -1893,7 +1893,6 @@ var App = {
       this._frRonSent = false;
       this._frResponseSent = false;
       this._frSelectedIdx = -1;
-      this._frShowWaits = false;
     }
     main.classList.add('battle-main');
     document.body.classList.add('is-battle-page');
@@ -2044,12 +2043,12 @@ var App = {
       var waitsTilesHtml = myWaits.map(function(w) {
         return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xxs' });
       }).join('');
-      waitsBtnHtml = '<div class="fr-waits-fab-wrap' + (this._frShowWaits ? ' open' : '') + '">' +
+      waitsBtnHtml = '<div class="fr-waits-fab-wrap">' +
         '<div class="fr-waits-panel">' +
           '<div class="fr-waits-panel-title">待ち牌</div>' +
           '<div class="fr-waits-panel-tiles">' + waitsTilesHtml + '</div>' +
         '</div>' +
-        '<button type="button" class="fr-waits-fab" id="btnFrShowWaits">' + (this._frShowWaits ? '✕ 閉じる' : '待ちを表示') + '</button>' +
+        '<button type="button" class="fr-waits-fab" id="btnFrShowWaits">待ちを表示</button>' +
       '</div>';
     }
 
@@ -2294,10 +2293,15 @@ var App = {
       });
     }
     var waitsBtn = document.getElementById('btnFrShowWaits');
-    if (waitsBtn) waitsBtn.addEventListener('click', function() {
-      self._frShowWaits = !self._frShowWaits;
-      self._render('friend', {});
-    });
+    if (waitsBtn) {
+      var waitsWrap = waitsBtn.closest('.fr-waits-fab-wrap');
+      var showWaits = function(e) { e.preventDefault(); waitsWrap.classList.add('open'); };
+      var hideWaits = function() { waitsWrap.classList.remove('open'); };
+      waitsBtn.addEventListener('pointerdown', showWaits);
+      waitsBtn.addEventListener('pointerup', hideWaits);
+      waitsBtn.addEventListener('pointerleave', hideWaits);
+      waitsBtn.addEventListener('pointercancel', hideWaits);
+    }
     var tsumoBtn = document.getElementById('btnFrTsumo');
     if (tsumoBtn) tsumoBtn.addEventListener('click', function() { sendFrAction('tsumo'); });
     var nukiBtn = document.getElementById('btnFrNuki');
