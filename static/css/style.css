@@ -5679,10 +5679,10 @@ body.is-battle-page {
   top: 54px !important;
 }
 .player-meld-area.seat-left {
-  left: 48px !important;
+  left: 72px !important;
 }
 .player-meld-area.seat-right {
-  right: 10px !important;
+  right: 72px !important;
 }
 
 /* ── FIX: 上家・下家の副露エリアが CPU の名前・点数バッジに重なる問題
