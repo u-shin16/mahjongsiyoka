@@ -580,23 +580,8 @@ const Chapters = (() => {
         ],
       },
       {
-        type: 'yn',
-        title: 'ミニゲーム⑩　ダブル東になる？',
-        instruction: 'この3枚の刻子は<strong>ダブル東</strong>になる？（場風:東、自風:東の場合だけダブル東）',
-        yesLabel: '○ ダブル東', noLabel: '✕ ちがう',
-        passNeeded: 4,
-        questions: [
-          { tiles: [{suit:'wind',num:1},{suit:'wind',num:1},{suit:'wind',num:1}], answer: true, fb: '東の刻子！場風・自風とも東だから役牌が2つ分＝ダブル東。' },
-          { tiles: [{suit:'wind',num:2},{suit:'wind',num:2},{suit:'wind',num:2}], answer: false, fb: '南は場風でも自風でもない！ダブル東にはならない（役牌にもならない）。' },
-          { tiles: [{suit:'dragon',num:1},{suit:'dragon',num:1},{suit:'dragon',num:1}], answer: false, fb: '白は三元牌なので役牌にはなるけど、ダブル東ではない（役牌1翻）。' },
-          { tiles: [{suit:'wind',num:1},{suit:'wind',num:1},{suit:'wind',num:1}], answer: true, fb: '東の刻子はダブル東（2翻分）！何度出てきても同じだよ。' },
-          { tiles: [{suit:'wind',num:3},{suit:'wind',num:3},{suit:'wind',num:3}], answer: false, fb: '西は場風でも自風でもない！役牌にもならない。' },
-          { tiles: [{suit:'wind',num:4},{suit:'wind',num:4},{suit:'wind',num:4}], answer: false, fb: '北は場風でも自風でもない！役牌にもならない。' },
-        ],
-      },
-      {
         type: 'choice',
-        title: 'ミニゲーム⑪　中級役を当てよう',
+        title: 'ミニゲーム⑩　中級役を当てよう',
         instruction: '説明に合う役を選ぼう！',
         passNeeded: 6,
         questions: [
@@ -609,12 +594,11 @@ const Chapters = (() => {
           { text: '暗刻（鳴かずに揃えた刻子）を3つ作る役は？', choices: ['三暗刻','対々和','三槓子','三色同刻'], answer: '三暗刻', fb: '三暗刻（サンアンコウ）！2翻。ロンで完成した面子は暗刻扱いにならないので注意。' },
           { text: 'すべての面子と頭に、么九牌（1・9・字牌）が1つ以上入る役は？', choices: ['混全帯幺九','清一色','対々和','七対子'], answer: '混全帯幺九', fb: '混全帯幺九（チャンタ）！門前2翻・鳴き1翻。' },
           { text: '白・發・中のうち2種類の刻子と、残り1種類の対子（頭）で作る役は？', choices: ['小三元','大三元','役牌','対々和'], answer: '小三元', fb: '小三元（ショウサンゲン）！2翻＋役牌2つ分で、合計4翻になることが多い。' },
-          { text: '親（自風=東）が東場（場風=東）で東の刻子を作ると、役牌は何翻になる？', choices: ['1翻','2翻','3翻','役満'], answer: '2翻', fb: 'ダブ東（ダブル東）！場風・自風の両方を満たすので役牌が2翻分になる。' },
         ],
       },
       {
         type: 'choice',
-        title: 'ミニゲーム⑫　この役は何？',
+        title: 'ミニゲーム⑪　この役は何？',
         instruction: '完成した手牌を見て、成立している<strong>役</strong>を当てよう！',
         passNeeded: 7,
         questions: [
@@ -627,7 +611,6 @@ const Chapters = (() => {
           { tiles: [{suit:'man',num:3},{suit:'man',num:3},{suit:'man',num:3},{suit:'pin',num:5},{suit:'pin',num:5},{suit:'pin',num:5},{suit:'sou',num:7},{suit:'sou',num:7},{suit:'sou',num:7},{suit:'man',num:1},{suit:'man',num:2},{suit:'man',num:3},{suit:'pin',num:8},{suit:'pin',num:8}], choices: ['三暗刻','対々和','三色同刻','三槓子'], answer: '三暗刻', fb: '暗刻（自分でツモった刻子）が3つ！三暗刻。' },
           { tiles: [{suit:'man',num:1},{suit:'man',num:2},{suit:'man',num:3},{suit:'pin',num:7},{suit:'pin',num:8},{suit:'pin',num:9},{suit:'sou',num:1},{suit:'sou',num:2},{suit:'sou',num:3},{suit:'wind',num:1},{suit:'wind',num:1},{suit:'wind',num:1},{suit:'man',num:9},{suit:'man',num:9}], choices: ['混全帯幺九','純全帯幺九','清一色','対々和'], answer: '混全帯幺九', fb: 'すべての面子・頭に1・9・字牌が入っている！混全帯幺九。' },
           { tiles: [{suit:'man',num:1},{suit:'man',num:2},{suit:'man',num:3},{suit:'dragon',num:1},{suit:'dragon',num:1},{suit:'dragon',num:1},{suit:'dragon',num:2},{suit:'dragon',num:2},{suit:'dragon',num:2},{suit:'pin',num:4},{suit:'pin',num:5},{suit:'pin',num:6},{suit:'dragon',num:3},{suit:'dragon',num:3}], choices: ['小三元','役牌','対々和','混老頭'], answer: '小三元', fb: '白・發が刻子、中が頭！小三元。' },
-          { tiles: [{suit:'wind',num:1},{suit:'wind',num:1},{suit:'wind',num:1},{suit:'man',num:2},{suit:'man',num:3},{suit:'man',num:4},{suit:'pin',num:5},{suit:'pin',num:6},{suit:'pin',num:7},{suit:'sou',num:3},{suit:'sou',num:4},{suit:'sou',num:5},{suit:'pin',num:9},{suit:'pin',num:9}], choices: ['ダブル東','役牌','小三元','対々和'], answer: 'ダブル東', fb: '場風も自風も東（親で東場）だから、東の刻子が役牌2つ分（ダブル東）！' },
         ],
       },
     ],
