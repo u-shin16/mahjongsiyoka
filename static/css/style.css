@@ -2407,16 +2407,16 @@ button { font-family: inherit; cursor: pointer; }
   flex-direction: row;
 }
 .jt-hidden-hand .tile.xxs {
-  width: 18px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 4px;
   border-bottom-width: 3px;
   border-right-width: 2px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 .jt-hidden-hand .tile-back-pattern {
-  width: 10px;
-  height: 15px;
+  width: 11px;
+  height: 11px;
   border-radius: 3px;
 }
 .battle-main .jt-player-bar,
@@ -2452,7 +2452,7 @@ button { font-family: inherit; cursor: pointer; }
   .battle-main .jt-table-mid { grid-template-columns: 52px minmax(0,1fr) 52px; }
   .battle-main .jt-table.sanma .jt-table-mid { grid-template-columns: minmax(0,1fr) 52px; }
   .battle-main .jt-side { width: 52px; }
-  .jt-hidden-hand .tile.xxs { width: 15px; height: 21px; }
+  .jt-hidden-hand .tile.xxs { width: 17px; height: 17px; }
   .jt-hidden-left, .jt-hidden-right { gap: 1px; }
   .battle-main .jt-disc-top, .battle-main .jt-disc-bot { min-height: 50px; }
 }
@@ -2987,16 +2987,16 @@ body.is-battle-page .app-main.battle-main {
   filter: drop-shadow(0 4px 4px rgba(0,0,0,0.45));
 }
 .battle-main .jt-hidden-hand .tile.xxs {
-  width: 24px;
-  height: 31px;
+  width: 26px;
+  height: 26px;
   border-radius: 4px;
   border-right-width: 2px;
   border-bottom-width: 4px;
   background: linear-gradient(180deg, #f5b35c 0%, #c67624 58%, #925012 100%);
 }
 .battle-main .jt-hidden-hand .tile-back-pattern {
-  width: 13px;
-  height: 19px;
+  width: 14px;
+  height: 14px;
   border-color: rgba(255, 227, 157, 0.62);
 }
 .battle-main .jt-hidden-top {
@@ -3382,8 +3382,8 @@ body.is-battle-page .app-main.battle-main {
     flex: 0 0 auto;
   }
   .battle-main .jt-hidden-hand .tile.xxs {
-    width: 18px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
   }
   .battle-main .jt-seat-avatar {
     width: 42px;
@@ -3462,8 +3462,8 @@ body.is-battle-page .app-main.battle-main {
     top: 35px;
   }
   .battle-main .jt-hidden-hand .tile.xxs {
-    width: 15px;
-    height: 20px;
+    width: 17px;
+    height: 17px;
   }
   .battle-main .jt-seat-top {
     top: 38px;

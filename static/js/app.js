@@ -2007,12 +2007,16 @@ var App = {
     var myMelds = (g.melds && g.melds[my]) || [];
     var isClosed = myMelds.every(function(m) { return m.type === 'ankan'; });
     var ankanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkAnkan(my) : [];
+    var kakanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkKakan(my) : [];
     var canNuki = g.isSanma && myTurn && g.phase === 'turn' && myHand.some(function(t) { return FriendGame.isNukiTile(t); });
     var actionBtns = '';
     if (myTurn && g.phase === 'turn' && Agari.isWinningHand(myHand)) actionBtns += '<button class="btn-battle btn-tsumo" id="btnFrTsumo">ツモ！</button>';
     if (canNuki) actionBtns += '<button class="btn-battle btn-nuki" id="btnFrNuki">北抜き</button>';
     ankanCands.forEach(function(c, ci) {
       actionBtns += '<button class="btn-battle btn-ankan" data-ankan-idx="' + ci + '">暗カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
+    });
+    kakanCands.forEach(function(c, ci) {
+      actionBtns += '<button class="btn-battle btn-ankan" data-kakan-idx="' + ci + '">加カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
     });
     var canRiichi = false;
     if (myTurn && g.phase === 'turn' && isClosed && !g.riichi[my] && g.scores[my] >= 1000 && myHand.length % 3 === 2) {
@@ -2314,6 +2318,14 @@ var App = {
         var cand = ankanCands[parseInt(btn.dataset.ankanIdx, 10)];
         if (cand && cand.tiles && cand.tiles[0]) {
           sendFrAction('ankan', { tile: { suit: cand.tiles[0].suit, num: cand.tiles[0].num } });
+        }
+      });
+    });
+    document.querySelectorAll('[data-kakan-idx]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var cand = kakanCands[parseInt(btn.dataset.kakanIdx, 10)];
+        if (cand && cand.tiles && cand.tiles[0]) {
+          sendFrAction('kakan', { tile: { suit: cand.tiles[0].suit, num: cand.tiles[0].num } });
         }
       });
     });

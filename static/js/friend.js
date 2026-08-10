@@ -579,6 +579,19 @@ var FriendGame = (function() {
     return res;
   }
 
+  // 加槓（既存のポンに、手牌にある同じ牌を足してカンにする）候補
+  function checkKakanCandidates(state, seat) {
+    if (!state || state.phase !== 'turn' || state.turn !== seat) return [];
+    var hand = state.hands[seat] || [];
+    var melds = (state.melds[seat] || []).filter(function(m) { return m.type === 'pon'; });
+    var res = [];
+    melds.forEach(function(m) {
+      var tile = hand.find(function(t) { return sameKind(t, m.tiles[0]); });
+      if (tile) res.push({ type: 'kakan', tiles: [tile], meld: m });
+    });
+    return res;
+  }
+
   function defaultAutoFlags(seat) {
     return {
       agari: isCpuSeat(seat),
@@ -1008,6 +1021,53 @@ var FriendGame = (function() {
     return true;
   }
 
+  function _executeKakan(state, seat, tileKind) {
+    if (state.phase !== 'turn' || seat !== state.turn) return false;
+    var cands = checkKakanCandidates(state, seat);
+    var cand = null;
+    for (var i = 0; i < cands.length; i++) {
+      if (sameKind(cands[i].tiles[0], tileKind)) { cand = cands[i]; break; }
+    }
+    if (!cand) return false;
+    _consumeTurnTimer(state, seat);
+    removeTilesByIds(state.hands[seat], cand.tiles);
+    var addedTile = cand.tiles[0];
+    cand.meld.type = 'kan';
+    cand.meld.kakan = true;
+    cand.meld.tiles = cand.meld.tiles.concat([addedTile]);
+
+    // 槍槓：加槓した牌で他家がロンできないか確認
+    var ronCandidates = [];
+    for (var s = 0; s < state.playerCount; s++) {
+      if (s === seat) continue;
+      if (Agari.isWinningHand((state.hands[s] || []).concat([addedTile]))) ronCandidates.push(s);
+    }
+    if (ronCandidates.length > 0) {
+      var autoWinner = ronCandidates.find(function(c) { return shouldAutoAgari(state, c); });
+      if (autoWinner != null) {
+        state.hands[autoWinner] = Tiles.sortTiles(state.hands[autoWinner].concat([addedTile]));
+        _finishHand(state, autoWinner, 'ron', seat);
+        return true;
+      }
+      _clearTurnTimer(state);
+      state.phase = 'ron_wait';
+      state.ron = {
+        tile: addedTile,
+        from: seat,
+        candidates: ronCandidates,
+        responses: {},
+        callOptionsBySeat: {},
+        replacementDraw: true,
+        revealKanDora: true,
+      };
+      return true;
+    }
+
+    addKanDora(state);
+    _drawFor(state, seat);
+    return true;
+  }
+
   function _executeNuki(state, seat, tileId) {
     if (!state.isSanma || state.phase !== 'turn' || seat !== state.turn) return false;
     _consumeTurnTimer(state, seat);
@@ -1037,7 +1097,7 @@ var FriendGame = (function() {
         candidates: ronCandidates,
         responses: {},
         callOptionsBySeat: {},
-        isYarikita: true,
+        replacementDraw: true,
       };
       return true;
     }
@@ -1117,9 +1177,18 @@ var FriendGame = (function() {
     var from = state.ron.from;
     var tile = state.ron.tile;
     var callMap = state.ron.callOptionsBySeat || {};
+    var replacementDraw = state.ron.replacementDraw;
+    var revealKanDora = state.ron.revealKanDora;
     state.ron = null;
-    if (hasCallOptions(callMap)) _setCallWait(state, tile, from, callMap);
-    else _nextTurn(state, from);
+    if (hasCallOptions(callMap)) {
+      _setCallWait(state, tile, from, callMap);
+    } else if (replacementDraw) {
+      // 加槓・北抜きのロン見送り後：ロンされなかったので打った本人が続けて打牌権を得る（嶺上ツモ）
+      if (revealKanDora) addKanDora(state);
+      _drawFor(state, from);
+    } else {
+      _nextTurn(state, from);
+    }
   }
 
   function _hostTick(state) {
@@ -1228,6 +1297,9 @@ var FriendGame = (function() {
       } else if (a.type === 'ankan') {
         ok = _executeAnkan(state, seat, a.tile);
 
+      } else if (a.type === 'kakan') {
+        ok = _executeKakan(state, seat, a.tile);
+
       } else if (a.type === 'auto_flags') {
         ensureRuntimeArrays(state);
         var old = getAutoFlags(state, seat);
@@ -1313,5 +1385,6 @@ var FriendGame = (function() {
     isTenpai13: isTenpai13,
     isNukiTile: function(tile) { return isNukiTile(_game, tile); },
     checkAnkan: function(seat) { return checkAnkanCandidates(_game, seat); },
+    checkKakan: function(seat) { return checkKakanCandidates(_game, seat); },
   };
 })();
