@@ -5987,3 +5987,27 @@ body.is-battle-page {
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(90deg); }
 }
+
+/* ============================================================
+   雀卓（対局画面）はPC想定の固定px指定（アバター・牌・バッジ等）が
+   多く、スマホを横向きにしても画面の縦幅が足りないと要素同士が
+   重なって崩れる。縦幅が足りない横画面では、雀卓全体をPC版と同じ
+   余白バランスの「設計サイズ」で組んでから縮小表示することで、
+   崩れずにPC版と同じ見た目のまま画面に収める。
+   ============================================================ */
+@media (orientation: landscape) and (max-height: 460px) {
+  body.is-battle-page .battle-main .jt-outer {
+    align-items: center !important;
+    justify-content: flex-start !important;
+  }
+  body.is-battle-page .battle-main .jt-row {
+    flex: none !important;
+    height: 700px !important;
+    min-height: 700px !important;
+    width: 100vw !important;
+  }
+  body.is-battle-page .battle-main .jt-table {
+    transform: scale(calc(100vh / 700px));
+    transform-origin: top center;
+  }
+}
