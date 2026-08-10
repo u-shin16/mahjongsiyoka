@@ -779,15 +779,21 @@ function positionMeldAreas() {
     el.style.setProperty('transform', transform, 'important');
   };
 
-  // 自分（下の角から、さらに右下へずらす）
-  var SELF_OFFSET_X = 60; // 右へのオフセット(px)
-  var SELF_OFFSET_Y = 24; // 下へのオフセット(px)
+  // 自分：ダイヤモンドの角ではなく自分の手牌の右隣に配置
+  // （角に置くと点数バッジ・自河と場所が競合するため、じゃんたま同様
+  //   自分の副露だけは手牌基準にする）
+  var SELF_GAP = 10; // 手牌の右端からの隙間(px)
   var selfArea = document.querySelector('.player-meld-area.seat-self');
-  if (selfArea) {
+  var handRow  = document.querySelector('.jt-hand-tiles-row');
+  if (selfArea && handRow) {
+    var hr = handRow.getBoundingClientRect();
     set(selfArea,
-      (cp.bottom + MELD_GAP + SELF_OFFSET_Y) + 'px',
-      (pCenterX + SELF_OFFSET_X) + 'px',
-      'auto', 'auto', 'translateX(-50%)');
+      (hr.top + hr.height / 2) + 'px',
+      (hr.right + SELF_GAP) + 'px',
+      'auto', 'auto', 'translateY(-50%)');
+  } else if (selfArea) {
+    // 手牌行が見つからない場合のフォールバック（従来のダイヤモンド基準）
+    set(selfArea, (cp.bottom + MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translateX(-50%)');
   }
 
   // 対面（上の角から上へ）
