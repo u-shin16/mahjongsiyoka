@@ -1905,11 +1905,20 @@ var App = {
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
       } else if (r) {
-        var resultHand = Tiles.sortTiles((r.hand || []).slice());
+        // 手牌（副露を除いた部分）を面子・雀頭ごとに理牌して表示する。
+        // 分解できない場合は今まで通りの一括ソートにフォールバックする。
+        var resultHandTiles = (r.hand || []).slice();
+        var resultDecomp = Agari.decomposeWinningHand(resultHandTiles);
+        var resultGroups = resultDecomp
+          ? (resultDecomp.type === 'chiitoitsu' ? resultDecomp.groups.slice() : resultDecomp.melds.concat([resultDecomp.pair]))
+          : [Tiles.sortTiles(resultHandTiles)];
+        var resultHandHtml = resultGroups.map(function(grp) {
+          return '<span class="agr-tile-group">' + grp.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</span>';
+        }).join('');
         endHtml = '<div class="fr-result-float"><div class="fr-panel" style="border-color:var(--gold)">' +
           '<div style="font-size:1.1rem;font-weight:900;color:var(--gold);margin-bottom:6px">' +
             esc(names[r.winner]) + ' の' + (r.type === 'tsumo' ? 'ツモ' : 'ロン') + '！</div>' +
-          '<div class="fr-river" style="margin-bottom:8px">' + resultHand.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</div>' +
+          '<div class="fr-river" style="margin-bottom:8px">' + resultHandHtml + '</div>' +
           (r.melds && r.melds.length ? '<div class="fr-melds">' + meldSetHtml(r.melds) + '</div>' : '') +
           (r.nuki && r.nuki.length ? '<div class="fr-nuki-row"><span>抜き北</span>' + r.nuki.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</div>' : '') +
           r.yaku.map(function(y) { return '<div class="fr-row"><span>' + esc(y.name) + '</span><span class="fr-score">' + y.han + '翻</span></div>'; }).join('') +
