@@ -1318,7 +1318,7 @@ button { font-family: inherit; cursor: pointer; }
 .battle-event-log .ev-riichi { color: #e74c3c; }
 .battle-event-log .ev-nuki { color: #72c7ff; font-weight: 700; }
 
-.battle-end-card { text-align: center; background: linear-gradient(145deg, #2a5c3c, #1a3a24); border: 2px solid var(--gold-dark); border-radius: var(--radius); padding: 24px; }
+.battle-end-card { width: 100%; max-width: 480px; text-align: center; background: linear-gradient(145deg, #2a5c3c, #1a3a24); border: 2px solid var(--gold-dark); border-radius: var(--radius); padding: 24px; }
 .battle-end-icon { font-size: 3rem; margin-bottom: 10px; }
 .battle-end-title { font-size: 1.5rem; font-weight: 900; color: var(--gold); margin-bottom: 8px; }
 .battle-end-detail { color: #a8d8b0; font-size: 0.92rem; line-height: 1.7; margin-bottom: 16px; }
@@ -5577,6 +5577,15 @@ body.is-battle-page {
 }
 .player-meld-area.seat-right {
   right: 10px !important;
+}
+
+/* ── FIX: 上家・下家の副露エリアが CPU の名前・点数バッジに重なる問題
+   （.jt-seat-left/.jt-seat-right のアバター＋名前バッジの下まで下げる） ── */
+.player-meld-area.seat-left {
+  top: calc(16% + 116px) !important;
+}
+.player-meld-area.seat-right {
+  top: calc(25% + 116px) !important;
 }
 
 /* ── 7. 手牌エリアのpaddingをわずかに詰める ── */

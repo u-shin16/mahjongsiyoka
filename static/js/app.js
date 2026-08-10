@@ -3837,13 +3837,13 @@ var App = {
 
     var renderRyukyoku = function() {
       var matchOver = Battle.isMatchOver();
-      main.innerHTML = '<div class="battle-end-card"><div class="battle-end-icon">🌊</div>' +
+      main.innerHTML = '<div class="agari-result-wrap"><div class="battle-end-card"><div class="battle-end-icon">🌊</div>' +
         '<div class="battle-end-title">流局'+(matchOver?' ／ 対局終了':'')+'</div>' +
         '<div class="battle-end-detail">'+Battle.getRoundLabel()+'<br>山がなくなりました。引き分けです。</div>' +
         '<div class="battle-final-scores">'+
         Battle.PLAYER_NAMES.map(function(name,i){var s=Battle.getState();return '<div class="battle-final-score-row"><div class="name">'+Battle.WIND_NAMES[i]+' '+Battle.WIND_READINGS[i]+' '+name+'</div><div class="pts">'+s.scores[i].toLocaleString()+'点</div></div>';}).join('')+
         '</div>' +
-        '<div class="btn-row">'+(matchOver?'<button class="btn btn-primary" id="btnPA2">再戦</button>':'<button class="btn btn-primary" id="btnNR2">次の局へ</button>')+'<button class="btn btn-secondary" id="btnBH2">ホームへ</button></div></div>';
+        '<div class="btn-row">'+(matchOver?'<button class="btn btn-primary" id="btnPA2">再戦</button>':'<button class="btn btn-primary" id="btnNR2">次の局へ</button>')+'<button class="btn btn-secondary" id="btnBH2">ホームへ</button></div></div></div>';
       var btnNR2 = document.getElementById('btnNR2');
       if (btnNR2) btnNR2.addEventListener('click', function(){Battle.nextRound(); resetLocalRound(); renderGame();});
       var btnPA2 = document.getElementById('btnPA2');
