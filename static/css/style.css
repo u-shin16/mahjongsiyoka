@@ -4744,6 +4744,13 @@ body.is-battle-page .app-main.battle-main {
   flex-wrap: wrap;
   gap: 2px;
 }
+.agr-tile-group {
+  display: inline-flex;
+  margin-right: 8px;
+}
+.agr-tile-group:last-child {
+  margin-right: 0;
+}
 .agr-sep {
   color: #7a9a82;
   font-size: 1.1rem;

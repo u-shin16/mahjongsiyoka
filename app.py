@@ -309,7 +309,7 @@ def clean_advice_response(obj, allowed_tiles):
         candidates.append({
             'tile': tile,
             'tileName': str(c.get('tileName') or tile_display_name(tile))[:20],
-            'reason': str(c.get('reason') or '')[:120],
+            'reason': str(c.get('reason') or '')[:30],
         })
         if len(candidates) >= 3:
             break
@@ -317,7 +317,7 @@ def clean_advice_response(obj, allowed_tiles):
         candidates.insert(0, {
             'tile': discard,
             'tileName': str(obj.get('tileName') or tile_display_name(discard))[:20],
-            'reason': str(obj.get('reason') or '')[:120],
+            'reason': str(obj.get('reason') or '')[:30],
         })
 
     try:
@@ -328,7 +328,10 @@ def clean_advice_response(obj, allowed_tiles):
     return {
         'discard': discard,
         'tileName': str(obj.get('tileName') or tile_display_name(discard))[:20],
-        'reason': str(obj.get('reason') or '')[:240],
+        # 「一言で、どの牌を切るか・なんでかだけ」という要望のため、
+        # プロンプト側で20文字前後を指示していてもLLMが長く書くことがあるので、
+        # ここでも短く切り詰めてハードに担保する。
+        'reason': str(obj.get('reason') or '')[:30],
         'detailedReason': {
             'efficiency': str((obj.get('detailedReason') or {}).get('efficiency') or '')[:260],
             'value': str((obj.get('detailedReason') or {}).get('value') or '')[:260],
@@ -414,6 +417,10 @@ def ai_advice():
             max_output_tokens=90,
             temperature=temperature,
         )
+        if mode == 'discard':
+            # 「一言で、どの牌を切るか・なんでかだけ」という要望のため、
+            # プロンプトで一文を指示していてもLLMが長く書くことがあるのでハードに切り詰める。
+            advice = str(advice or '')[:40]
         return jsonify({'advice': advice, 'model': model})
 
     except Exception as e:

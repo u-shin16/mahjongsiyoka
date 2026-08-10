@@ -3652,34 +3652,37 @@ var App = {
         loserLine = '<div class="agr-loser">← '+esc(loserName)+' の捨て牌</div>';
       }
 
-      // 手牌 HTML (14枚、和了牌を区別)
+      // 手牌 HTML (14枚、和了牌を区別。面子・対子ごとに理牌して表示する)
       var hand = (s.hands[winner] || []).slice();
       var handHtml = '';
       if (hand.length > 0) {
         var winningTile = s.winTile || hand[hand.length - 1];
+
+        // 面子・雀頭（七対子なら対子7組）ごとにグループ分けする。
+        // 分解できない場合は今まで通りの一括ソートにフォールバックする。
+        var decomposition = Agari.decomposeWinningHand(hand);
+        var groups = decomposition
+          ? (decomposition.type === 'chiitoitsu' ? decomposition.groups.slice() : decomposition.melds.concat([decomposition.pair]))
+          : [Tiles.sortTiles(hand)];
+
+        // 和了牌をどれか1つの組から取り除く（＋の後ろに別枠で表示するため）
         var winRemoved = false;
-        var mainTiles = hand.filter(function(t) {
-          if (!winRemoved && winningTile && t.id === winningTile.id) {
-            winRemoved = true;
-            return false;
-          }
-          return true;
-        });
-        if (!winRemoved && winningTile) {
-          mainTiles = hand.filter(function(t) {
-            if (!winRemoved && Tiles.isSame(t, winningTile)) {
-              winRemoved = true;
-              return false;
-            }
-            return true;
-          });
-        }
-        mainTiles = Tiles.sortTiles(mainTiles);
+        var mainGroups = groups.map(function(g) {
+          if (winRemoved) return g;
+          var idx = winningTile ? g.findIndex(function(t) { return t.id === winningTile.id; }) : -1;
+          if (idx === -1 && winningTile) idx = g.findIndex(function(t) { return Tiles.isSame(t, winningTile); });
+          if (idx === -1) return g;
+          winRemoved = true;
+          return g.filter(function(_, i) { return i !== idx; });
+        }).filter(function(g) { return g.length > 0; });
+
         handHtml =
           '<div class="agr-hand">' +
             '<div class="agr-tiles">' +
-              mainTiles.map(function(t) {
-                return Tiles.renderTile(t, { noHover: true, extraClass: 'agr-tile' });
+              mainGroups.map(function(g) {
+                return '<span class="agr-tile-group">' + g.map(function(t) {
+                  return Tiles.renderTile(t, { noHover: true, extraClass: 'agr-tile' });
+                }).join('') + '</span>';
               }).join('') +
             '</div>' +
             '<div class="agr-sep">＋</div>' +
