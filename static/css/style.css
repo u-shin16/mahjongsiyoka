@@ -5002,6 +5002,7 @@ body.is-battle-page .app-main.battle-main {
 
 .meld-set {
   display: flex;
+  flex-shrink: 0;
   align-items: flex-end;
   gap: 1px;
   background: rgba(0,0,0,0.2);
