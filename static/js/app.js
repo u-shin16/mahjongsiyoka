@@ -3528,7 +3528,7 @@ var App = {
         var buildNukiTiles = function(pi) {
           var tiles = (s.nuki && s.nuki[pi]) || [];
           if (!tiles.length) return '';
-          return '<div class="fr-nuki-row"><span>抜き北</span>' + tiles.map(function(t, ti) {
+          return '<div class="fr-nuki-row">' + tiles.map(function(t, ti) {
             return Tiles.renderTile(t, {noHover:true, extraClass:'meld-tile'});
           }).join('') + '</div>';
         };
