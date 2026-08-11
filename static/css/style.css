@@ -6276,3 +6276,25 @@ body.is-battle-page {
   flex-direction: row !important;
   flex-wrap: wrap !important;
 }
+
+/* 上家・下家は牌1枚ずつを個別に回転させると、横並びにしても
+   文字が縦読みになって"縦の集合"に見えてしまう。
+   セット(.meld-set)・抜き北の行(.fr-nuki-row)をまるごと回転させる
+   （180°の対面は個々の牌回転のままでも横並びとして自然に見えるため対象外） */
+.player-meld-area.seat-left .tile,
+.player-meld-area.seat-right .tile {
+  transform: none !important;
+}
+.player-meld-area.seat-left .meld-set,
+.player-meld-area.seat-left .fr-nuki-row {
+  transform: rotate(90deg) !important;
+}
+.player-meld-area.seat-right .meld-set,
+.player-meld-area.seat-right .fr-nuki-row {
+  transform: rotate(-90deg) !important;
+}
+.player-meld-area.seat-left .meld-called,
+.player-meld-area.seat-right .meld-called {
+  transform: rotate(-90deg) !important;
+  margin: 0 4px !important;
+}
