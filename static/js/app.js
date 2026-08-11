@@ -863,36 +863,21 @@ function positionMeldAreas() {
       'rotate(' + angleDeg + 'deg)');
   };
 
-  // 上家（ダイヤモンドの左側）専用：回転の一般式だと方向を誤りやすいので、
-  // 「ダイヤモンド中心から左へclear分離れた位置」を直接計算する。
-  // 中心基準の配置は回転角によらず中心は動かないため、この形が一番安全
-  var positionLeftOfDiamond = function(area, lift, gap, clear) {
-    if (!area) return;
-    var w = area.offsetWidth;
-    var h = area.offsetHeight;
-    // rotate(90deg)後の見た目の幅はh、高さはw になる
-    var visW = h, visH = w;
-    var cx = pCenterX - clear - gap - visW / 2; // ダイヤモンドより左へ
-    var cy = pCenterY - lift;                    // 少し上寄りに
-    var margin = 8, topSafe = 64;
-    cx = Math.min(Math.max(cx, visW / 2 + margin), window.innerWidth - visW / 2 - margin);
-    cy = Math.min(Math.max(cy, visH / 2 + topSafe), window.innerHeight - visH / 2 - margin);
-    set(area, (cy - h / 2) + 'px', (cx - w / 2) + 'px', 'auto', 'auto', 'rotate(90deg)');
-  };
-
   var handRow   = document.querySelector('.jt-hand-tiles-row');
   var oppHand   = document.querySelector('.jt-hidden-top');
+  var leftHand  = document.querySelector('.jt-hidden-left');
   var rightHand = document.querySelector('.jt-hidden-right');
 
-  // ダイヤモンド中心から見て、河（.disc-river-left、156×144px固定）の
-  // 外側に副露・北抜きが来るように必要な半径を確保する
-  // （ダイヤモンド半径74px + 河とのすき間26px + 河の高さ144px ＋ 余白）
-  var DIAMOND_CLEAR = 250;
-
-  // 上家（seat-left）は三麻では存在しない席なので、ダイヤモンド中心を
-  // 基準にした新しい計算式に変更しても三麻の見た目に影響しない。
-  // 下家（seat-right）は三麻でも使う席で、そちらは崩れていないとの
-  // 確認が取れているため、これまで通り伏せ手牌基準のままにする
+  // 上家(seat-left)も下家(seat-right)と全く同じ「伏せ手牌基準」の式に揃える。
+  // 前回、上家だけダイヤモンド基準の専用式に変えたが、そもそもの暴走の
+  // 原因は副露エリアにmax-widthが無く折り返しが発生しなかったこと
+  // （直前の修正で対応済み）だったため、他の3席と同じ関係性に戻す
+  var leftCx = 0, leftCy = 0;
+  if (leftHand) {
+    var lhr = leftHand.getBoundingClientRect();
+    leftCx = (lhr.left + lhr.right) / 2;
+    leftCy = (lhr.top + lhr.bottom) / 2;
+  }
   var rightCx = 0, rightCy = 0;
   if (rightHand) {
     var rhr = rightHand.getBoundingClientRect();
@@ -903,13 +888,13 @@ function positionMeldAreas() {
   // 副露エリア
   positionForSeat(document.querySelector('.player-meld-area.seat-self'), handRow, 0, MELD_LIFT, GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-meld-area.seat-opposite'), oppHand, 180, MELD_LIFT, GAP, CPU_HAND_HALF);
-  positionLeftOfDiamond(document.querySelector('.player-meld-area.seat-left'), MELD_LIFT, GAP, DIAMOND_CLEAR);
+  if (leftHand) positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftCx, leftCy, 90, MELD_LIFT, GAP, CPU_HAND_HALF);
   if (rightHand) positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightCx, rightCy, -90, MELD_LIFT, GAP, CPU_HAND_HALF);
 
   // 北抜きエリア（副露とは独立配置。手牌が縮んでも動かないよう同じ固定半幅を使う）
   positionForSeat(document.querySelector('.player-nuki-area.seat-self'), handRow, 0, NUKI_LIFT, NUKI_GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-nuki-area.seat-opposite'), oppHand, 180, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  positionLeftOfDiamond(document.querySelector('.player-nuki-area.seat-left'), NUKI_LIFT, NUKI_GAP, DIAMOND_CLEAR);
+  if (leftHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftCx, leftCy, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
   if (rightHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightCx, rightCy, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
 }
 
