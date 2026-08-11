@@ -779,63 +779,68 @@ function positionMeldAreas() {
     el.style.setProperty('transform', transform, 'important');
   };
 
-  // 自分：ダイヤモンドの角ではなく自分の手牌の右隣に配置
-  // （角に置くと点数バッジ・自河と場所が競合するため、じゃんたま同様
-  //   自分の副露だけは手牌基準にする）
-  var SELF_GAP    = 10; // 手牌の右端からの隙間(px)
-  var SELF_LIFT   = 54; // 手牌中央からさらに上へのオフセット(px)
+  // 自分の副露の位置関係（手牌の右端から GAP、手牌の中心から上へ LIFT）を
+  // 基準にして、各席の回転角度（対面180°・上家90°・下家-90°）だけ
+  // そのまま回転させて同じ位置関係を再現する。
+  // 例）対面は180°回転なので「右端→左端」「上→下」に反転して置かれる。
+  var GAP  = 10; // 手牌の端からの隙間(px)
+  var LIFT = 54; // 手牌中央からのオフセット(px)（自分の副露と同じ値）
+
+  var positionForSeat = function(area, handEl, angleDeg) {
+    if (!area || !handEl) return;
+    var hr = handEl.getBoundingClientRect();
+    var cx = (hr.left + hr.right) / 2;
+    var cy = (hr.top + hr.bottom) / 2;
+    // 0°/180°は手牌が横向き（読み方向=横幅）、90°/-90°は縦向き（読み方向=高さ）
+    var halfLen = (angleDeg === 90 || angleDeg === -90) ? hr.height / 2 : hr.width / 2;
+    var ox = halfLen + GAP; // 自分から見て「右へ」
+    var oy = -LIFT;         // 自分から見て「上へ」
+    var rad = angleDeg * Math.PI / 180;
+    var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
+    var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
+    var ax = Math.round(cx + rx);
+    var ay = Math.round(cy + ry);
+
+    // アンカー点に副露エリアのどの辺を合わせるかも、同じ回転で決める
+    // 0°=左端合わせ／180°=右端合わせ／90°=上端合わせ／-90°=下端合わせ
+    var tx = -50, ty = -50;
+    if (angleDeg === 0)   { tx = 0;    ty = -50; }
+    if (angleDeg === 180) { tx = -100; ty = -50; }
+    if (angleDeg === 90)  { tx = -50;  ty = 0;   }
+    if (angleDeg === -90) { tx = -50;  ty = -100; }
+
+    set(area, ay + 'px', ax + 'px', 'auto', 'auto', 'translate(' + tx + '%, ' + ty + '%)');
+  };
+
   var selfArea = document.querySelector('.player-meld-area.seat-self');
   var handRow  = document.querySelector('.jt-hand-tiles-row');
   if (selfArea && handRow) {
-    var hr = handRow.getBoundingClientRect();
-    set(selfArea,
-      (hr.top + hr.height / 2 - SELF_LIFT) + 'px',
-      (hr.right + SELF_GAP) + 'px',
-      'auto', 'auto', 'translateY(-50%)');
+    positionForSeat(selfArea, handRow, 0);
   } else if (selfArea) {
     // 手牌行が見つからない場合のフォールバック（従来のダイヤモンド基準）
     set(selfArea, (cp.bottom + MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translateX(-50%)');
   }
 
-  // 対面・上家・下家も、自分と同じ考え方で「その席の伏せ手牌(jt-hidden-hand)の
-  // 隣」に配置する（ダイヤモンドの角だとバッジ・河と競合するため）
-  var HAND_GAP = 8; // 伏せ手牌からの隙間(px)
-
-  // 対面（上の伏せ手牌の左隣）
   var oppArea = document.querySelector('.player-meld-area.seat-opposite');
   var oppHand = document.querySelector('.jt-hidden-top');
   if (oppArea && oppHand) {
-    var ohr = oppHand.getBoundingClientRect();
-    set(oppArea,
-      (ohr.top + ohr.height / 2) + 'px',
-      (ohr.left - HAND_GAP) + 'px',
-      'auto', 'auto', 'translate(-100%, -50%)');
+    positionForSeat(oppArea, oppHand, 180);
   } else if (oppArea) {
     set(oppArea, (cp.top - MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translate(-50%, -100%)');
   }
 
-  // 上家（左の伏せ手牌の下）
   var leftArea = document.querySelector('.player-meld-area.seat-left');
   var leftHand = document.querySelector('.jt-hidden-left');
   if (leftArea && leftHand) {
-    var lhr = leftHand.getBoundingClientRect();
-    set(leftArea,
-      (lhr.bottom + HAND_GAP) + 'px',
-      (lhr.left + lhr.width / 2) + 'px',
-      'auto', 'auto', 'translateX(-50%)');
+    positionForSeat(leftArea, leftHand, 90);
   } else if (leftArea) {
     set(leftArea, pCenterY + 'px', (cp.left - MELD_GAP) + 'px', 'auto', 'auto', 'translate(-100%, -50%)');
   }
 
-  // 下家（右の伏せ手牌の下）
   var rightArea = document.querySelector('.player-meld-area.seat-right');
   var rightHand = document.querySelector('.jt-hidden-right');
   if (rightArea && rightHand) {
-    var rhr = rightHand.getBoundingClientRect();
-    set(rightArea,
-      (rhr.bottom + HAND_GAP) + 'px',
-      (rhr.left + rhr.width / 2) + 'px',
-      'auto', 'auto', 'translateX(-50%)');
+    positionForSeat(rightArea, rightHand, -90);
   } else if (rightArea) {
     set(rightArea, pCenterY + 'px', (cp.right + MELD_GAP) + 'px', 'auto', 'auto', 'translateY(-50%)');
   }
