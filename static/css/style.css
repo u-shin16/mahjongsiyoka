@@ -5629,7 +5629,7 @@ body.is-battle-page {
 /* ── 4. 鳴きフロートパネルをコンパクト化 ── */
 .hand-action-float {
   bottom: 158px !important;
-  right: 10px !important;
+  right: 140px !important; /* 副露・北抜き（自分）と被らないよう内側に移動 */
   max-width: 210px !important;
   gap: 4px !important;
   padding: 4px 6px !important;
