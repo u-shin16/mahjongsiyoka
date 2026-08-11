@@ -863,6 +863,23 @@ function positionMeldAreas() {
       'rotate(' + angleDeg + 'deg)');
   };
 
+  // 上家（ダイヤモンドの左側）専用：回転の一般式だと方向を誤りやすいので、
+  // 「ダイヤモンド中心から左へclear分離れた位置」を直接計算する。
+  // 中心基準の配置は回転角によらず中心は動かないため、この形が一番安全
+  var positionLeftOfDiamond = function(area, lift, gap, clear) {
+    if (!area) return;
+    var w = area.offsetWidth;
+    var h = area.offsetHeight;
+    // rotate(90deg)後の見た目の幅はh、高さはw になる
+    var visW = h, visH = w;
+    var cx = pCenterX - clear - gap - visW / 2; // ダイヤモンドより左へ
+    var cy = pCenterY - lift;                    // 少し上寄りに
+    var margin = 8, topSafe = 64;
+    cx = Math.min(Math.max(cx, visW / 2 + margin), window.innerWidth - visW / 2 - margin);
+    cy = Math.min(Math.max(cy, visH / 2 + topSafe), window.innerHeight - visH / 2 - margin);
+    set(area, (cy - h / 2) + 'px', (cx - w / 2) + 'px', 'auto', 'auto', 'rotate(90deg)');
+  };
+
   var handRow   = document.querySelector('.jt-hand-tiles-row');
   var oppHand   = document.querySelector('.jt-hidden-top');
   var rightHand = document.querySelector('.jt-hidden-right');
@@ -886,13 +903,13 @@ function positionMeldAreas() {
   // 副露エリア
   positionForSeat(document.querySelector('.player-meld-area.seat-self'), handRow, 0, MELD_LIFT, GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-meld-area.seat-opposite'), oppHand, 180, MELD_LIFT, GAP, CPU_HAND_HALF);
-  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), pCenterX, pCenterY, 90, MELD_LIFT, GAP, DIAMOND_CLEAR);
+  positionLeftOfDiamond(document.querySelector('.player-meld-area.seat-left'), MELD_LIFT, GAP, DIAMOND_CLEAR);
   if (rightHand) positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightCx, rightCy, -90, MELD_LIFT, GAP, CPU_HAND_HALF);
 
   // 北抜きエリア（副露とは独立配置。手牌が縮んでも動かないよう同じ固定半幅を使う）
   positionForSeat(document.querySelector('.player-nuki-area.seat-self'), handRow, 0, NUKI_LIFT, NUKI_GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-nuki-area.seat-opposite'), oppHand, 180, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), pCenterX, pCenterY, 90, NUKI_LIFT, NUKI_GAP, DIAMOND_CLEAR);
+  positionLeftOfDiamond(document.querySelector('.player-nuki-area.seat-left'), NUKI_LIFT, NUKI_GAP, DIAMOND_CLEAR);
   if (rightHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightCx, rightCy, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
 }
 
