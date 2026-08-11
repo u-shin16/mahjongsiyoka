@@ -3711,8 +3711,6 @@ var App = {
             // ── 手牌エリア（テーブル上に表示） ──
             '<div class="jt-hand-in-table">' +
               '<div class="jt-hand-infobar">' +
-                '<span><span class="wind">'+Battle.WIND_NAMES[0]+'</span> あなた</span>' +
-                '<span class="score">'+s.scores[0].toLocaleString()+'点</span>' +
                 (isSanma ? '<span class="mj-nuki-count">抜き北 '+nukiCount(0)+'</span>' : '') +
                 (isRiichi ? '<span class="mj-riichi-badge">リーチ中</span>' : '') +
                 (!isRiichi && canRiichi ? '<span class="mj-tenpai-notice">🀄 テンパイ！</span>' : '') +
