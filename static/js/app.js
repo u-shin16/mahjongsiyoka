@@ -757,14 +757,6 @@ function positionDiscardRivers() {
   }
 }
 
-// 北抜きエリアの座標は「最初に表示された位置」で固定する。
-// 手牌(.jt-hand-tiles-row)は鳴くたびに牌が抜けて幅が縮むため、
-// 毎回計算し直すと副露が増えるほど北抜きの位置がずれてしまうため。
-// seatクラス名 → { top, left } のキャッシュ。新しい局が始まって
-// 北抜きが一旦0枚に戻ると要素ごと消えるので、そのタイミングで自動的に
-// クリアされる（次に表示されたときに改めて位置を確定し直す）
-var nukiPositionCache = {};
-
 // ── 副露（鳴き牌・北抜き）エリアを中央ダイヤモンドの角に密着配置 ──
 // フレンド対戦画面（ダイヤモンド化していない）では .jt-center-panel-diamond が
 // 存在しないため何もしない
@@ -793,21 +785,26 @@ function positionMeldAreas() {
   // 例）対面は180°回転なので「右端→左端」「上→下」に反転して置かれる。
   // 副露(.player-meld-area)と北抜き(.player-nuki-area)は別要素なので、
   // 同じ考え方で LIFT だけ変えて独立に配置する（互いのサイズに影響されない）。
-  var GAP       = 10; // 手牌の端からの隙間(px)
-  var MELD_LIFT = 54; // 副露の、手牌中央からのオフセット(px)
-  var NUKI_GAP  = 70; // 北抜きの、手牌の端からの隙間(px)（副露よりさらに右）
-  var NUKI_LIFT = 110; // 北抜きの、手牌中央からのオフセット(px)
+  //
+  // 手牌の「読み方向の長さ」は実測(hr.width/height)を使わず固定値にする。
+  // 鳴くたびに手牌から牌が抜けて実際のサイズが縮んでいくため、実測すると
+  // 鳴くたびに副露・北抜きの位置がずれてしまう（満卓の手牌サイズを
+  // 常に使うことで、鳴いても位置が動かないようにする）。
+  var GAP            = 10;  // 手牌の端からの隙間(px)
+  var MELD_LIFT       = 54;  // 副露の、手牌中央からのオフセット(px)
+  var NUKI_GAP        = 70;  // 北抜きの、手牌の端からの隙間(px)（副露よりさらに右）
+  var NUKI_LIFT        = 110; // 北抜きの、手牌中央からのオフセット(px)
+  var SELF_HAND_HALF  = 373; // 自分の手牌(52px牌×13+ツモ牌+区切り線)の満卓時の半幅
+  var CPU_HAND_HALF   = 187; // CPUの伏せ手牌(26px牌×13)の満卓時の半幅
 
-  var positionForSeat = function(area, handEl, angleDeg, lift, gap) {
+  var positionForSeat = function(area, handEl, angleDeg, lift, gap, handHalf) {
     if (!area || !handEl) return;
     if (gap == null) gap = GAP;
     var hr = handEl.getBoundingClientRect();
     var cx = (hr.left + hr.right) / 2;
     var cy = (hr.top + hr.bottom) / 2;
-    // 0°/180°は手牌が横向き（読み方向=横幅）、90°/-90°は縦向き（読み方向=高さ）
-    var halfLen = (angleDeg === 90 || angleDeg === -90) ? hr.height / 2 : hr.width / 2;
-    var ox = halfLen + gap; // 自分から見て「右へ」
-    var oy = -lift;         // 自分から見て「上へ」
+    var ox = handHalf + gap; // 自分から見て「右へ」
+    var oy = -lift;          // 自分から見て「上へ」
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
@@ -830,17 +827,16 @@ function positionMeldAreas() {
   // 組み立て、その完成した箱を90°/-90°回転させて配置する
   // （牌ごとの回転だと、回転後の見た目サイズとレイアウト上のサイズが
   //   ズレて複数セット時にうまく横に並ばなかったため）
-  var positionRotatedSeat = function(area, handEl, angleDeg, lift, gap) {
+  var positionRotatedSeat = function(area, handEl, angleDeg, lift, gap, handHalf) {
     if (!area || !handEl) return;
     if (gap == null) gap = GAP;
     var hr = handEl.getBoundingClientRect();
     var hcx = (hr.left + hr.right) / 2;
     var hcy = (hr.top + hr.bottom) / 2;
-    var handHalfLen = hr.height / 2; // 上家・下家の伏せ手牌は縦向き
     var areaW = area.offsetWidth;
     var areaH = area.offsetHeight;
-    var ox = handHalfLen + gap + areaW / 2; // 自分の「右へ」に相当
-    var oy = -lift;                          // 自分の「上へ」に相当
+    var ox = handHalf + gap + areaW / 2; // 自分の「右へ」に相当
+    var oy = -lift;                       // 自分の「上へ」に相当
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
@@ -859,38 +855,16 @@ function positionMeldAreas() {
   var rightHand = document.querySelector('.jt-hidden-right');
 
   // 副露エリア
-  positionForSeat(document.querySelector('.player-meld-area.seat-self'), handRow, 0, MELD_LIFT);
-  positionForSeat(document.querySelector('.player-meld-area.seat-opposite'), oppHand, 180, MELD_LIFT);
-  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftHand, 90, MELD_LIFT);
-  positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightHand, -90, MELD_LIFT);
+  positionForSeat(document.querySelector('.player-meld-area.seat-self'), handRow, 0, MELD_LIFT, GAP, SELF_HAND_HALF);
+  positionForSeat(document.querySelector('.player-meld-area.seat-opposite'), oppHand, 180, MELD_LIFT, GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftHand, 90, MELD_LIFT, GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightHand, -90, MELD_LIFT, GAP, CPU_HAND_HALF);
 
-  // 北抜きエリア（副露とは独立配置）。
-  // 一度位置が決まったら、その局の間は再計算せずキャッシュした座標を
-  // そのまま使い続ける（鳴くたびに手牌が縮んで位置がずれるのを防ぐ）
-  var positionNukiOnce = function(seatKey, area, handEl, angleDeg, positionFn) {
-    if (!area) { delete nukiPositionCache[seatKey]; return; }
-    var cached = nukiPositionCache[seatKey];
-    if (cached) {
-      area.style.setProperty('top',       cached.top,       'important');
-      area.style.setProperty('left',      cached.left,      'important');
-      area.style.setProperty('right',     'auto',           'important');
-      area.style.setProperty('bottom',    'auto',           'important');
-      area.style.setProperty('transform', cached.transform, 'important');
-      return;
-    }
-    if (!handEl) return;
-    positionFn(area, handEl, angleDeg, NUKI_LIFT, NUKI_GAP);
-    nukiPositionCache[seatKey] = {
-      top: area.style.top,
-      left: area.style.left,
-      transform: area.style.transform
-    };
-  };
-
-  positionNukiOnce('self',     document.querySelector('.player-nuki-area.seat-self'),     handRow,   0,   positionForSeat);
-  positionNukiOnce('opposite', document.querySelector('.player-nuki-area.seat-opposite'), oppHand,   180, positionForSeat);
-  positionNukiOnce('left',     document.querySelector('.player-nuki-area.seat-left'),     leftHand,  90,  positionRotatedSeat);
-  positionNukiOnce('right',    document.querySelector('.player-nuki-area.seat-right'),    rightHand, -90, positionRotatedSeat);
+  // 北抜きエリア（副露とは独立配置。手牌が縮んでも動かないよう同じ固定半幅を使う）
+  positionForSeat(document.querySelector('.player-nuki-area.seat-self'), handRow, 0, NUKI_LIFT, NUKI_GAP, SELF_HAND_HALF);
+  positionForSeat(document.querySelector('.player-nuki-area.seat-opposite'), oppHand, 180, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftHand, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightHand, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
 }
 
 // ウィンドウリサイズ時も再配置
