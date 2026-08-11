@@ -5674,7 +5674,10 @@ body.is-battle-page {
   zoom: 0.48 !important;
 }
 .player-meld-area .fr-nuki-row {
-  margin-top: 5px !important;
+  margin-top: 0 !important;
+  margin-bottom: 5px !important;
+  order: -1 !important;         /* フウロ牌より前＝上の行に表示 */
+  flex-basis: 100% !important;  /* 単独の行として折り返す */
 }
 
 /* ── 6. 副露エリア位置の微調整 ── */
