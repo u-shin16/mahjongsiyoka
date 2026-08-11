@@ -3549,7 +3549,7 @@ var App = {
         callFloatHtml =
           '<div class="hand-action-float">' +
             callBtns +
-            '<button class="btn-battle btn-skip-call" id="btnSkipCall">スキップ</button>' +
+            '<button class="btn-battle btn-skip-call" id="btnSkipCall">スルー</button>' +
           '</div>';
       } else if (s.phase === 'player_turn' || s.phase === 'naki_discard') {
         var floatBtns = '';
