@@ -2062,13 +2062,6 @@ var App = {
       var html = meldSetHtml(g.melds && g.melds[seat]);
       return html ? '<div class="fr-melds">' + html + '</div>' : '';
     };
-    var nukiHtml = function(seat) {
-      var tiles = g.nuki && g.nuki[seat] ? g.nuki[seat] : [];
-      if (!tiles.length) return '';
-      return '<div class="fr-nuki-row"><span>抜き北</span>' + tiles.map(function(t) {
-        return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
-      }).join('') + '</div>';
-    };
     var riverHtml = function(seat) {
       return '<div class="fr-river">' + (g.discards[seat] || []).map(function(t) {
         return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' + (t.riichiDiscard ? ' fr-riichi-tile' : '') });
@@ -2263,22 +2256,35 @@ var App = {
         '</div>' +
       '</div>';
     };
-    var centerScoresHtml = '<div class="jt-center-score-list">' +
-      visualSeats.map(function(seat) {
-        return '<div class="jt-center-score-item seat-' + seat + ' ' + (seat === my ? 'me' : '') + '">' +
-          '<span class="wind">' + seatWind(seat) + '</span>' +
-          '<span class="name">' + esc(names[seat] || ('P' + (seat + 1))) + '</span>' +
-          '<span class="pts ' + (showDiff && seat !== my ? (g.scores[seat] >= g.scores[my] ? 'plus' : 'minus') : '') + '">' + scoreText(seat) + '</span>' +
-          (isDisconnected(seat) ? '<span class="fr-disconnect-mark">⚡</span>' : '') +
-          (g.riichi[seat] ? '<span class="riichi">R</span>' : '') +
-          (isSanma && nukiCount(seat) > 0 ? '<span class="nuki">北' + nukiCount(seat) + '</span>' : '') +
-        '</div>';
-      }).join('') + '</div>';
-    var centerHtml = '<div class="jt-center"><div class="jt-center-panel fr-score-toggle" id="frScoreToggle" title="点差表示">' +
-      '<div class="jt-center-roundline">東' + g.round + '局<span>山' + g.wall.length + '枚</span></div>' +
-      timerHtml +
-      centerScoresHtml +
-    '</div></div>';
+    // seat → ダイヤモンドの辺（CPU戦と同じ構成：自分=下、対面=上、下家=右、上家=左）
+    var seatEdgeCls = {};
+    seatEdgeCls[my] = 'bottom';
+    seatEdgeCls[topSeat] = 'top';
+    seatEdgeCls[rightSeat] = 'right';
+    if (leftSeat >= 0) seatEdgeCls[leftSeat] = 'left';
+    var centerEdgesHtml = visualSeats.map(function(seat) {
+      var edge = seatEdgeCls[seat];
+      if (!edge) return '';
+      return '<div class="jt-diamond-edge jt-diamond-edge-' + edge + ' seat-' + seat + ' ' + (seat === my ? 'me' : '') + '">' +
+        '<span class="wind">' + seatWind(seat) + '</span>' +
+        '<span class="pts ' + (showDiff && seat !== my ? (g.scores[seat] >= g.scores[my] ? 'plus' : 'minus') : '') + '">' + scoreText(seat) + '</span>' +
+        (isDisconnected(seat) ? '<span class="fr-disconnect-mark">⚡</span>' : '') +
+        (g.riichi[seat] ? '<span class="riichi">R</span>' : '') +
+        (isSanma && nukiCount(seat) > 0 ? '<span class="nuki">北' + nukiCount(seat) + '</span>' : '') +
+      '</div>';
+    }).join('');
+    var centerHtml = '<div class="jt-center">' +
+      '<div class="jt-center-panel jt-center-panel-diamond fr-score-toggle" id="frScoreToggle" title="点差表示">' +
+        '<div class="jt-center-diamond">' +
+          '<div class="jt-center-diamond-inner">' +
+            '<div class="jt-diamond-roundline">東' + g.round + '局</div>' +
+            '<div class="jt-diamond-wall">山' + g.wall.length + '枚</div>' +
+          '</div>' +
+        '</div>' +
+        centerEdgesHtml +
+      '</div>' +
+      (timerHtml ? '<div class="fr-diamond-timer">' + timerHtml + '</div>' : '') +
+    '</div>';
     var doraHtml = '<div class="jt-table-dora">ドラ表示：' +
       Tiles.renderTile(g.doraInd, { noHover: true, extraClass: 'xxs' }) +
       ((g.kanDoraInds || []).length ? (g.kanDoraInds || []).map(function(t) {
@@ -2305,7 +2311,9 @@ var App = {
       '<span class="fr-table-msg">' + msg + '</span>' +
       actionBtns +
     '</div>';
+    // 副露(.player-meld-area)と北抜き(.player-nuki-area)はCPU戦と同じく別要素にする
     var perPlayerMeldsHtml = '';
+    var perPlayerNukiHtml = '';
     var seatCls = {};
     seatCls[my] = 'seat-self';
     seatCls[topSeat] = 'seat-opposite';
@@ -2313,9 +2321,13 @@ var App = {
     if (leftSeat >= 0) seatCls[leftSeat] = 'seat-left';
     visualSeats.forEach(function(seat) {
       var sets = meldSetHtml(g.melds && g.melds[seat]);
-      var nuki = nukiHtml(seat);
-      if (!sets && !nuki) return;
-      perPlayerMeldsHtml += '<div class="player-meld-area ' + seatCls[seat] + '">' + sets + nuki + '</div>';
+      if (sets) perPlayerMeldsHtml += '<div class="player-meld-area ' + seatCls[seat] + '">' + sets + '</div>';
+
+      var nukiTiles = (isSanma && g.nuki && g.nuki[seat]) || [];
+      if (nukiTiles.length) {
+        var nukiTilesHtml = nukiTiles.map(function(t) { return Tiles.renderTile(t, { noHover: true }); }).join('');
+        perPlayerNukiHtml += '<div class="player-nuki-area ' + seatCls[seat] + '">' + nukiTilesHtml + '</div>';
+      }
     });
 
     main.innerHTML = '<div class="jt-outer fr-jt-outer">' +
@@ -2355,6 +2367,7 @@ var App = {
             actionHtml +
           '</div>' +
           perPlayerMeldsHtml +
+          perPlayerNukiHtml +
           endHtml +
           waitsBtnHtml +
         '</div>' +
@@ -2362,6 +2375,9 @@ var App = {
       '</div>' +
     '</div>';
     positionDiscardRivers();
+    positionMeldAreas();
+    requestAnimationFrame(positionDiscardRivers);
+    requestAnimationFrame(positionMeldAreas);
 
     var sendFrAction = function(type, payload) {
       FriendGame.sendAction(type, payload)['catch'](function(e) {

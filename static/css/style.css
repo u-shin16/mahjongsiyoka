@@ -5934,6 +5934,14 @@ body.is-battle-page {
 }
 .battle-main .jt-center-score-item .pts.plus { color: #8ff0b3; }
 .battle-main .jt-center-score-item .pts.minus { color: #ff9a8a; }
+/* 友人戦：ダイヤモンド化後は .jt-diamond-edge 側にも同じ色分けを適用 */
+.battle-main .jt-diamond-edge .pts.plus { color: #8ff0b3; }
+.battle-main .jt-diamond-edge .pts.minus { color: #ff9a8a; }
+/* 友人戦：持ち時間タイマーはダイヤモンドの下に小さく表示 */
+.fr-diamond-timer {
+  width: 120px;
+  margin: 6px auto 0;
+}
 .fr-turn-timer {
   position: relative;
   height: 18px;
