@@ -3833,7 +3833,8 @@ body.is-battle-page .app-main.battle-main {
   cursor: pointer !important;
   flex-shrink: 0 !important;
 }
-.jt-hand-in-table .mj-sorted-tiles .tile.selected {
+.jt-hand-in-table .mj-sorted-tiles .tile.selected,
+.jt-hand-in-table .mj-drew-area .tile.selected {
   transform: translateY(-10px) !important;
   box-shadow: 0 0 0 2px rgba(232,184,75,0.8) !important;
 }
