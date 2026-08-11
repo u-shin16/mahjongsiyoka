@@ -788,7 +788,7 @@ function positionMeldAreas() {
   var GAP       = 10; // 手牌の端からの隙間(px)
   var MELD_LIFT = 54; // 副露の、手牌中央からのオフセット(px)
   var NUKI_GAP  = 70; // 北抜きの、手牌の端からの隙間(px)（副露よりさらに右）
-  var NUKI_LIFT = 80; // 北抜きの、手牌中央からのオフセット(px)
+  var NUKI_LIFT = 110; // 北抜きの、手牌中央からのオフセット(px)
 
   var positionForSeat = function(area, handEl, angleDeg, lift, gap) {
     if (!area || !handEl) return;
