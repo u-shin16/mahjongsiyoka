@@ -787,16 +787,18 @@ function positionMeldAreas() {
   // 同じ考え方で LIFT だけ変えて独立に配置する（互いのサイズに影響されない）。
   var GAP       = 10; // 手牌の端からの隙間(px)
   var MELD_LIFT = 54; // 副露の、手牌中央からのオフセット(px)
-  var NUKI_LIFT = 90; // 北抜きの、手牌中央からのオフセット(px)（副露よりさらに上）
+  var NUKI_GAP  = 70; // 北抜きの、手牌の端からの隙間(px)（副露よりさらに右）
+  var NUKI_LIFT = 60; // 北抜きの、手牌中央からのオフセット(px)
 
-  var positionForSeat = function(area, handEl, angleDeg, lift) {
+  var positionForSeat = function(area, handEl, angleDeg, lift, gap) {
     if (!area || !handEl) return;
+    if (gap == null) gap = GAP;
     var hr = handEl.getBoundingClientRect();
     var cx = (hr.left + hr.right) / 2;
     var cy = (hr.top + hr.bottom) / 2;
     // 0°/180°は手牌が横向き（読み方向=横幅）、90°/-90°は縦向き（読み方向=高さ）
     var halfLen = (angleDeg === 90 || angleDeg === -90) ? hr.height / 2 : hr.width / 2;
-    var ox = halfLen + GAP; // 自分から見て「右へ」
+    var ox = halfLen + gap; // 自分から見て「右へ」
     var oy = -lift;         // 自分から見て「上へ」
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
@@ -820,15 +822,16 @@ function positionMeldAreas() {
   // 組み立て、その完成した箱を90°/-90°回転させて配置する
   // （牌ごとの回転だと、回転後の見た目サイズとレイアウト上のサイズが
   //   ズレて複数セット時にうまく横に並ばなかったため）
-  var positionRotatedSeat = function(area, handEl, angleDeg, lift) {
+  var positionRotatedSeat = function(area, handEl, angleDeg, lift, gap) {
     if (!area || !handEl) return;
+    if (gap == null) gap = GAP;
     var hr = handEl.getBoundingClientRect();
     var hcx = (hr.left + hr.right) / 2;
     var hcy = (hr.top + hr.bottom) / 2;
     var handHalfLen = hr.height / 2; // 上家・下家の伏せ手牌は縦向き
     var areaW = area.offsetWidth;
     var areaH = area.offsetHeight;
-    var ox = handHalfLen + GAP + areaW / 2; // 自分の「右へ」に相当
+    var ox = handHalfLen + gap + areaW / 2; // 自分の「右へ」に相当
     var oy = -lift;                          // 自分の「上へ」に相当
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
@@ -855,16 +858,16 @@ function positionMeldAreas() {
 
   // 北抜きエリア（副露とは独立配置。手牌基準の座標が無い場合はダイヤモンド角基準）
   var nukiSelf  = document.querySelector('.player-nuki-area.seat-self');
-  if (nukiSelf && handRow) positionForSeat(nukiSelf, handRow, 0, NUKI_LIFT);
+  if (nukiSelf && handRow) positionForSeat(nukiSelf, handRow, 0, NUKI_LIFT, NUKI_GAP);
 
   var nukiOpp = document.querySelector('.player-nuki-area.seat-opposite');
-  if (nukiOpp && oppHand) positionForSeat(nukiOpp, oppHand, 180, NUKI_LIFT);
+  if (nukiOpp && oppHand) positionForSeat(nukiOpp, oppHand, 180, NUKI_LIFT, NUKI_GAP);
 
   var nukiLeft = document.querySelector('.player-nuki-area.seat-left');
-  if (nukiLeft && leftHand) positionRotatedSeat(nukiLeft, leftHand, 90, NUKI_LIFT);
+  if (nukiLeft && leftHand) positionRotatedSeat(nukiLeft, leftHand, 90, NUKI_LIFT, NUKI_GAP);
 
   var nukiRight = document.querySelector('.player-nuki-area.seat-right');
-  if (nukiRight && rightHand) positionRotatedSeat(nukiRight, rightHand, -90, NUKI_LIFT);
+  if (nukiRight && rightHand) positionRotatedSeat(nukiRight, rightHand, -90, NUKI_LIFT, NUKI_GAP);
 }
 
 // ウィンドウリサイズ時も再配置
