@@ -2150,15 +2150,12 @@ var App = {
     var ankanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkAnkan(my) : [];
     var kakanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkKakan(my) : [];
     var canNuki = g.isSanma && myTurn && g.phase === 'turn' && myHand.some(function(t) { return FriendGame.isNukiTile(t); });
+    // CPU戦と同じく、鳴き選択・北抜き・暗カン/加カンは手牌右上の
+    // フロートパネル(frCallFloatHtml)に、ツモ・リーチ・ロンは
+    // 手牌下のアクション行(actionBtns)に分けて表示する
     var actionBtns = '';
+    var frCallFloatHtml = '';
     if (myTurn && g.phase === 'turn' && Agari.isWinningHand(myHand)) actionBtns += '<button class="btn-battle btn-tsumo" id="btnFrTsumo">ツモ！</button>';
-    if (canNuki) actionBtns += '<button class="btn-battle btn-nuki" id="btnFrNuki">北抜き</button>';
-    ankanCands.forEach(function(c, ci) {
-      actionBtns += '<button class="btn-battle btn-ankan" data-ankan-idx="' + ci + '">暗カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
-    });
-    kakanCands.forEach(function(c, ci) {
-      actionBtns += '<button class="btn-battle btn-ankan" data-kakan-idx="' + ci + '">加カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
-    });
     var canRiichi = false;
     if (myTurn && g.phase === 'turn' && isClosed && !g.riichi[my] && g.scores[my] >= 1000 && myHand.length % 3 === 2) {
       // どれか1枚を切ればテンパイになる手かどうかを確認してからボタンを出す
@@ -2174,14 +2171,33 @@ var App = {
       actionBtns += '<button class="btn-battle btn-ron" id="btnFrRon">ロン！</button>' +
               '<button class="btn-battle btn-skip" id="btnFrPass">スルー</button>';
     }
+
     if (g.phase === 'call_wait' && g.call && g.call.candidates.indexOf(my) >= 0 && !this._frResponseSent) {
       var callOpts = (g.call.optionsBySeat && g.call.optionsBySeat[my]) || [];
+      var callBtnsHtml = '';
       callOpts.forEach(function(opt, oi) {
         var label = opt.type === 'pon' ? 'ポン' : opt.type === 'chi' ? 'チー' : 'カン';
         var callClass = opt.type === 'pon' ? 'btn-pon' : opt.type === 'chi' ? 'btn-chi' : 'btn-kan';
-        actionBtns += '<button class="btn-battle ' + callClass + '" data-call-idx="' + oi + '" data-call-type="' + esc(opt.type) + '">' + label + '</button>';
+        callBtnsHtml += '<button class="btn-battle btn-call ' + callClass + '" data-call-idx="' + oi + '" data-call-type="' + esc(opt.type) + '">' + label + '</button>';
       });
-      actionBtns += '<button class="btn-battle btn-skip-call" id="btnFrPass">スルー</button>';
+      var callFromName = names[g.call.from] || ('P' + (g.call.from + 1));
+      var callTileLabel = Tiles.label(g.call.tile);
+      frCallFloatHtml =
+        '<div class="hand-action-float">' +
+          '<div class="naki-banner-float">' + esc(callFromName) + ' が <strong>' + esc(callTileLabel) + '</strong> を捨てました</div>' +
+          callBtnsHtml +
+          '<button class="btn-battle btn-skip-call" id="btnFrPass">スキップ</button>' +
+        '</div>';
+    } else {
+      var floatBtnsFr = '';
+      if (canNuki) floatBtnsFr += '<button class="btn-battle btn-nuki" id="btnFrNuki">北抜き</button>';
+      ankanCands.forEach(function(c, ci) {
+        floatBtnsFr += '<button class="btn-battle btn-ankan" data-ankan-idx="' + ci + '">暗カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
+      });
+      kakanCands.forEach(function(c, ci) {
+        floatBtnsFr += '<button class="btn-battle btn-ankan" data-kakan-idx="' + ci + '">加カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
+      });
+      if (floatBtnsFr) frCallFloatHtml = '<div class="hand-action-float">' + floatBtnsFr + '</div>';
     }
     var waitsBtnHtml = '';
     if (myWaits.length > 0) {
@@ -2400,6 +2416,7 @@ var App = {
             '<div class="jt-hand-tiles-row fr-table-hand" id="frHand"><div class="mj-sorted-tiles">' + handTilesHtml + '</div></div>' +
             actionHtml +
           '</div>' +
+          frCallFloatHtml +
           perPlayerMeldsHtml +
           perPlayerNukiHtml +
           endHtml +
