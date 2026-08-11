@@ -779,14 +779,17 @@ function positionMeldAreas() {
     el.style.setProperty('transform', transform, 'important');
   };
 
-  // 自分の副露の位置関係（手牌の右端から GAP、手牌の中心から上へ LIFT）を
+  // 自分の副露の位置関係（手牌の端から GAP、手牌の中心から LIFT ずらす）を
   // 基準にして、各席の回転角度（対面180°・上家90°・下家-90°）だけ
   // そのまま回転させて同じ位置関係を再現する。
   // 例）対面は180°回転なので「右端→左端」「上→下」に反転して置かれる。
-  var GAP  = 10; // 手牌の端からの隙間(px)
-  var LIFT = 54; // 手牌中央からのオフセット(px)（自分の副露と同じ値）
+  // 副露(.player-meld-area)と北抜き(.player-nuki-area)は別要素なので、
+  // 同じ考え方で LIFT だけ変えて独立に配置する（互いのサイズに影響されない）。
+  var GAP       = 10; // 手牌の端からの隙間(px)
+  var MELD_LIFT = 54; // 副露の、手牌中央からのオフセット(px)
+  var NUKI_LIFT = 90; // 北抜きの、手牌中央からのオフセット(px)（副露よりさらに上）
 
-  var positionForSeat = function(area, handEl, angleDeg) {
+  var positionForSeat = function(area, handEl, angleDeg, lift) {
     if (!area || !handEl) return;
     var hr = handEl.getBoundingClientRect();
     var cx = (hr.left + hr.right) / 2;
@@ -794,14 +797,14 @@ function positionMeldAreas() {
     // 0°/180°は手牌が横向き（読み方向=横幅）、90°/-90°は縦向き（読み方向=高さ）
     var halfLen = (angleDeg === 90 || angleDeg === -90) ? hr.height / 2 : hr.width / 2;
     var ox = halfLen + GAP; // 自分から見て「右へ」
-    var oy = -LIFT;         // 自分から見て「上へ」
+    var oy = -lift;         // 自分から見て「上へ」
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
     var ax = Math.round(cx + rx);
     var ay = Math.round(cy + ry);
 
-    // アンカー点に副露エリアのどの辺を合わせるかも、同じ回転で決める
+    // アンカー点にエリアのどの辺を合わせるかも、同じ回転で決める
     // 0°=左端合わせ／180°=右端合わせ／90°=上端合わせ／-90°=下端合わせ
     var tx = -50, ty = -50;
     if (angleDeg === 0)   { tx = 0;    ty = -50; }
@@ -812,29 +815,12 @@ function positionMeldAreas() {
     set(area, ay + 'px', ax + 'px', 'auto', 'auto', 'translate(' + tx + '%, ' + ty + '%)');
   };
 
-  var selfArea = document.querySelector('.player-meld-area.seat-self');
-  var handRow  = document.querySelector('.jt-hand-tiles-row');
-  if (selfArea && handRow) {
-    positionForSeat(selfArea, handRow, 0);
-  } else if (selfArea) {
-    // 手牌行が見つからない場合のフォールバック（従来のダイヤモンド基準）
-    set(selfArea, (cp.bottom + MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translateX(-50%)');
-  }
-
-  var oppArea = document.querySelector('.player-meld-area.seat-opposite');
-  var oppHand = document.querySelector('.jt-hidden-top');
-  if (oppArea && oppHand) {
-    positionForSeat(oppArea, oppHand, 180);
-  } else if (oppArea) {
-    set(oppArea, (cp.top - MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translate(-50%, -100%)');
-  }
-
-  // 上家・下家は「牌ごとに回転」ではなく「副露エリア全体を1つの箱として
+  // 上家・下家は「牌ごとに回転」ではなく「エリア全体を1つの箱として
   // 丸ごと回転」させる。内部は自分と同じ普通の横並びレイアウトのまま
-  // 複数セットを並べ、その完成した箱を90°/-90°回転させて配置する
+  // 組み立て、その完成した箱を90°/-90°回転させて配置する
   // （牌ごとの回転だと、回転後の見た目サイズとレイアウト上のサイズが
   //   ズレて複数セット時にうまく横に並ばなかったため）
-  var positionRotatedSeat = function(area, handEl, angleDeg) {
+  var positionRotatedSeat = function(area, handEl, angleDeg, lift) {
     if (!area || !handEl) return;
     var hr = handEl.getBoundingClientRect();
     var hcx = (hr.left + hr.right) / 2;
@@ -843,7 +829,7 @@ function positionMeldAreas() {
     var areaW = area.offsetWidth;
     var areaH = area.offsetHeight;
     var ox = handHalfLen + GAP + areaW / 2; // 自分の「右へ」に相当
-    var oy = -LIFT;                          // 自分の「上へ」に相当
+    var oy = -lift;                          // 自分の「上へ」に相当
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
@@ -856,21 +842,29 @@ function positionMeldAreas() {
       'rotate(' + angleDeg + 'deg)');
   };
 
-  var leftArea = document.querySelector('.player-meld-area.seat-left');
+  var handRow  = document.querySelector('.jt-hand-tiles-row');
+  var oppHand  = document.querySelector('.jt-hidden-top');
   var leftHand = document.querySelector('.jt-hidden-left');
-  if (leftArea && leftHand) {
-    positionRotatedSeat(leftArea, leftHand, 90);
-  } else if (leftArea) {
-    set(leftArea, pCenterY + 'px', (cp.left - MELD_GAP) + 'px', 'auto', 'auto', 'translate(-100%, -50%)');
-  }
-
-  var rightArea = document.querySelector('.player-meld-area.seat-right');
   var rightHand = document.querySelector('.jt-hidden-right');
-  if (rightArea && rightHand) {
-    positionRotatedSeat(rightArea, rightHand, -90);
-  } else if (rightArea) {
-    set(rightArea, pCenterY + 'px', (cp.right + MELD_GAP) + 'px', 'auto', 'auto', 'translateY(-50%)');
-  }
+
+  // 副露エリア
+  positionForSeat(document.querySelector('.player-meld-area.seat-self'), handRow, 0, MELD_LIFT);
+  positionForSeat(document.querySelector('.player-meld-area.seat-opposite'), oppHand, 180, MELD_LIFT);
+  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftHand, 90, MELD_LIFT);
+  positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightHand, -90, MELD_LIFT);
+
+  // 北抜きエリア（副露とは独立配置。手牌基準の座標が無い場合はダイヤモンド角基準）
+  var nukiSelf  = document.querySelector('.player-nuki-area.seat-self');
+  if (nukiSelf && handRow) positionForSeat(nukiSelf, handRow, 0, NUKI_LIFT);
+
+  var nukiOpp = document.querySelector('.player-nuki-area.seat-opposite');
+  if (nukiOpp && oppHand) positionForSeat(nukiOpp, oppHand, 180, NUKI_LIFT);
+
+  var nukiLeft = document.querySelector('.player-nuki-area.seat-left');
+  if (nukiLeft && leftHand) positionRotatedSeat(nukiLeft, leftHand, 90, NUKI_LIFT);
+
+  var nukiRight = document.querySelector('.player-nuki-area.seat-right');
+  if (nukiRight && rightHand) positionRotatedSeat(nukiRight, rightHand, -90, NUKI_LIFT);
 }
 
 // ウィンドウリサイズ時も再配置
@@ -3501,6 +3495,7 @@ var App = {
       // ─────────────────────────────────────────────────────────
       var allMeldsHtml = '';  // 旧グローバルパネルは使用しない
       var perPlayerMeldsHtml = '';
+      var perPlayerNukiHtml = '';
       (function() {
         if (!s.melds) return;
         // プレイヤーインデックス → seat クラス名
@@ -3526,24 +3521,27 @@ var App = {
 
         // 抜き北パネルHTML生成ヘルパー（実際の牌画像を表示）
         var buildNukiTiles = function(pi) {
-          var tiles = (s.nuki && s.nuki[pi]) || [];
-          if (!tiles.length) return '';
-          return '<div class="fr-nuki-row">' + tiles.map(function(t, ti) {
+          return (s.nuki[pi] || []).map(function(t) {
             return Tiles.renderTile(t, {noHover:true, extraClass:'meld-tile'});
-          }).join('') + '</div>';
+          }).join('');
         };
 
+        // 副露(.player-meld-area)と北抜き(.player-nuki-area)は別要素にする。
+        // 同じ箱に入れると、鳴きの有無でエリア全体のサイズが変わり
+        // 北抜きの位置までつられて動いてしまうため、それぞれ独立して配置する
         for (var pi = 0; pi < s.playerCount; pi++) {
-          var hasMelds = s.melds[pi] && s.melds[pi].length > 0;
-          var hasNuki  = isSanma && s.nuki && s.nuki[pi] && s.nuki[pi].length > 0;
-          if (!hasMelds && !hasNuki) continue;
           var cls = seatCls[pi];
           if (!cls) continue;
-          perPlayerMeldsHtml +=
-            '<div class="player-meld-area '+cls+'">' +
-              (hasMelds ? buildMeldSets(pi) : '') +
-              (hasNuki ? buildNukiTiles(pi) : '') +
-            '</div>';
+
+          var hasMelds = s.melds[pi] && s.melds[pi].length > 0;
+          if (hasMelds) {
+            perPlayerMeldsHtml += '<div class="player-meld-area '+cls+'">' + buildMeldSets(pi) + '</div>';
+          }
+
+          var hasNuki = isSanma && s.nuki && s.nuki[pi] && s.nuki[pi].length > 0;
+          if (hasNuki) {
+            perPlayerNukiHtml += '<div class="player-nuki-area '+cls+'">' + buildNukiTiles(pi) + '</div>';
+          }
         }
       })();
 
@@ -3659,6 +3657,9 @@ var App = {
 
             // ── 各プレイヤー専用副露パネル（seat ごとに配置） ──
             perPlayerMeldsHtml +
+
+            // ── 各プレイヤー専用北抜きパネル（副露とは独立配置） ──
+            perPlayerNukiHtml +
 
           '</div>' +
 

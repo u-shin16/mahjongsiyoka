@@ -6302,3 +6302,26 @@ body.is-battle-page {
   transform: rotate(-90deg) !important;
   margin: 0 4px !important;
 }
+
+/* ============================================================
+   NUKI AREA: 北抜きを副露(.player-meld-area)から独立させた専用エリア
+   鳴きの有無で副露エリアのサイズが変わっても、北抜きの位置は
+   手牌基準で独立計算されるためつられて動かない
+   ============================================================ */
+.player-nuki-area {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.player-nuki-area .tile {
+  zoom: 0.48;
+}
+/* 対面は牌を180°回転（副露と同じ考え方）。上家・下家はエリア全体を
+   JS側で丸ごと回転させるので、牌自体は回転させない */
+.player-nuki-area.seat-opposite .tile {
+  transform: rotate(180deg);
+  transform-origin: center center;
+}
