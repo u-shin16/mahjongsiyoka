@@ -2078,10 +2078,10 @@ var App = {
         var tiles = (m.tiles || []).map(function(t, ti) {
           var isCalled = m.calledTile && t.id === m.calledTile.id;
           var isHidden = m.type === 'ankan' && (ti === 0 || ti === 3);
-          if (isHidden) return Tiles.renderTile({ suit: 'back', num: 0, id: 'frh_' + mi + '_' + ti }, { faceDown: true, noHover: true, extraClass: 'xxs' });
-          return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' + (isCalled ? ' meld-called' : '') });
+          if (isHidden) return Tiles.renderTile({ suit: 'back', num: 0, id: 'frh_' + mi + '_' + ti }, { faceDown: true, noHover: true, extraClass: 'meld-tile' });
+          return Tiles.renderTile(t, { noHover: true, extraClass: 'meld-tile' + (isCalled ? ' meld-called' : '') });
         }).join('');
-        return '<div class="fr-meld-set meld-set meld-' + esc(m.type) + '"><span class="meld-type-label">' + typeLabel + '</span>' + tiles + '</div>';
+        return '<div class="meld-set meld-' + esc(m.type) + '"><span class="meld-type-label">' + typeLabel + '</span>' + tiles + '</div>';
       }).join('');
     };
     var meldHtml = function(seat) {
@@ -2359,7 +2359,7 @@ var App = {
 
       var nukiTiles = (isSanma && g.nuki && g.nuki[seat]) || [];
       if (nukiTiles.length) {
-        var nukiTilesHtml = nukiTiles.map(function(t) { return Tiles.renderTile(t, { noHover: true }); }).join('');
+        var nukiTilesHtml = nukiTiles.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'meld-tile' }); }).join('');
         perPlayerNukiHtml += '<div class="player-nuki-area ' + seatCls[seat] + '">' + nukiTilesHtml + '</div>';
       }
     });
