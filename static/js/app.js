@@ -3526,8 +3526,9 @@ var App = {
       '</div>';
 
       // ── 手牌HTML（tableHtml より先に定義） ──
-      // ── 暗カン候補 ──
+      // ── 暗カン・加カン候補 ──
       var ankanCands = (s.phase === 'player_turn') ? Battle.checkAnkan() : [];
+      var kakanCands = (s.phase === 'player_turn') ? Battle.checkKakan() : [];
 
       // ─────────────────────────────────────────────────────────
       // callFloatHtml: 手牌右上に固定表示する鳴き選択 / 北抜き / 暗カン
@@ -3558,7 +3559,10 @@ var App = {
           floatBtns += '<button class="btn-battle btn-nuki" id="btnNuki">'+(selectedIsNuki0 ? '北を抜く' : '北抜き')+'</button>';
         }
         ankanCands.forEach(function(ak) {
-          floatBtns += '<button class="btn-battle btn-ankan" data-tile="'+esc(JSON.stringify(ak.tiles[0]))+'">暗カン('+Tiles.label(ak.tiles[0])+')</button>';
+          floatBtns += '<button class="btn-battle btn-ankan" data-tile="'+esc(JSON.stringify(ak.tiles[0]))+'">カン</button>';
+        });
+        kakanCands.forEach(function(kk) {
+          floatBtns += '<button class="btn-battle btn-ankan" data-kakan-tile="'+esc(JSON.stringify(kk.tiles[0]))+'">カン</button>';
         });
         if (floatBtns) {
           callFloatHtml = '<div class="hand-action-float">'+floatBtns+'</div>';
@@ -3921,6 +3925,18 @@ var App = {
             var ok = Battle.playerAnkan(tile);
             if (ok) clearBattleAdvice();
             if (ok) { log('暗カン！', 'ev-discard'); afterDiscard(); }
+          } catch(e) {}
+        });
+      });
+
+      // 加カンボタン
+      document.querySelectorAll('.btn-ankan[data-kakan-tile]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          try {
+            var kTile = JSON.parse(btn.dataset.kakanTile);
+            var ok = Battle.playerKakan(kTile);
+            if (ok) clearBattleAdvice();
+            if (ok) { log('加カン！', 'ev-discard'); afterDiscard(); }
           } catch(e) {}
         });
       });
