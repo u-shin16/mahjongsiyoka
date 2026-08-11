@@ -4984,11 +4984,11 @@ body.is-battle-page .app-main.battle-main {
 /* 鳴き選択ボタン群 */
 .call-actions { flex-wrap: wrap; gap: 6px; }
 
-.btn-pon  { background: linear-gradient(145deg, #4a7cdc, #2a4c9c); border-color: #6a9cff; }
-.btn-chi  { background: linear-gradient(145deg, #3a9c5c, #1a6c3c); border-color: #5acc7c; }
-.btn-kan  { background: linear-gradient(145deg, #9c4a7c, #6c1a4c); border-color: #cc6aac; }
-.btn-ankan { background: linear-gradient(145deg, #7c3a7c, #4c0a4c); border-color: #ac5aac; font-size: 0.78rem; }
-.btn-skip-call { background: rgba(80,80,80,0.6); border-color: rgba(180,180,180,0.3); }
+.btn-pon  { background: linear-gradient(145deg, #4a7cdc, #2a4c9c); border-color: #6a9cff; color: #fff; }
+.btn-chi  { background: linear-gradient(145deg, #3a9c5c, #1a6c3c); border-color: #5acc7c; color: #fff; }
+.btn-kan  { background: linear-gradient(145deg, #9c4a7c, #6c1a4c); border-color: #cc6aac; color: #fff; }
+.btn-ankan { background: linear-gradient(145deg, #7c3a7c, #4c0a4c); border-color: #ac5aac; font-size: 0.78rem; color: #fff; }
+.btn-skip-call { background: rgba(80,80,80,0.6); border-color: rgba(180,180,180,0.3); color: #fff; }
 
 .btn-call, .btn-skip-call, .btn-ankan {
   padding: 7px 14px;
