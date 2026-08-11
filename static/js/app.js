@@ -842,6 +842,17 @@ function positionMeldAreas() {
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
     var centerX = hcx + rx;
     var centerY = hcy + ry;
+
+    // 鳴くほどセットが増えて箱が大きくなり、画面外にはみ出すことがあるため、
+    // 中心座標を画面内に収まる範囲へクランプする。
+    // 90°/-90°回転後の見た目の幅・高さは areaH/areaW と入れ替わる
+    var visHalfW = areaH / 2;
+    var visHalfH = areaW / 2;
+    var margin = 8;
+    var topSafe = 64; // 右上の「退出/設定」ボタンと被らないための余白
+    centerX = Math.min(Math.max(centerX, visHalfW + margin), window.innerWidth - visHalfW - margin);
+    centerY = Math.min(Math.max(centerY, visHalfH + topSafe), window.innerHeight - visHalfH - margin);
+
     set(area,
       (centerY - areaH / 2) + 'px',
       (centerX - areaW / 2) + 'px',
