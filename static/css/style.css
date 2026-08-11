@@ -3576,24 +3576,8 @@ body.is-battle-page .app-main.battle-main {
 }
 
 /* ============================================================
-   USER FIXES: 9索赤・捨て牌配置・対面向き
+   USER FIXES: 捨て牌配置・対面向き
    ============================================================ */
-
-/* 1) 9索の真ん中を赤く */
-.tile[data-suit="sou"][data-num="9"] { position: relative; }
-.tile[data-suit="sou"][data-num="9"]::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 24%;
-  height: 18%;
-  background: #c0392b;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 6;
-}
 
 /* 2) 全員6枚改行 — サイドゾーン幅を6タイル分に拡張 */
 /* zoom 0.54 → 52px × 0.54 ≈ 28px/tile。6枚 + 5gap(2px) = 178px */

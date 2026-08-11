@@ -161,13 +161,11 @@ const Tiles = (() => {
     const boxH = small ? SPRITE.smallH : SPRITE.displayH;
     const scaleX = boxW / pos.w;
     const scaleY = boxH / pos.h;
-    const px = n => `${n.toFixed(3)}px`;
+    const px = n => `${Math.round(n)}px`;
     return [
       `width:${px(boxW)}`,
       `height:${px(boxH)}`,
-      `background-image:url(${SPRITE.url})`,
-      `background-size:${px(SPRITE.sheetW * scaleX)} ${px(SPRITE.sheetH * scaleY)}`,
-      `background-position:${px(-pos.x * scaleX)} ${px(-pos.y * scaleY)}`,
+      `background:url(${SPRITE.url}) no-repeat ${px(-pos.x * scaleX)} ${px(-pos.y * scaleY)}/${px(SPRITE.sheetW * scaleX)} ${px(SPRITE.sheetH * scaleY)}`,
     ].join(';');
   }
 
