@@ -827,21 +827,24 @@ function positionMeldAreas() {
   // 組み立て、その完成した箱を90°/-90°回転させて配置する
   // （牌ごとの回転だと、回転後の見た目サイズとレイアウト上のサイズが
   //   ズレて複数セット時にうまく横に並ばなかったため）
-  var positionRotatedSeat = function(area, handEl, angleDeg, lift, gap, handHalf) {
-    if (!area || !handEl) return;
+  //
+  // 基準点は伏せ手牌(.jt-hidden-left/right)ではなく中央ダイヤモンドにする。
+  // 伏せ手牌自体がCSSで回転・センタリングされている特殊な要素で、
+  // それを基準に座標計算すると鳴きが増えたときに位置が大きく崩れる
+  // ことがあったため、Phase1で「回転させない安定した基準点」として
+  // 設計したダイヤモンドの中心を使う
+  var positionRotatedSeat = function(area, refCx, refCy, angleDeg, lift, gap, refHalf) {
+    if (!area) return;
     if (gap == null) gap = GAP;
-    var hr = handEl.getBoundingClientRect();
-    var hcx = (hr.left + hr.right) / 2;
-    var hcy = (hr.top + hr.bottom) / 2;
     var areaW = area.offsetWidth;
     var areaH = area.offsetHeight;
-    var ox = handHalf + gap + areaW / 2; // 自分の「右へ」に相当
-    var oy = -lift;                       // 自分の「上へ」に相当
+    var ox = refHalf + gap + areaW / 2; // 基準点から「右へ」に相当
+    var oy = -lift;                      // 基準点から「上へ」に相当
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
-    var centerX = hcx + rx;
-    var centerY = hcy + ry;
+    var centerX = refCx + rx;
+    var centerY = refCy + ry;
 
     // 鳴くほどセットが増えて箱が大きくなり、画面外にはみ出すことがあるため、
     // 中心座標を画面内に収まる範囲へクランプする。
@@ -860,22 +863,37 @@ function positionMeldAreas() {
       'rotate(' + angleDeg + 'deg)');
   };
 
-  var handRow  = document.querySelector('.jt-hand-tiles-row');
-  var oppHand  = document.querySelector('.jt-hidden-top');
-  var leftHand = document.querySelector('.jt-hidden-left');
+  var handRow   = document.querySelector('.jt-hand-tiles-row');
+  var oppHand   = document.querySelector('.jt-hidden-top');
   var rightHand = document.querySelector('.jt-hidden-right');
+
+  // ダイヤモンド中心から見て、河（.disc-river-left、156×144px固定）の
+  // 外側に副露・北抜きが来るように必要な半径を確保する
+  // （ダイヤモンド半径74px + 河とのすき間26px + 河の高さ144px ＋ 余白）
+  var DIAMOND_CLEAR = 250;
+
+  // 上家（seat-left）は三麻では存在しない席なので、ダイヤモンド中心を
+  // 基準にした新しい計算式に変更しても三麻の見た目に影響しない。
+  // 下家（seat-right）は三麻でも使う席で、そちらは崩れていないとの
+  // 確認が取れているため、これまで通り伏せ手牌基準のままにする
+  var rightCx = 0, rightCy = 0;
+  if (rightHand) {
+    var rhr = rightHand.getBoundingClientRect();
+    rightCx = (rhr.left + rhr.right) / 2;
+    rightCy = (rhr.top + rhr.bottom) / 2;
+  }
 
   // 副露エリア
   positionForSeat(document.querySelector('.player-meld-area.seat-self'), handRow, 0, MELD_LIFT, GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-meld-area.seat-opposite'), oppHand, 180, MELD_LIFT, GAP, CPU_HAND_HALF);
-  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftHand, 90, MELD_LIFT, GAP, CPU_HAND_HALF);
-  positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightHand, -90, MELD_LIFT, GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), pCenterX, pCenterY, 90, MELD_LIFT, GAP, DIAMOND_CLEAR);
+  if (rightHand) positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightCx, rightCy, -90, MELD_LIFT, GAP, CPU_HAND_HALF);
 
   // 北抜きエリア（副露とは独立配置。手牌が縮んでも動かないよう同じ固定半幅を使う）
   positionForSeat(document.querySelector('.player-nuki-area.seat-self'), handRow, 0, NUKI_LIFT, NUKI_GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-nuki-area.seat-opposite'), oppHand, 180, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftHand, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightHand, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), pCenterX, pCenterY, 90, NUKI_LIFT, NUKI_GAP, DIAMOND_CLEAR);
+  if (rightHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightCx, rightCy, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
 }
 
 // ウィンドウリサイズ時も再配置
@@ -1480,21 +1498,27 @@ var App = {
 
       var mg=mgs[0];var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
       var ch5mg2Hints = [
-        'この問題は「同じ牌3枚の刻子が役牌になれるか？」を問うもの。役牌とは<strong>刻子を作ると役（得点の権利）になる特定の牌</strong>のこと',
-        '役牌になれる牌は決まっている：<strong>白・發・中（三元牌）</strong>と、<strong>場の風牌</strong>と<strong>自分の風牌</strong>。それ以外の牌の刻子は役牌にならないよ',
+        'この問題は「同じ牌3枚の刻子が役牌になれるか、なれるなら三元牌と風牌のどちらか」を問うもの。役牌とは<strong>刻子を作ると役（得点の権利）になる特定の牌</strong>のこと',
+        '<strong>白・發・中（三元牌）</strong>の刻子はいつでも「役牌（三元牌）」。<strong>場の風牌・自分の風牌</strong>の刻子は「役牌（風牌）」。それ以外の牌の刻子は役牌にならないよ',
       ];
       var hLvCh5 = 0;
       main.innerHTML=chHeader('第5章 役牌を作ろう',mg.title,pct,correct,mg.passNeeded)+
         '<div class="game-instruction">'+mg.instruction+'</div>'+
         '<div class="game-area"><div class="tiles-row">'+q.tiles.map(function(t){return Tiles.renderTile(Tiles.make(t.suit,t.num),{noHover:true});}).join('')+'</div>'+
-        '<div class="yn-panel" style="margin-top:14px"><button class="btn btn-yes" id="btnY">○ 役牌</button><button class="btn btn-no" id="btnN">✕ 役牌でない</button></div>'+
+        '<div class="choice-grid" style="margin-top:14px">'+
+          '<button class="btn-choice" data-ans="dragon">役牌（三元牌）</button>'+
+          '<button class="btn-choice" data-ans="wind">役牌（風牌）</button>'+
+          '<button class="btn-choice" data-ans="none">役牌でない</button>'+
+        '</div>'+
         '<div id="feedback"></div></div>'+
         '<div class="btn-row"><button class="btn btn-hint" id="btnHintCh5">💡 ヒントを見る</button></div>'+
         '<div class="hint-box" id="hintBoxCh5"></div>';
       var handleYN=function(ch){if(showingFb)return;showingFb=true;var ok=ch===q.answer;if(ok)correct++;
+        document.querySelectorAll('.choice-grid .btn-choice').forEach(function(b){b.classList.add(b.dataset.ans===q.answer?'correct-ans':'wrong-ans');});
         showFeedback(ok,q.fb,function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){showClear(5,3);}else render();});};
-      document.getElementById('btnY').addEventListener('click',function(){handleYN(true);});
-      document.getElementById('btnN').addEventListener('click',function(){handleYN(false);});
+      document.querySelectorAll('.choice-grid .btn-choice').forEach(function(el){
+        el.addEventListener('click',function(){handleYN(el.dataset.ans);});
+      });
       document.getElementById('btnHintCh5').addEventListener('click', function() {
         var hb=document.getElementById('hintBoxCh5'), btn=document.getElementById('btnHintCh5');
         hLvCh5=Math.min(hLvCh5+1,ch5mg2Hints.length);
