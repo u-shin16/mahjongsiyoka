@@ -3809,6 +3809,9 @@ body.is-battle-page .app-main.battle-main {
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
   justify-content: center !important;
+  /* overflow-x:auto にすると overflow-y も auto 扱いになり、
+     選択時に浮き上がる牌の上端が見切れるため、逃げ用の余白を確保 */
+  padding-top: 14px !important;
 }
 .jt-hand-in-table .mj-sorted-tiles .tile,
 .jt-hand-in-table .mj-drew-area .tile {
