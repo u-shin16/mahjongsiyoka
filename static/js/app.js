@@ -3546,11 +3546,8 @@ var App = {
             callBtns += '<button class="btn-battle btn-call btn-chi" data-call-idx="'+idx+'">チー ('+setLabel+')</button>';
           }
         });
-        var fromName = cp ? Battle.PLAYER_NAMES[cp.fromPlayer] : '';
-        var tileLabel = cp ? Tiles.label(cp.tile) : '';
         callFloatHtml =
           '<div class="hand-action-float">' +
-            '<div class="naki-banner-float">'+esc(fromName)+' が <strong>'+esc(tileLabel)+'</strong> を捨てました</div>' +
             callBtns +
             '<button class="btn-battle btn-skip-call" id="btnSkipCall">スキップ</button>' +
           '</div>';
