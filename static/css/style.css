@@ -6263,3 +6263,16 @@ body.is-battle-page {
 .player-meld-area .meld-set {
   margin: 0 -1px -1px 0 !important;
 }
+
+/* ============================================================
+   MELD AREA SHAPE FIX: 対面・上家・下家の副露エリアが
+   複数セットになると縦に積み上がって見えるとの指摘のため、
+   自分と同じ「横に並べる」向きに統一する
+   （牌1枚ずつの回転angleはそのまま：対面180°/上家90°/下家-90°）
+   ============================================================ */
+.player-meld-area.seat-opposite,
+.player-meld-area.seat-left,
+.player-meld-area.seat-right {
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+}
