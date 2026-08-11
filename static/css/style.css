@@ -6277,7 +6277,10 @@ body.is-battle-page {
 .player-meld-area.seat-left,
 .player-meld-area.seat-right {
   flex-direction: row !important;
-  flex-wrap: wrap !important;
+  /* wrapだと複数セットが折り返して縦に積まれて見えることがあるため、
+     常に1行に収まるnowrapにする（position:fixedで幅制限が無いため
+     牌が増えても画面外に伸びるだけで折り返さない） */
+  flex-wrap: nowrap !important;
 }
 
 /* 上家・下家は「牌ごと」「セットごと」の個別回転をやめ、
