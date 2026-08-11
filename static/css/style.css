@@ -6285,13 +6285,20 @@ body.is-battle-page {
   /* nowrapだと画面外にはみ出すため、自分と同じwrap（折り返しあり）に戻す */
   flex-wrap: wrap !important;
 }
-/* 上家・下家は箱ごと90°/-90°回転するため、max-widthが無いと
-   セットが増えるほど横に際限なく伸び、回転後に縦方向へ暴走する。
-   対面は牌1枚ずつ180°回転するだけで箱自体は回転しないため、
-   自分(seat-self)と同じく横に並べ続けてよく、この制限は不要。 */
+/* 上家・下家は箱ごと90°/-90°回転するため、セット同士が横に並んだまま
+   増えると、回転後は縦方向へ際限なく暴走してしまう。
+   flex-wrap+max-widthで折り返す方式だと、折り返した各行が箱の
+   最大幅いっぱいまで引き伸ばされてしまい（内容が1セット分しか無くても）、
+   回転後の見た目の高さが常に上限値に張り付いて縦長に見えていた。
+   flex-direction:columnで「セットを縦に積む」形に切り替えれば、
+   折り返し計算なしで各セットの実サイズぶんだけ箱が育つ。
+   回転後はこの列がそのまま横方向の並びになるため、セットが
+   増えるほど横に伸びる（対面・自分と同じ見た目）。 */
 .player-meld-area.seat-left,
 .player-meld-area.seat-right {
-  max-width: 170px !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  width: fit-content !important;
 }
 
 /* 上家・下家は「牌ごと」「セットごと」の個別回転をやめ、
