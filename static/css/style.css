@@ -6287,6 +6287,11 @@ body.is-battle-page {
   flex-direction: row !important;
   /* nowrapだと画面外にはみ出すため、自分と同じwrap（折り返しあり）に戻す */
   flex-wrap: wrap !important;
+  /* max-widthが無いとwrapが実際には発生せず、セットが増えるほど
+     横に際限なく伸びてしまう（幅に制限が無いflex containerは
+     折り返すより1行に収めようとするため）。上限を設けて必ず
+     折り返させることで、90°/-90°回転後に縦方向へ暴走するのを防ぐ */
+  max-width: 170px !important;
 }
 
 /* 上家・下家は「牌ごと」「セットごと」の個別回転をやめ、
