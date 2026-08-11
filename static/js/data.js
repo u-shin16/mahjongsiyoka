@@ -74,12 +74,20 @@ var GameData = (function() {
       winTile:_p(9), winNote:'2-3-4萬が2セット＝一盃口'
     },
     {
-      id:'yakuhai', name:'役牌', reading:'ヤクハイ', han:1, hanOpen:1,
-      condition:'白・發・中、または場の風・自分の風の牌を3枚揃える役。',
-      mistake:'自風でも場風でもない風牌の刻子は役にならない。',
+      id:'yakuhai_dragon', name:'役牌（三元牌）', reading:'ヤクハイ（サンゲンパイ）', han:1, hanOpen:1,
+      condition:'白・發・中（三元牌）を3枚揃える役。',
+      mistake:'三元牌は場風・自風に関係なく、いつでも役牌になる。',
       chapter:5,
       example:[_m(1),_m(2),_m(3),_p(4),_p(5),_p(6),_s(7),_s(8),_s(9),_d(3),_d(3),_d(3),_m(5),_m(5)],
-      winTile:_m(5), winNote:'中（中）の刻子で役牌成立'
+      winTile:_m(5), winNote:'中（中）の刻子で役牌（三元牌）成立'
+    },
+    {
+      id:'yakuhai_wind', name:'役牌（風牌）', reading:'ヤクハイ（フォンパイ）', han:1, hanOpen:1,
+      condition:'場の風・自分の風の牌を3枚揃える役。',
+      mistake:'自風でも場風でもない風牌の刻子は役にならない。',
+      chapter:5,
+      example:[_m(1),_m(2),_m(3),_p(4),_p(5),_p(6),_s(7),_s(8),_s(9),_w(1),_w(1),_w(1),_m(5),_m(5)],
+      winTile:_m(5), winNote:'東（場風）の刻子で役牌（風牌）成立'
     },
     {
       id:'rinshan', name:'嶺上開花', reading:'リンシャンカイホウ', han:1, hanOpen:1,

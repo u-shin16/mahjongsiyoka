@@ -25,6 +25,8 @@ var FriendGame = (function() {
   var _hostLoopTimer = null;
 
   var BASE_SCORES = [1000, 2000, 3900, 7700, 8000, 12000, 16000];
+  var YAKUMAN_HAN = 13; // 役満1つぶんの翻数（表示・合算用。点数計算は別途yakumanフラグで判定）
+  var YAKUMAN_PTS = 32000; // 役満1つぶんの点数（積み満貫方式：複数役満は加算）
   var CPU_UID_PREFIX = 'cpu:';
   var HEARTBEAT_MS = 30000;
   var DISCONNECT_MS = 90000;
@@ -717,6 +719,9 @@ var FriendGame = (function() {
     state.turn = (state.round - 1) % n;
     state.phase = 'turn';
     state.drawnId = null;
+    state.ippatsuActive = makeArray(n, false);
+    state.riichiDouble = makeArray(n, false);
+    state.rinshanPending = false;
     state.result = null;
     state.ron = null;
     state.call = null;
@@ -725,6 +730,7 @@ var FriendGame = (function() {
   }
 
   function _drawFor(state, seat) {
+    state.rinshanPending = false;
     if (state.wall.length === 0) {
       state.phase = 'hand_end';
       state.result = { type: 'ryukyoku', deltas: state.scores.map(function() { return 0; }) };
@@ -793,6 +799,17 @@ var FriendGame = (function() {
   function isHonorTile(t) { return t.suit === 'wind' || t.suit === 'dragon'; }
   function isTerminalTile(t) { return (t.suit === 'man' || t.suit === 'pin' || t.suit === 'sou') && (t.num === 1 || t.num === 9); }
   function isTerminalOrHonor(t) { return isHonorTile(t) || isTerminalTile(t); }
+  // 發（緑發）と索子の2,3,4,6,8だけが緑一色の対象
+  function isGreenTile(t) { return t.suit === 'dragon' ? t.num === 2 : (t.suit === 'sou' && [2, 3, 4, 6, 8].indexOf(t.num) >= 0); }
+  // 平和判定用：順子のどの位置で和了ったかでリャンメン/ペンチャン/カンチャンを見分ける
+  function isRyanmenWait(group, winningTile) {
+    var nums = group.tiles.map(function(t) { return t.num; }).slice().sort(function(a, b) { return a - b; });
+    var low = nums[0];
+    if (winningTile.num === low + 1) return false; // 中央＝カンチャン
+    if (winningTile.num === low) return low !== 7;  // 89待ちの7＝ペンチャン
+    if (winningTile.num === low + 2) return low !== 1; // 12待ちの3＝ペンチャン
+    return false;
+  }
 
   function seatWindNum(state, seat) {
     var dealerSeat = (state.round - 1) % state.playerCount;
@@ -854,7 +871,9 @@ var FriendGame = (function() {
         if (hasHonor7) yaku.push({ name: '混一色', han: open ? 2 : 3 });
         else yaku.push({ name: '清一色', han: open ? 5 : 6 });
       }
-      if (shape.groups.every(function(g) { return isTerminalOrHonor(g.tiles[0]); })) {
+      if (shape.groups.every(function(g) { return isHonorTile(g.tiles[0]); })) {
+        yaku.push({ name: '字一色', han: YAKUMAN_HAN, yakuman: true });
+      } else if (shape.groups.every(function(g) { return isTerminalOrHonor(g.tiles[0]); })) {
         yaku.push({ name: '混老頭', han: 2 });
       }
       return yaku;
@@ -863,14 +882,46 @@ var FriendGame = (function() {
     var groups = shape.groups;
     var pair = shape.pair;
     var allTiles = groups.reduce(function(acc, g) { return acc.concat(g.tiles); }, []).concat(pair);
+    var seatW = seatWindNum(state, winner);
+    var roundW = roundWindNum(state);
 
     if (allTiles.every(function(t) { return !isTerminalOrHonor(t); })) {
       yaku.push({ name: '断幺九', han: 1 });
     }
 
+    // 平和：門前・全て順子・役牌でない対子・リャンメン待ち
+    if (!open && winningTile) {
+      var allSeq = groups.every(function(g) { return g.kind === 'sequence'; });
+      var pairIsValuable = pair[0].suit === 'dragon' ||
+        (pair[0].suit === 'wind' && (pair[0].num === seatW || pair[0].num === roundW));
+      if (allSeq && !pairIsValuable) {
+        var isTankiWaitForPinfu = pair.some(function(t) { return t.id === winningTile.id; });
+        if (!isTankiWaitForPinfu) {
+          var pinfuGroup = groups.filter(function(g) {
+            return g.tiles.some(function(t) { return t.id === winningTile.id; });
+          })[0];
+          if (pinfuGroup && isRyanmenWait(pinfuGroup, winningTile)) {
+            yaku.push({ name: '平和', han: 1 });
+          }
+        }
+      }
+    }
+
     var allTriplet = groups.every(function(g) { return g.kind === 'triplet'; });
     if (allTriplet) yaku.push({ name: '対々和', han: 2 });
-    if (allTiles.every(isTerminalOrHonor)) yaku.push({ name: '混老頭', han: 2 });
+
+    var allHonor = allTiles.every(isHonorTile);
+    var allTerminalOnly = allTiles.every(isTerminalTile);
+    if (allHonor) {
+      yaku.push({ name: '字一色', han: YAKUMAN_HAN, yakuman: true });
+    } else if (allTerminalOnly) {
+      yaku.push({ name: '清老頭', han: YAKUMAN_HAN, yakuman: true });
+    } else if (allTiles.every(isTerminalOrHonor)) {
+      yaku.push({ name: '混老頭', han: 2 });
+    }
+    if (allTiles.every(isGreenTile)) {
+      yaku.push({ name: '緑一色', han: YAKUMAN_HAN, yakuman: true });
+    }
 
     var everyGroupTouchesTerminalOrHonor = groups.every(function(g) {
       return g.tiles.some(isTerminalOrHonor);
@@ -891,24 +942,53 @@ var FriendGame = (function() {
       else yaku.push({ name: '清一色', han: open ? 5 : 6 });
     }
 
-    var seatW = seatWindNum(state, winner);
-    var roundW = roundWindNum(state);
     groups.forEach(function(g) {
       if (g.kind !== 'triplet') return;
       var t = g.tiles[0];
       if (t.suit === 'dragon') {
-        yaku.push({ name: '役牌', han: 1 });
+        yaku.push({ name: '役牌（三元牌）', han: 1 });
       } else if (t.suit === 'wind') {
         var isSeat = t.num === seatW;
         var isRound = t.num === roundW;
         if (isSeat && isRound) yaku.push({ name: '連風牌', han: 2 });
-        else if (isSeat || isRound) yaku.push({ name: '役牌', han: 1 });
+        else if (isSeat || isRound) yaku.push({ name: '役牌（風牌）', han: 1 });
       }
     });
 
     var dragonTriplets = groups.filter(function(g) { return g.kind === 'triplet' && g.tiles[0].suit === 'dragon'; }).length;
-    if (dragonTriplets === 2 && pair[0].suit === 'dragon') {
+    if (dragonTriplets === 3) {
+      yaku.push({ name: '大三元', han: YAKUMAN_HAN, yakuman: true });
+    } else if (dragonTriplets === 2 && pair[0].suit === 'dragon') {
       yaku.push({ name: '小三元', han: 2 });
+    }
+
+    var windTriplets = groups.filter(function(g) { return g.kind === 'triplet' && g.tiles[0].suit === 'wind'; }).length;
+    if (windTriplets === 4) {
+      yaku.push({ name: '大四喜', han: YAKUMAN_HAN * 2, yakuman: true });
+    } else if (windTriplets === 3 && pair[0].suit === 'wind') {
+      yaku.push({ name: '小四喜', han: YAKUMAN_HAN, yakuman: true });
+    }
+
+    // 九蓮宝燈：門前・一色のみで 1112345678999 の形＋余剰牌1枚
+    if (!open && winningTile && !allTiles.some(isHonorTile)) {
+      var chuurenSuits = {};
+      allTiles.forEach(function(t) { chuurenSuits[t.suit] = true; });
+      if (Object.keys(chuurenSuits).length === 1) {
+        var cCounts = {};
+        allTiles.forEach(function(t) { cCounts[t.num] = (cCounts[t.num] || 0) + 1; });
+        var chuurenOk = (cCounts[1] || 0) >= 3 && (cCounts[9] || 0) >= 3;
+        for (var cn = 2; cn <= 8; cn++) { if (!cCounts[cn]) chuurenOk = false; }
+        if (chuurenOk) {
+          var baseCounts = { 1: 3, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1, 9: 3 };
+          var restCounts = {};
+          for (var bk = 1; bk <= 9; bk++) restCounts[bk] = cCounts[bk] || 0;
+          restCounts[winningTile.num] = restCounts[winningTile.num] - 1;
+          var isPureChuuren = true;
+          for (var bk2 = 1; bk2 <= 9; bk2++) { if (restCounts[bk2] !== baseCounts[bk2]) isPureChuuren = false; }
+          if (isPureChuuren) yaku.push({ name: '純正九蓮宝燈', han: YAKUMAN_HAN * 2, yakuman: true });
+          else yaku.push({ name: '九蓮宝燈', han: YAKUMAN_HAN, yakuman: true });
+        }
+      }
     }
 
     var seqBySuit = { man: {}, pin: {}, sou: {} };
@@ -939,14 +1019,21 @@ var FriendGame = (function() {
     });
 
     var kanCount = groups.filter(function(g) { return g.isKan; }).length;
-    if (kanCount >= 3) yaku.push({ name: '三槓子', han: 2 });
+    if (kanCount === 4) yaku.push({ name: '四槓子', han: YAKUMAN_HAN, yakuman: true });
+    else if (kanCount === 3) yaku.push({ name: '三槓子', han: 2 });
 
     var ankouCount = groups.filter(function(g) {
       if (g.kind !== 'triplet' || !g.concealed) return false;
       if (winType === 'ron' && winningTile && g.tiles.some(function(t) { return t.id === winningTile.id; })) return false;
       return true;
     }).length;
-    if (ankouCount >= 3) yaku.push({ name: '三暗刻', han: 2 });
+    if (ankouCount === 4) {
+      var isSuuankouTanki = !!(winningTile && pair.some(function(t) { return t.id === winningTile.id; }));
+      if (isSuuankouTanki) yaku.push({ name: '四暗刻単騎', han: YAKUMAN_HAN * 2, yakuman: true });
+      else yaku.push({ name: '四暗刻', han: YAKUMAN_HAN, yakuman: true });
+    } else if (ankouCount >= 3) {
+      yaku.push({ name: '三暗刻', han: 2 });
+    }
 
     if (!open) {
       var seqCounts = {};
@@ -964,14 +1051,40 @@ var FriendGame = (function() {
     return yaku;
   }
 
-  function _finishHand(state, winner, winType, fromSeat, winningTile) {
+  function _finishHand(state, winner, winType, fromSeat, winningTile, isChankan) {
     var hand = state.hands[winner];
     var scoringTiles = getScoringTiles(state, winner);
     var closed = isClosed(state, winner);
     var resolvedWinTile = winningTile || (winType === 'tsumo' ? hand.find(function(t) { return t.id === state.drawnId; }) : null);
     var yaku = computeShapeYaku(state, winner, winType, fromSeat, resolvedWinTile);
-    if (state.riichi[winner]) yaku.push({ name: '立直', han: 1 });
+
+    if (state.riichi[winner]) {
+      if (state.riichiDouble && state.riichiDouble[winner]) yaku.push({ name: 'ダブルリーチ', han: 2 });
+      else yaku.push({ name: '立直', han: 1 });
+      if (state.ippatsuActive && state.ippatsuActive[winner]) yaku.push({ name: '一発', han: 1 });
+    }
     if (winType === 'tsumo' && closed) yaku.push({ name: '門前清自摸和', han: 1 });
+    if (isChankan) yaku.push({ name: '槍槓', han: 1 });
+    if (winType === 'tsumo' && state.rinshanPending) yaku.push({ name: '嶺上開花', han: 1 });
+    if (state.wall && state.wall.length === 0) {
+      if (winType === 'tsumo') yaku.push({ name: '海底摸月', han: 1 });
+      else yaku.push({ name: '河底撈魚', han: 1 });
+    }
+
+    // 天和・地和・人和：誰も鳴いておらず、自分がまだ一度も捨てていない状態での和了
+    var dealerSeat = (state.round - 1) % state.playerCount;
+    var noCallsYet = (state.melds || []).every(function(m) { return !m || m.length === 0; });
+    var winnerHasNotDiscarded = (state.discards[winner] || []).length === 0;
+    if (noCallsYet && winnerHasNotDiscarded) {
+      var totalDiscards = (state.discards || []).reduce(function(a, d) { return a + (d ? d.length : 0); }, 0);
+      if (winType === 'tsumo' && winner === dealerSeat) {
+        yaku.push({ name: '天和', han: YAKUMAN_HAN, yakuman: true });
+      } else if (winType === 'tsumo') {
+        yaku.push({ name: '地和', han: YAKUMAN_HAN, yakuman: true });
+      } else if (winType === 'ron' && winner !== dealerSeat && totalDiscards < state.playerCount) {
+        yaku.push({ name: '人和', han: YAKUMAN_HAN, yakuman: true });
+      }
+    }
 
     var nuki = state.nuki && state.nuki[winner] ? state.nuki[winner].length : 0;
     var dora = countMatch(scoringTiles, doraFromInd(state.doraInd));
@@ -989,7 +1102,10 @@ var FriendGame = (function() {
     if (nuki > 0) yaku.push({ name: '抜き北', han: nuki });
 
     var han = yaku.reduce(function(a, y) { return a + y.han; }, 0);
-    var pts = BASE_SCORES[Math.min(Math.max(han, 1) - 1, BASE_SCORES.length - 1)];
+    var yakumanUnits = yaku.reduce(function(a, y) { return a + (y.yakuman ? Math.round(y.han / YAKUMAN_HAN) : 0); }, 0);
+    var pts = yakumanUnits > 0
+      ? yakumanUnits * YAKUMAN_PTS
+      : BASE_SCORES[Math.min(Math.max(han, 1) - 1, BASE_SCORES.length - 1)];
     var deltas = state.scores.map(function() { return 0; });
     if (winType === 'ron') {
       deltas[winner] += pts;
@@ -1171,9 +1287,12 @@ var FriendGame = (function() {
     state.drawnId = null;
     state.ron = null;
     state.call = null;
+    // ポン・チー・カンは一発を消す（誰かの一発待ちが成立していれば解除）
+    state.ippatsuActive = makeArray(state.playerCount, false);
     if (opt.type === 'kan') {
       addKanDora(state);
       _drawFor(state, seat);
+      state.rinshanPending = true;
     } else {
       state.phase = 'naki_discard';
       _startTurnTimer(state, seat);
@@ -1193,7 +1312,9 @@ var FriendGame = (function() {
     removeTilesByIds(state.hands[seat], cand.tiles);
     state.melds[seat].push({ type: 'ankan', tiles: cand.tiles, calledTile: null, fromPlayer: -1 });
     addKanDora(state);
+    state.ippatsuActive = makeArray(state.playerCount, false);
     _drawFor(state, seat);
+    state.rinshanPending = true;
     return true;
   }
 
@@ -1211,6 +1332,7 @@ var FriendGame = (function() {
     cand.meld.type = 'kan';
     cand.meld.kakan = true;
     cand.meld.tiles = cand.meld.tiles.concat([addedTile]);
+    state.ippatsuActive = makeArray(state.playerCount, false);
 
     // 槍槓：加槓した牌で他家がロンできないか確認
     var ronCandidates = [];
@@ -1222,7 +1344,7 @@ var FriendGame = (function() {
       var autoWinner = ronCandidates.find(function(c) { return shouldAutoAgari(state, c); });
       if (autoWinner != null) {
         state.hands[autoWinner] = Tiles.sortTiles(state.hands[autoWinner].concat([addedTile]));
-        _finishHand(state, autoWinner, 'ron', seat, addedTile);
+        _finishHand(state, autoWinner, 'ron', seat, addedTile, true);
         return true;
       }
       _clearTurnTimer(state);
@@ -1235,12 +1357,14 @@ var FriendGame = (function() {
         callOptionsBySeat: {},
         replacementDraw: true,
         revealKanDora: true,
+        isChankan: true,
       };
       return true;
     }
 
     addKanDora(state);
     _drawFor(state, seat);
+    state.rinshanPending = true;
     return true;
   }
 
@@ -1298,6 +1422,13 @@ var FriendGame = (function() {
       state.riichi[seat] = true;
       state.riichiWaits[seat] = waits;
       state.scores[seat] -= 1000;
+      // ダブルリーチ：自分の最初の打牌で、かつそれまで誰も鳴いていなければ成立
+      var noCallsYetForDbl = (state.melds || []).every(function(m) { return !m || m.length === 0; });
+      state.riichiDouble[seat] = noCallsYetForDbl && state.discards[seat].length === 0;
+      state.ippatsuActive[seat] = true;
+    } else if (state.ippatsuActive && state.ippatsuActive[seat]) {
+      // リーチ宣言後、自分の次の打牌が来たら一発のチャンスは終わり
+      state.ippatsuActive[seat] = false;
     }
 
     hand.splice(idx, 1);
@@ -1362,6 +1493,7 @@ var FriendGame = (function() {
       // 加槓・北抜きのロン見送り後：ロンされなかったので打った本人が続けて打牌権を得る（嶺上ツモ）
       if (revealKanDora) addKanDora(state);
       _drawFor(state, from);
+      if (revealKanDora) state.rinshanPending = true;
     } else {
       _nextTurn(state, from);
     }
@@ -1378,7 +1510,7 @@ var FriendGame = (function() {
         var rc = state.ron.candidates[r];
         if (shouldAutoAgari(state, rc)) {
           state.hands[rc] = Tiles.sortTiles(state.hands[rc].concat([state.ron.tile]));
-          _finishHand(state, rc, 'ron', state.ron.from, state.ron.tile);
+          _finishHand(state, rc, 'ron', state.ron.from, state.ron.tile, !!state.ron.isChankan);
           return true;
         }
       }
@@ -1492,7 +1624,7 @@ var FriendGame = (function() {
         if (state.phase === 'ron_wait' && state.ron && state.ron.candidates.indexOf(seat) >= 0) {
           if (a.type === 'ron') {
             state.hands[seat] = Tiles.sortTiles(state.hands[seat].concat([state.ron.tile]));
-            _finishHand(state, seat, 'ron', state.ron.from, state.ron.tile);
+            _finishHand(state, seat, 'ron', state.ron.from, state.ron.tile, !!state.ron.isChankan);
             ok = true;
           } else {
             state.ron.responses[seat] = 'pass';
