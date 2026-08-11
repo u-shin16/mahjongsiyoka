@@ -6294,6 +6294,18 @@ body.is-battle-page {
   width: fit-content !important;
 }
 
+/* 自分(seat-self)は幅制限なしで横に並べ続ける設計だが、
+   position:fixed + left指定のみ(right:auto)だと、実際の幅は
+   「画面右端までの残り幅」で頭打ちになり、鳴きが増えて残り幅を
+   超えると2行に折り返されてしまう。副露エリアは縦中心基準
+   (translateY(-50%))で位置決めしているため、折り返して高さが
+   増えるとその分だけ上にも下にもズレて見え、「鳴くほど上に
+   ズレていく」ように見えていた。width:max-contentで画面幅に
+   関係なく必ず1行のまま伸びるようにして解消する。 */
+.player-meld-area.seat-self {
+  width: max-content !important;
+}
+
 /* 上家・下家は「牌ごと」「セットごと」の個別回転をやめ、
    副露エリア全体（.player-meld-area）を1つの箱として丸ごと
    回転させる（回転角はJSのpositionRotatedSeat()が付与）。
@@ -6332,6 +6344,12 @@ body.is-battle-page {
 }
 .player-nuki-area .tile {
   zoom: 0.48;
+}
+/* 副露エリアと同じ理由(position:fixed + left指定のみだと画面右端までの
+   残り幅で折り返されてしまう)で、自分の北抜きも幅制限なしで
+   横に伸び続けるようにする */
+.player-nuki-area.seat-self {
+  width: max-content !important;
 }
 /* 対面は牌を180°回転（副露と同じ考え方）。上家・下家はエリア全体を
    JS側で丸ごと回転させるので、牌自体は回転させない */
