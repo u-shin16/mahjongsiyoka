@@ -733,7 +733,29 @@ var FriendGame = (function() {
     state.rinshanPending = false;
     if (state.wall.length === 0) {
       state.phase = 'hand_end';
-      state.result = { type: 'ryukyoku', deltas: state.scores.map(function() { return 0; }) };
+      var deltas = state.scores.map(function() { return 0; });
+      // 流し満貫：捨て牌が全部么九牌で、誰にも鳴かれていない席は満貫扱いで受け取る
+      var nagashiSeats = [];
+      for (var ns = 0; ns < state.playerCount; ns++) {
+        var nDiscards = state.discards[ns] || [];
+        if (nDiscards.length === 0) continue;
+        if (!nDiscards.every(isTerminalOrHonor)) continue;
+        if (seatDiscardsWereCalled(state, ns)) continue;
+        nagashiSeats.push(ns);
+      }
+      if (nagashiSeats.length > 0) {
+        var nagashiPts = BASE_SCORES[4]; // 満貫(5翻相当)＝8000点
+        nagashiSeats.forEach(function(ns) {
+          var each = Math.ceil(nagashiPts / (state.playerCount - 1) / 100) * 100;
+          for (var k = 0; k < state.playerCount; k++) {
+            if (k === ns) continue;
+            deltas[k] -= each;
+            deltas[ns] += each;
+          }
+        });
+        for (var m = 0; m < state.playerCount; m++) state.scores[m] += deltas[m];
+      }
+      state.result = { type: 'ryukyoku', deltas: deltas, nagashiMangan: nagashiSeats };
       state.drawnId = null;
       _clearTurnTimer(state);
       return null;
@@ -799,6 +821,17 @@ var FriendGame = (function() {
   function isHonorTile(t) { return t.suit === 'wind' || t.suit === 'dragon'; }
   function isTerminalTile(t) { return (t.suit === 'man' || t.suit === 'pin' || t.suit === 'sou') && (t.num === 1 || t.num === 9); }
   function isTerminalOrHonor(t) { return isHonorTile(t) || isTerminalTile(t); }
+  // 流し満貫用：この席の捨て牌が誰かに鳴かれていないか（鳴かれていたら流し満貫は不成立）
+  function seatDiscardsWereCalled(state, seat) {
+    for (var i = 0; i < state.playerCount; i++) {
+      if (i === seat) continue;
+      var melds = (state.melds && state.melds[i]) || [];
+      for (var j = 0; j < melds.length; j++) {
+        if (melds[j].fromPlayer === seat) return true;
+      }
+    }
+    return false;
+  }
   // 發（緑發）と索子の2,3,4,6,8だけが緑一色の対象
   function isGreenTile(t) { return t.suit === 'dragon' ? t.num === 2 : (t.suit === 'sou' && [2, 3, 4, 6, 8].indexOf(t.num) >= 0); }
   // 平和判定用：順子のどの位置で和了ったかでリャンメン/ペンチャン/カンチャンを見分ける
@@ -855,6 +888,18 @@ var FriendGame = (function() {
   // 立直・門前清自摸和・ドラ類・抜き北は _finishHand 側で別途加算する。
   function computeShapeYaku(state, winner, winType, fromSeat, winningTile) {
     var yaku = [];
+
+    // 国士無双：通常の面子分解とは別形なので最初に判定して抜ける
+    var hand14 = state.hands[winner] || [];
+    if (Agari.isKokushiHand && Agari.isKokushiHand(hand14)) {
+      var kokushiDecomp = Agari.decomposeWinningHand(hand14);
+      var isThirteenWait = !!(winningTile && kokushiDecomp && kokushiDecomp.pairKind &&
+        kokushiDecomp.pairKind.suit === winningTile.suit && kokushiDecomp.pairKind.num === winningTile.num);
+      if (isThirteenWait) yaku.push({ name: '国士無双十三面待ち', han: YAKUMAN_HAN * 2, yakuman: true });
+      else yaku.push({ name: '国士無双', han: YAKUMAN_HAN, yakuman: true });
+      return yaku;
+    }
+
     var open = !isClosed(state, winner);
     var shape = buildHandGroups(state, winner);
     if (!shape) return yaku;

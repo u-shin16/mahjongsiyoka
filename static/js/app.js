@@ -2181,7 +2181,15 @@ var App = {
           rank.map(function(x, i) { return '<div class="fr-row"><span>' + (i + 1) + '位</span><span class="fr-name">' + esc(x.nm) + '</span><span class="fr-score">' + x.sc.toLocaleString() + '点</span></div>'; }).join('') +
           '<div class="btn-row" style="margin-top:12px"><button class="btn btn-primary" id="btnFrExit">部屋を出る</button></div></div></div>';
       } else if (r && r.type === 'ryukyoku') {
+        var nagashiSeats = r.nagashiMangan || [];
+        var nagashiHtml = nagashiSeats.length
+          ? '<div style="margin:8px 0"><span style="color:var(--gold);font-weight:900">流し満貫！</span>' +
+            nagashiSeats.map(function(ns) { return '<div class="fr-row"><span>' + esc(names[ns]) + '</span></div>'; }).join('') +
+            (r.deltas ? r.deltas.map(function(d, i) { return d !== 0 ? '<div class="fr-row"><span>' + esc(names[i]) + '</span><span style="color:' + (d > 0 ? 'var(--gold)' : '#ff9a8a') + '">' + (d > 0 ? '+' : '') + d.toLocaleString() + '</span></div>' : ''; }).join('') : '') +
+            '</div>'
+          : '';
         endHtml = '<div class="fr-result-float"><div class="fr-panel"><strong>流局</strong>（山がなくなりました）' +
+          nagashiHtml +
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
       } else if (r) {

@@ -77,12 +77,53 @@ const Agari = (() => {
     return null;
   }
 
-  // 和了形（13+1枚）を、雀頭＋4面子（通常形）または7対子に分解する。
+  // 国士無双（13種の么九牌が1枚ずつ＋そのうち1種が対子）の判定。
+  // 14枚のときだけ和了形として成立する。
+  const KOKUSHI_KINDS = [
+    { suit: 'man', num: 1 }, { suit: 'man', num: 9 },
+    { suit: 'pin', num: 1 }, { suit: 'pin', num: 9 },
+    { suit: 'sou', num: 1 }, { suit: 'sou', num: 9 },
+    { suit: 'wind', num: 1 }, { suit: 'wind', num: 2 }, { suit: 'wind', num: 3 }, { suit: 'wind', num: 4 },
+    { suit: 'dragon', num: 1 }, { suit: 'dragon', num: 2 }, { suit: 'dragon', num: 3 },
+  ];
+  function isKokushiKind(t) {
+    return KOKUSHI_KINDS.some(k => k.suit === t.suit && k.num === t.num);
+  }
+  function decomposeKokushi(tiles) {
+    if (!tiles || tiles.length !== 14) return null;
+    if (!tiles.every(isKokushiKind)) return null;
+    const counts = new Map();
+    for (const t of tiles) {
+      const key = t.suit + '_' + t.num;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    let pairKind = null;
+    for (const k of KOKUSHI_KINDS) {
+      const key = k.suit + '_' + k.num;
+      const c = counts.get(key) || 0;
+      if (c === 0) return null;
+      if (c > 2) return null;
+      if (c === 2) {
+        if (pairKind) return null; // 対子は1種類だけ
+        pairKind = k;
+      }
+    }
+    if (!pairKind) return null;
+    return { type: 'kokushi', pairKind };
+  }
+  function isKokushiHand(tiles) {
+    return decomposeKokushi(tiles) !== null;
+  }
+
+  // 和了形（13+1枚）を、雀頭＋4面子（通常形）・7対子・国士無双に分解する。
   // 分解できなければ null（呼び出し側でフラットソートにフォールバックする）。
   function decomposeWinningHand(tiles) {
     if (!tiles || tiles.length < 2) return null;
 
     if (tiles.length === 14) {
+      const kokushi = decomposeKokushi(tiles);
+      if (kokushi) return kokushi;
+
       const sorted = Tiles.sortTiles(tiles);
       const used = new Array(sorted.length).fill(false);
       const pairs = [];
@@ -117,6 +158,8 @@ const Agari = (() => {
 
   function isWinningHand(tiles) {
     if (!tiles || tiles.length < 2) return false;
+
+    if (tiles.length === 14 && isKokushiHand(tiles)) return true;
 
     // Chiitoitsu (7 pairs) for 14-tile hands
     if (tiles.length === 14) {
@@ -189,5 +232,5 @@ const Agari = (() => {
     return waits;
   }
 
-  return { isWinningHand, isWinningNums, numHandWaitsFor, getTenpaiWaits, canFormSets, decomposeWinningHand };
+  return { isWinningHand, isWinningNums, numHandWaitsFor, getTenpaiWaits, canFormSets, decomposeWinningHand, isKokushiHand };
 })();
