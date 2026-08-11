@@ -829,10 +829,37 @@ function positionMeldAreas() {
     set(oppArea, (cp.top - MELD_GAP) + 'px', pCenterX + 'px', 'auto', 'auto', 'translate(-50%, -100%)');
   }
 
+  // 上家・下家は「牌ごとに回転」ではなく「副露エリア全体を1つの箱として
+  // 丸ごと回転」させる。内部は自分と同じ普通の横並びレイアウトのまま
+  // 複数セットを並べ、その完成した箱を90°/-90°回転させて配置する
+  // （牌ごとの回転だと、回転後の見た目サイズとレイアウト上のサイズが
+  //   ズレて複数セット時にうまく横に並ばなかったため）
+  var positionRotatedSeat = function(area, handEl, angleDeg) {
+    if (!area || !handEl) return;
+    var hr = handEl.getBoundingClientRect();
+    var hcx = (hr.left + hr.right) / 2;
+    var hcy = (hr.top + hr.bottom) / 2;
+    var handHalfLen = hr.height / 2; // 上家・下家の伏せ手牌は縦向き
+    var areaW = area.offsetWidth;
+    var areaH = area.offsetHeight;
+    var ox = handHalfLen + GAP + areaW / 2; // 自分の「右へ」に相当
+    var oy = -LIFT;                          // 自分の「上へ」に相当
+    var rad = angleDeg * Math.PI / 180;
+    var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
+    var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
+    var centerX = hcx + rx;
+    var centerY = hcy + ry;
+    set(area,
+      (centerY - areaH / 2) + 'px',
+      (centerX - areaW / 2) + 'px',
+      'auto', 'auto',
+      'rotate(' + angleDeg + 'deg)');
+  };
+
   var leftArea = document.querySelector('.player-meld-area.seat-left');
   var leftHand = document.querySelector('.jt-hidden-left');
   if (leftArea && leftHand) {
-    positionForSeat(leftArea, leftHand, 90);
+    positionRotatedSeat(leftArea, leftHand, 90);
   } else if (leftArea) {
     set(leftArea, pCenterY + 'px', (cp.left - MELD_GAP) + 'px', 'auto', 'auto', 'translate(-100%, -50%)');
   }
@@ -840,7 +867,7 @@ function positionMeldAreas() {
   var rightArea = document.querySelector('.player-meld-area.seat-right');
   var rightHand = document.querySelector('.jt-hidden-right');
   if (rightArea && rightHand) {
-    positionForSeat(rightArea, rightHand, -90);
+    positionRotatedSeat(rightArea, rightHand, -90);
   } else if (rightArea) {
     set(rightArea, pCenterY + 'px', (cp.right + MELD_GAP) + 'px', 'auto', 'auto', 'translateY(-50%)');
   }
