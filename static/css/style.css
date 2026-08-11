@@ -6299,15 +6299,3 @@ body.is-battle-page {
   transform: rotate(-90deg) !important;
   margin: 0 4px !important;
 }
-
-/* ============================================================
-   NUKI BADGE: 抜き北をフウロ牌の右上に固定表示
-   ============================================================ */
-.player-meld-area .fr-nuki-row {
-  position: absolute !important;
-  top: -6px !important;
-  right: -6px !important;
-  left: auto !important;
-  bottom: auto !important;
-  margin-top: 0 !important;
-}
