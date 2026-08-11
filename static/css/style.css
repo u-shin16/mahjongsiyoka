@@ -5002,7 +5002,6 @@ body.is-battle-page .app-main.battle-main {
 
 .meld-set {
   display: flex;
-  flex-shrink: 0;
   align-items: flex-end;
   gap: 1px;
   background: rgba(0,0,0,0.2);
@@ -5028,14 +5027,9 @@ body.is-battle-page .app-main.battle-main {
 .meld-set .tile { zoom: 0.55 !important; pointer-events: none !important; }
 
 /* 鳴いた牌（横向き）*/
-.meld-set .meld-called,
-.meld-set .meld-kakan-added {
+.meld-set .meld-called {
   transform: rotate(-90deg) !important;
   margin: 0 4px;
-}
-/* 加カンで追加した4枚目: 元の横向き牌にぴったり寄せて積んだ見た目にする */
-.meld-set .meld-kakan-added {
-  margin: 0 -3px 0 -3px !important;
 }
 
 /* ポン/チー/カン の色分け */
@@ -5518,8 +5512,7 @@ body.is-battle-page {
 .player-meld-area.seat-self .tile {
   transform: none !important;
 }
-.player-meld-area.seat-self .meld-called,
-.player-meld-area.seat-self .meld-kakan-added {
+.player-meld-area.seat-self .meld-called {
   transform: rotate(-90deg) !important;
   margin: 0 5px !important;
 }
@@ -5530,8 +5523,7 @@ body.is-battle-page {
   transform-origin: center center !important;
 }
 /* meld-called: 180° + (-90°) = 90° */
-.player-meld-area.seat-opposite .meld-called,
-.player-meld-area.seat-opposite .meld-kakan-added {
+.player-meld-area.seat-opposite .meld-called {
   transform: rotate(90deg) !important;
   margin: 0 5px !important;
 }
@@ -6284,21 +6276,11 @@ body.is-battle-page {
   flex-direction: row !important;
   /* nowrapだと画面外にはみ出すため、自分と同じwrap（折り返しあり）に戻す */
   flex-wrap: wrap !important;
-}
-/* 上家・下家は箱ごと90°/-90°回転するため、セット同士が横に並んだまま
-   増えると、回転後は縦方向へ際限なく暴走してしまう。
-   flex-wrap+max-widthで折り返す方式だと、折り返した各行が箱の
-   最大幅いっぱいまで引き伸ばされてしまい（内容が1セット分しか無くても）、
-   回転後の見た目の高さが常に上限値に張り付いて縦長に見えていた。
-   flex-direction:columnで「セットを縦に積む」形に切り替えれば、
-   折り返し計算なしで各セットの実サイズぶんだけ箱が育つ。
-   回転後はこの列がそのまま横方向の並びになるため、セットが
-   増えるほど横に伸びる（対面・自分と同じ見た目）。 */
-.player-meld-area.seat-left,
-.player-meld-area.seat-right {
-  flex-direction: column !important;
-  flex-wrap: nowrap !important;
-  width: fit-content !important;
+  /* max-widthが無いとwrapが実際には発生せず、セットが増えるほど
+     横に際限なく伸びてしまう（幅に制限が無いflex containerは
+     折り返すより1行に収めようとするため）。上限を設けて必ず
+     折り返させることで、90°/-90°回転後に縦方向へ暴走するのを防ぐ */
+  max-width: 170px !important;
 }
 
 /* 上家・下家は「牌ごと」「セットごと」の個別回転をやめ、
@@ -6319,9 +6301,7 @@ body.is-battle-page {
   transform: none !important;
 }
 .player-meld-area.seat-left .meld-called,
-.player-meld-area.seat-right .meld-called,
-.player-meld-area.seat-left .meld-kakan-added,
-.player-meld-area.seat-right .meld-kakan-added {
+.player-meld-area.seat-right .meld-called {
   transform: rotate(-90deg) !important;
   margin: 0 4px !important;
 }

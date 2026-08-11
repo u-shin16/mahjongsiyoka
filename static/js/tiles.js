@@ -222,48 +222,6 @@ const Tiles = (() => {
     return true;
   }
 
-  // 副露(ポン/チー/カン)の並べ方を実際の麻雀のルールに合わせて決める。
-  // 戻り値: { tiles: 表示順のタイル配列, sidewaysIndex: 横向きにする牌のindex(-1なら無し), kakanIndex: 加カンで積む牌のindex(無ければ-1) }
-  function orderMeldTiles(meld, ownerSeat, playerCount) {
-    const tiles = meld.tiles;
-    if (meld.type === 'ankan') {
-      return { tiles, sidewaysIndex: -1, kakanIndex: -1 };
-    }
-    const offset = (typeof meld.fromPlayer === 'number' && meld.fromPlayer >= 0)
-      ? ((meld.fromPlayer - ownerSeat + playerCount) % playerCount)
-      : 1;
-
-    if (meld.type === 'chi') {
-      const called = meld.calledTile;
-      const others = tiles.filter(t => !(called && t.id === called.id));
-      others.sort((a, b) => a.num - b.num);
-      const ordered = called ? [called].concat(others) : tiles;
-      return { tiles: ordered, sidewaysIndex: 0, kakanIndex: -1 };
-    }
-
-    // pon / kan(大明カン): 同一牌なので配列の並び替えは不要。
-    // 横向きにするindexだけ、鳴いた相手(上家/対面/下家)基準で決める。
-    // offset = (fromPlayer - ownerSeat + n) % n: 上家は常に offset===n-1、下家は常に offset===1。
-    if (!meld.kakan) {
-      const n = tiles.length;
-      let sidewaysIndex;
-      if (offset === playerCount - 1) sidewaysIndex = 0;   // 上家: 一番左
-      else if (offset === 1) sidewaysIndex = n - 1;         // 下家: 一番右
-      else sidewaysIndex = 1;                               // 対面: 真ん中寄り(4人打ちのみ)
-      return { tiles, sidewaysIndex, kakanIndex: -1 };
-    }
-
-    // 加カン: 元のポン3枚のうち横向きの牌の隣に、追加した4枚目を差し込む
-    const base = tiles.slice(0, 3);
-    const added = tiles[3];
-    let sidewaysIndex;
-    if (offset === playerCount - 1) sidewaysIndex = 0;
-    else if (offset === 1) sidewaysIndex = 2;
-    else sidewaysIndex = 1;
-    const ordered = base.slice(0, sidewaysIndex + 1).concat(added ? [added] : []).concat(base.slice(sidewaysIndex + 1));
-    return { tiles: ordered, sidewaysIndex, kakanIndex: added ? sidewaysIndex + 1 : -1 };
-  }
-
   function isSequence(tiles) {
     if (tiles.length !== 3) return false;
     const suits = new Set(tiles.map(t => t.suit));
@@ -344,5 +302,5 @@ const Tiles = (() => {
     return shuffle(tiles);
   }
 
-  return { make, makeNum, makeColored, label, windReading, renderTile, renderRow, isSame, isSequence, isTriplet, isPair, isMeld, sortTiles, shuffle, makeFull, makeSanmaFull, orderMeldTiles };
+  return { make, makeNum, makeColored, label, windReading, renderTile, renderRow, isSame, isSequence, isTriplet, isPair, isMeld, sortTiles, shuffle, makeFull, makeSanmaFull };
 })();

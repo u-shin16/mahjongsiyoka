@@ -2072,23 +2072,20 @@ var App = {
     var timerPct = Math.max(0, Math.min(100, Math.round(timerLeft / timerTotal * 100)));
     var timerHtml = timer ? '<div class="fr-turn-timer ' + (timerLeft <= 5000 ? 'warn' : '') + '">' +
       '<span>' + (Math.ceil(timerLeft / 1000)) + 's</span><i style="width:' + timerPct + '%"></i></div>' : '';
-    var meldSetHtml = function(melds, ownerSeat) {
+    var meldSetHtml = function(melds) {
       return (melds || []).map(function(m, mi) {
         var typeLabel = m.type === 'pon' ? 'ポン' : m.type === 'chi' ? 'チー' : m.type === 'kan' ? 'カン' : '暗カン';
-        var ord = Tiles.orderMeldTiles(m, ownerSeat, g.playerCount);
-        var tiles = ord.tiles.map(function(t, ti) {
-          var isSideways = ti === ord.sidewaysIndex;
-          var isKakanAdded = ti === ord.kakanIndex;
+        var tiles = (m.tiles || []).map(function(t, ti) {
+          var isCalled = m.calledTile && t.id === m.calledTile.id;
           var isHidden = m.type === 'ankan' && (ti === 0 || ti === 3);
           if (isHidden) return Tiles.renderTile({ suit: 'back', num: 0, id: 'frh_' + mi + '_' + ti }, { faceDown: true, noHover: true, extraClass: 'meld-tile' });
-          var cls = 'meld-tile' + (isSideways ? ' meld-called' : '') + (isKakanAdded ? ' meld-kakan-added' : '');
-          return Tiles.renderTile(t, { noHover: true, extraClass: cls });
+          return Tiles.renderTile(t, { noHover: true, extraClass: 'meld-tile' + (isCalled ? ' meld-called' : '') });
         }).join('');
         return '<div class="meld-set meld-' + esc(m.type) + '"><span class="meld-type-label">' + typeLabel + '</span>' + tiles + '</div>';
       }).join('');
     };
     var meldHtml = function(seat) {
-      var html = meldSetHtml(g.melds && g.melds[seat], seat);
+      var html = meldSetHtml(g.melds && g.melds[seat]);
       return html ? '<div class="fr-melds">' + html + '</div>' : '';
     };
     var riverHtml = function(seat) {
@@ -2252,7 +2249,7 @@ var App = {
           '<div style="font-size:1.1rem;font-weight:900;color:var(--gold);margin-bottom:6px">' +
             esc(names[r.winner]) + ' の' + (r.type === 'tsumo' ? 'ツモ' : 'ロン') + '！</div>' +
           '<div class="fr-result-hand-row" style="margin-bottom:8px">' + resultHandHtml + '</div>' +
-          (r.melds && r.melds.length ? '<div class="fr-melds">' + meldSetHtml(r.melds, r.winner) + '</div>' : '') +
+          (r.melds && r.melds.length ? '<div class="fr-melds">' + meldSetHtml(r.melds) + '</div>' : '') +
           (r.nuki && r.nuki.length ? '<div class="fr-nuki-row"><span>抜き北</span>' + r.nuki.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</div>' : '') +
           r.yaku.map(function(y) { return '<div class="fr-row"><span>' + esc(y.name) + '</span><span class="fr-score">' + y.han + '翻</span></div>'; }).join('') +
           '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + r.han + '翻 ' + r.pts.toLocaleString() + '点</div>' +
@@ -2373,7 +2370,7 @@ var App = {
     seatCls[rightSeat] = 'seat-right';
     if (leftSeat >= 0) seatCls[leftSeat] = 'seat-left';
     visualSeats.forEach(function(seat) {
-      var sets = meldSetHtml(g.melds && g.melds[seat], seat);
+      var sets = meldSetHtml(g.melds && g.melds[seat]);
       if (sets) perPlayerMeldsHtml += '<div class="player-meld-area ' + seatCls[seat] + '">' + sets + '</div>';
 
       var nukiTiles = (isSanma && g.nuki && g.nuki[seat]) || [];
@@ -3591,14 +3588,11 @@ var App = {
         var buildMeldSets = function(pi) {
           return s.melds[pi].map(function(meld) {
             var typeLabel = meld.type==='pon'?'ポン':meld.type==='chi'?'チー':meld.type==='kan'?'カン':'暗カン';
-            var ord = Tiles.orderMeldTiles(meld, pi, s.playerCount);
-            var meldTiles = ord.tiles.map(function(t, ti) {
-              var isSideways = ti === ord.sidewaysIndex;
-              var isKakanAdded = ti === ord.kakanIndex;
+            var meldTiles = meld.tiles.map(function(t, ti) {
+              var isCalled = meld.calledTile && Tiles.isSame(t, meld.calledTile) && ti === meld.tiles.length - 1;
               var isHidden = meld.type === 'ankan' && (ti === 0 || ti === 3);
               if (isHidden) return Tiles.renderTile({suit:'back',num:0,id:'ah'+pi+'_'+ti}, {faceDown:true, noHover:true, extraClass:'meld-tile'});
-              var cls = 'meld-tile' + (isSideways ? ' meld-called' : '') + (isKakanAdded ? ' meld-kakan-added' : '');
-              return Tiles.renderTile(t, {noHover:true, extraClass:cls});
+              return Tiles.renderTile(t, {noHover:true, extraClass:'meld-tile'+(isCalled?' meld-called':'')});
             }).join('');
             return '<div class="meld-set meld-'+meld.type+'"><span class="meld-type-label">'+typeLabel+'</span>'+meldTiles+'</div>';
           }).join('');
@@ -4070,13 +4064,11 @@ var App = {
       var winnerMelds = (s.melds && s.melds[winner]) || [];
       var meldsHtml = winnerMelds.length ? '<div class="fr-melds">' + winnerMelds.map(function(m) {
         var typeLabel = m.type === 'pon' ? 'ポン' : m.type === 'chi' ? 'チー' : m.type === 'kan' ? 'カン' : '暗カン';
-        var ord = Tiles.orderMeldTiles(m, winner, s.playerCount);
-        var mTiles = ord.tiles.map(function(t, ti) {
-          var isSideways = ti === ord.sidewaysIndex;
-          var isKakanAdded = ti === ord.kakanIndex;
+        var mTiles = (m.tiles || []).map(function(t, ti) {
+          var isCalled = m.calledTile && Tiles.isSame(t, m.calledTile) && ti === m.tiles.length - 1;
           var isHidden = m.type === 'ankan' && (ti === 0 || ti === 3);
           if (isHidden) return Tiles.renderTile({suit:'back',num:0,id:'agrh_'+ti}, {faceDown:true, noHover:true, extraClass:'xxs'});
-          return Tiles.renderTile(t, {noHover:true, extraClass:'xxs'+(isSideways?' meld-called':'')+(isKakanAdded?' meld-kakan-added':'')});
+          return Tiles.renderTile(t, {noHover:true, extraClass:'xxs'+(isCalled?' meld-called':'')});
         }).join('');
         return '<div class="fr-meld-set meld-set meld-'+m.type+'"><span class="meld-type-label">'+typeLabel+'</span>'+mTiles+'</div>';
       }).join('') + '</div>' : '';
