@@ -757,6 +757,14 @@ function positionDiscardRivers() {
   }
 }
 
+// 北抜きエリアの座標は「最初に表示された位置」で固定する。
+// 手牌(.jt-hand-tiles-row)は鳴くたびに牌が抜けて幅が縮むため、
+// 毎回計算し直すと副露が増えるほど北抜きの位置がずれてしまうため。
+// seatクラス名 → { top, left } のキャッシュ。新しい局が始まって
+// 北抜きが一旦0枚に戻ると要素ごと消えるので、そのタイミングで自動的に
+// クリアされる（次に表示されたときに改めて位置を確定し直す）
+var nukiPositionCache = {};
+
 // ── 副露（鳴き牌・北抜き）エリアを中央ダイヤモンドの角に密着配置 ──
 // フレンド対戦画面（ダイヤモンド化していない）では .jt-center-panel-diamond が
 // 存在しないため何もしない
@@ -856,18 +864,33 @@ function positionMeldAreas() {
   positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftHand, 90, MELD_LIFT);
   positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightHand, -90, MELD_LIFT);
 
-  // 北抜きエリア（副露とは独立配置。手牌基準の座標が無い場合はダイヤモンド角基準）
-  var nukiSelf  = document.querySelector('.player-nuki-area.seat-self');
-  if (nukiSelf && handRow) positionForSeat(nukiSelf, handRow, 0, NUKI_LIFT, NUKI_GAP);
+  // 北抜きエリア（副露とは独立配置）。
+  // 一度位置が決まったら、その局の間は再計算せずキャッシュした座標を
+  // そのまま使い続ける（鳴くたびに手牌が縮んで位置がずれるのを防ぐ）
+  var positionNukiOnce = function(seatKey, area, handEl, angleDeg, positionFn) {
+    if (!area) { delete nukiPositionCache[seatKey]; return; }
+    var cached = nukiPositionCache[seatKey];
+    if (cached) {
+      area.style.setProperty('top',       cached.top,       'important');
+      area.style.setProperty('left',      cached.left,      'important');
+      area.style.setProperty('right',     'auto',           'important');
+      area.style.setProperty('bottom',    'auto',           'important');
+      area.style.setProperty('transform', cached.transform, 'important');
+      return;
+    }
+    if (!handEl) return;
+    positionFn(area, handEl, angleDeg, NUKI_LIFT, NUKI_GAP);
+    nukiPositionCache[seatKey] = {
+      top: area.style.top,
+      left: area.style.left,
+      transform: area.style.transform
+    };
+  };
 
-  var nukiOpp = document.querySelector('.player-nuki-area.seat-opposite');
-  if (nukiOpp && oppHand) positionForSeat(nukiOpp, oppHand, 180, NUKI_LIFT, NUKI_GAP);
-
-  var nukiLeft = document.querySelector('.player-nuki-area.seat-left');
-  if (nukiLeft && leftHand) positionRotatedSeat(nukiLeft, leftHand, 90, NUKI_LIFT, NUKI_GAP);
-
-  var nukiRight = document.querySelector('.player-nuki-area.seat-right');
-  if (nukiRight && rightHand) positionRotatedSeat(nukiRight, rightHand, -90, NUKI_LIFT, NUKI_GAP);
+  positionNukiOnce('self',     document.querySelector('.player-nuki-area.seat-self'),     handRow,   0,   positionForSeat);
+  positionNukiOnce('opposite', document.querySelector('.player-nuki-area.seat-opposite'), oppHand,   180, positionForSeat);
+  positionNukiOnce('left',     document.querySelector('.player-nuki-area.seat-left'),     leftHand,  90,  positionRotatedSeat);
+  positionNukiOnce('right',    document.querySelector('.player-nuki-area.seat-right'),    rightHand, -90, positionRotatedSeat);
 }
 
 // ウィンドウリサイズ時も再配置
