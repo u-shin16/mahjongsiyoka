@@ -3576,8 +3576,24 @@ body.is-battle-page .app-main.battle-main {
 }
 
 /* ============================================================
-   USER FIXES: 捨て牌配置・対面向き
+   USER FIXES: 9索赤・捨て牌配置・対面向き
    ============================================================ */
+
+/* 1) 9索の真ん中を赤く */
+.tile[data-suit="sou"][data-num="9"] { position: relative; }
+.tile[data-suit="sou"][data-num="9"]::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 24%;
+  height: 18%;
+  background: #c0392b;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 6;
+}
 
 /* 2) 全員6枚改行 — サイドゾーン幅を6タイル分に拡張 */
 /* zoom 0.54 → 52px × 0.54 ≈ 28px/tile。6枚 + 5gap(2px) = 178px */
@@ -3809,9 +3825,6 @@ body.is-battle-page .app-main.battle-main {
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
   justify-content: center !important;
-  /* overflow-x:auto にすると overflow-y も auto 扱いになり、
-     選択時に浮き上がる牌の上端が見切れるため、逃げ用の余白を確保 */
-  padding-top: 14px !important;
 }
 .jt-hand-in-table .mj-sorted-tiles .tile,
 .jt-hand-in-table .mj-drew-area .tile {
@@ -3820,8 +3833,7 @@ body.is-battle-page .app-main.battle-main {
   cursor: pointer !important;
   flex-shrink: 0 !important;
 }
-.jt-hand-in-table .mj-sorted-tiles .tile.selected,
-.jt-hand-in-table .mj-drew-area .tile.selected {
+.jt-hand-in-table .mj-sorted-tiles .tile.selected {
   transform: translateY(-10px) !important;
   box-shadow: 0 0 0 2px rgba(232,184,75,0.8) !important;
 }
@@ -3830,8 +3842,7 @@ body.is-battle-page .app-main.battle-main {
   cursor: default !important;
   pointer-events: none !important;
 }
-.jt-hand-in-table .mj-sorted-tiles .tile:hover:not(.t-lock),
-.jt-hand-in-table .mj-drew-area .tile:hover {
+.jt-hand-in-table .mj-sorted-tiles .tile:hover:not(.t-lock) {
   transform: translateY(-6px) !important;
 }
 .jt-hand-in-table .mj-hand-sep {
@@ -5617,8 +5628,8 @@ body.is-battle-page {
 
 /* ── 4. 鳴きフロートパネルをコンパクト化 ── */
 .hand-action-float {
-  bottom: 230px !important; /* 抜き北（自分）と被らないよう上に移動 */
-  right: 140px !important; /* 副露・北抜き（自分）と被らないよう内側に移動 */
+  bottom: 158px !important;
+  right: 10px !important;
   max-width: 210px !important;
   gap: 4px !important;
   padding: 4px 6px !important;
@@ -5637,13 +5648,13 @@ body.is-battle-page {
   line-height: 1.2 !important;
 }
 
-/* 鳴きボタン */
+/* 鳴きボタン自体を小さく */
 .hand-action-float [class*="btn-"] {
-  height: 42px !important;
-  padding: 4px 16px !important;
-  font-size: 0.95rem !important;
+  height: 28px !important;
+  padding: 2px 9px !important;
+  font-size: 0.73rem !important;
   border-radius: 999px !important;
-  min-width: 60px !important;
+  min-width: 40px !important;
 }
 
 /* ── 5. 副露牌サイズを少し縮小（0.55 → 0.48）── */
@@ -6276,40 +6287,11 @@ body.is-battle-page {
   flex-direction: row !important;
   /* nowrapだと画面外にはみ出すため、自分と同じwrap（折り返しあり）に戻す */
   flex-wrap: wrap !important;
-}
-/* 上家・下家は箱ごと90°/-90°回転する。セット内の牌(row方向)と
-   セット同士の並び(親のrow方向)を同じ軸に揃えることで、複数セットが
-   「横に別カラムで並ぶ」のではなく、1セット目の牌の続きとして
-   2セット目の牌がそのまま縦に連結される（1本の縦列）ようにする。
-   （親をcolumnにすると、セット内はrow・セット同士はcolumnという
-   直交した軸になり、回転後に2列のグリッド状になってしまっていた） */
-.player-meld-area.seat-left,
-.player-meld-area.seat-right {
-  flex-wrap: nowrap !important;
-  width: max-content !important;
-}
-/* 上家・下家は基準点(アンカー)を「列の先頭側」に固定しているため、
-   通常のrow順のままだと最初に鳴いたセットがアンカー(手牌の近く)に
-   居座り続け、後から鳴いたセットだけが遠くに追加されていってしまう。
-   自分・対面は逆に「アンカーが列の末尾側」にあるため、後から鳴いた
-   セットがアンカー付近に来て、先に鳴いたセットが押し出されるように
-   見える。上家・下家もrow-reverseで並び順を逆にし、後から鳴いた
-   セットが常にアンカー付近（手牌の近く）に来るように揃える。 */
-.player-meld-area.seat-left,
-.player-meld-area.seat-right {
-  flex-direction: row-reverse !important;
-}
-
-/* 自分(seat-self)は幅制限なしで横に並べ続ける設計だが、
-   position:fixed + left指定のみ(right:auto)だと、実際の幅は
-   「画面右端までの残り幅」で頭打ちになり、鳴きが増えて残り幅を
-   超えると2行に折り返されてしまう。副露エリアは縦中心基準
-   (translateY(-50%))で位置決めしているため、折り返して高さが
-   増えるとその分だけ上にも下にもズレて見え、「鳴くほど上に
-   ズレていく」ように見えていた。width:max-contentで画面幅に
-   関係なく必ず1行のまま伸びるようにして解消する。 */
-.player-meld-area.seat-self {
-  width: max-content !important;
+  /* max-widthが無いとwrapが実際には発生せず、セットが増えるほど
+     横に際限なく伸びてしまう（幅に制限が無いflex containerは
+     折り返すより1行に収めようとするため）。上限を設けて必ず
+     折り返させることで、90°/-90°回転後に縦方向へ暴走するのを防ぐ */
+  max-width: 170px !important;
 }
 
 /* 上家・下家は「牌ごと」「セットごと」の個別回転をやめ、
@@ -6350,24 +6332,6 @@ body.is-battle-page {
 }
 .player-nuki-area .tile {
   zoom: 0.48;
-}
-/* 副露エリアと同じ理由(position:fixed + left指定のみだと画面右端までの
-   残り幅で折り返されてしまう)で、自分の北抜きも幅制限なしで
-   横に伸び続けるようにする */
-.player-nuki-area.seat-self {
-  width: max-content !important;
-}
-/* 上家・下家の北抜きも副露と全く同じrow方向のレイアウトで配置する。
-   副露とのレーン分けはJS側のNUKI_LIFT_SIDE（画面の横方向オフセットに
-   変換されるLIFT値）で行う（GAP側で分けると、伸びる方向＝画面の
-   縦方向に沿ってズラすだけになり、牌が増えると結局追いついて重なる）。 */
-.player-nuki-area.seat-left,
-.player-nuki-area.seat-right {
-  width: max-content !important;
-  flex-wrap: nowrap !important;
-  /* 副露と同じ理由で、後から抜いた北がアンカー(手牌の近く)に
-     来るようにrow-reverseにする */
-  flex-direction: row-reverse !important;
 }
 /* 対面は牌を180°回転（副露と同じ考え方）。上家・下家はエリア全体を
    JS側で丸ごと回転させるので、牌自体は回転させない */

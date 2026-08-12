@@ -629,40 +629,6 @@ var Battle = (function() {
     return drawRinshanForPlayer();
   }
 
-  // player0 の加カン候補を返す（既にポンしている牌の4枚目を手牌に持っている場合）
-  function checkKakan() {
-    if (!state || state.phase !== 'player_turn') return [];
-    var hand = state.hands[0];
-    var melds = state.melds[0] || [];
-    var res = [];
-    melds.forEach(function(m) {
-      if (m.type !== 'pon') return;
-      var kind = m.tiles[0];
-      var match = hand.find(function(t) { return Tiles.isSame(t, kind); });
-      if (match) res.push({ type: 'kakan', tiles: [kind], meld: m });
-    });
-    return res;
-  }
-
-  // 加カン実行（既存のポンに手牌の4枚目を足してカンに格上げする）
-  function playerKakan(tileToKan) {
-    if (!state || state.phase !== 'player_turn') return false;
-    var hand = state.hands[0];
-    var meld = (state.melds[0] || []).filter(function(m) {
-      return m.type === 'pon' && Tiles.isSame(m.tiles[0], tileToKan);
-    })[0];
-    if (!meld) return false;
-    var idx = hand.findIndex(function(t) { return Tiles.isSame(t, tileToKan); });
-    if (idx < 0) return false;
-    var added = hand.splice(idx, 1)[0];
-    meld.type = 'kan';
-    meld.kakan = true;
-    meld.tiles = meld.tiles.concat([added]);
-    addKanDora();
-    state.ippatsu = false;
-    return drawRinshanForPlayer();
-  }
-
   // スキップ（鳴かない）
   function skipCall() {
     if (!state || !state.callPending) return;
@@ -935,10 +901,8 @@ var Battle = (function() {
     playerChi:    playerChi,
     playerKan:    playerKan,
     playerAnkan:  playerAnkan,
-    playerKakan:  playerKakan,
     skipCall:     skipCall,
     checkAnkan:   checkAnkan,
-    checkKakan:   checkKakan,
     getPlayerCallOptions: getPlayerCallOptions,
     PLAYER_NAMES:  PLAYER_NAMES,
     WIND_NAMES:    WIND_NAMES,
