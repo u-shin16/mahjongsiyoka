@@ -6282,12 +6282,10 @@ body.is-battle-page {
    「横に別カラムで並ぶ」のではなく、1セット目の牌の続きとして
    2セット目の牌がそのまま縦に連結される（1本の縦列）ようにする。
    （親をcolumnにすると、セット内はrow・セット同士はcolumnという
-   直交した軸になり、回転後に2列のグリッド状になってしまっていた）
-   flex-wrapはwrapのまま残す：鳴きが増えて画面外へはみ出しそうな時だけ
-   JS側(positionRotatedSeat)がmax-widthを付与して2列目に折り返させ、
-   常に画面内に収まるようにするため（付与されなければ従来通り1列）。 */
+   直交した軸になり、回転後に2列のグリッド状になってしまっていた） */
 .player-meld-area.seat-left,
 .player-meld-area.seat-right {
+  flex-wrap: nowrap !important;
   width: max-content !important;
 }
 
@@ -6355,8 +6353,8 @@ body.is-battle-page {
 .player-nuki-area.seat-left,
 .player-nuki-area.seat-right {
   width: max-content !important;
+  flex-wrap: nowrap !important;
   flex-direction: row !important;
-  flex-wrap: wrap !important;
 }
 /* 対面は牌を180°回転（副露と同じ考え方）。上家・下家はエリア全体を
    JS側で丸ごと回転させるので、牌自体は回転させない */
