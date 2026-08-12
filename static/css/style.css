@@ -6289,9 +6289,19 @@ body.is-battle-page {
    自分(seat-self)と同じくrow+wrapのまま(max-width制限も不要)。 */
 .player-meld-area.seat-left,
 .player-meld-area.seat-right {
-  flex-direction: column !important;
   flex-wrap: nowrap !important;
   width: fit-content !important;
+}
+/* 90°回転する上家は column、-90°回転する下家は column-reverse。
+   回転方向によって「積む方向」を逆にしないと、画面外(左方向)に
+   はみ出す向きに伸びてしまうため（positionRotatedSeatの
+   transform-origin:0 0 と組み合わせて、どちらも画面内側＝
+   セルフや対面と同じ横方向へ伸びるように揃えている） */
+.player-meld-area.seat-left {
+  flex-direction: column-reverse !important;
+}
+.player-meld-area.seat-right {
+  flex-direction: column !important;
 }
 
 /* 自分(seat-self)は幅制限なしで横に並べ続ける設計だが、
@@ -6350,6 +6360,22 @@ body.is-battle-page {
    横に伸び続けるようにする */
 .player-nuki-area.seat-self {
   width: max-content !important;
+}
+/* 上家・下家は副露エリアと同じくJSで箱ごと回転させる。デフォルトの
+   横並び(row)のままだと、北抜きが増えるほど回転前の「幅」が伸び、
+   回転後は画面の縦方向にズレて見えてしまうため、副露エリアと同じ
+   flex-direction:columnにして「回転前の高さ」が伸びる形に揃える
+   （回転後は横方向に伸びるようになり、位置が固定されたままになる） */
+.player-nuki-area.seat-left,
+.player-nuki-area.seat-right {
+  width: fit-content !important;
+}
+/* 副露エリアと同じ理由でcolumn/column-reverseを回転方向ごとに使い分ける */
+.player-nuki-area.seat-left {
+  flex-direction: column-reverse !important;
+}
+.player-nuki-area.seat-right {
+  flex-direction: column !important;
 }
 /* 対面は牌を180°回転（副露と同じ考え方）。上家・下家はエリア全体を
    JS側で丸ごと回転させるので、牌自体は回転させない */

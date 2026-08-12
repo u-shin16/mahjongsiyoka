@@ -836,31 +836,37 @@ function positionMeldAreas() {
   var positionRotatedSeat = function(area, refCx, refCy, angleDeg, lift, gap, refHalf) {
     if (!area) return;
     if (gap == null) gap = GAP;
-    var areaW = area.offsetWidth;
-    var areaH = area.offsetHeight;
-    var ox = refHalf + gap + areaW / 2; // 基準点から「右へ」に相当
-    var oy = -lift;                      // 基準点から「上へ」に相当
+    // 基準点(anchorX/anchorY)は箱自身の現在のサイズに一切依存させない固定値にする。
+    // 以前は箱の中心を基準点に合わせていたため、鳴き/北抜きが増えて箱が
+    // 大きくなるたびに中心を保ったまま上下左右へ均等に広がって見えていた
+    // （90°/-90°回転した席では、この「箱の半分ぶん」のズレがそのまま
+    // 画面の縦方向へ変換されるため、鳴くたびに上へズレていくように見えた）。
+    // 代わりに transform-origin を箱の左上角に固定し、その角を基準点に
+    // ピン留めしたまま回転させることで、箱は常にその角から一方向にだけ
+    // 伸びるようになり、基準点自体は完全に不動になる。
+    var ox = refHalf + gap; // 基準点から「右へ」に相当（固定値）
+    var oy = -lift;          // 基準点から「上へ」に相当
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
-    var centerX = refCx + rx;
-    var centerY = refCy + ry;
+    var anchorX = refCx + rx;
+    var anchorY = refCy + ry;
 
-    // 鳴くほどセットが増えて箱が大きくなり、画面外にはみ出すことがあるため、
-    // 中心座標を画面内に収まる範囲へクランプする。
-    // 90°/-90°回転後の見た目の幅・高さは areaH/areaW と入れ替わる
-    var visHalfW = areaH / 2;
-    var visHalfH = areaW / 2;
     var margin = 8;
     var topSafe = 64; // 右上の「退出/設定」ボタンと被らないための余白
-    centerX = Math.min(Math.max(centerX, visHalfW + margin), window.innerWidth - visHalfW - margin);
-    centerY = Math.min(Math.max(centerY, visHalfH + topSafe), window.innerHeight - visHalfH - margin);
+    anchorX = Math.min(Math.max(anchorX, margin), window.innerWidth - margin);
+    anchorY = Math.min(Math.max(anchorY, topSafe), window.innerHeight - margin);
 
-    set(area,
-      (centerY - areaH / 2) + 'px',
-      (centerX - areaW / 2) + 'px',
-      'auto', 'auto',
-      'rotate(' + angleDeg + 'deg)');
+    // 90°(上家)は基準点を左上角に固定すると画面外(左)へ伸びる向きになるため、
+    // 基準点を左下角に固定して上方向へ伸びるようにする(回転後は右方向=画面内側へ伸びる)。
+    // -90°(下家)は左上角固定のままで画面内側(右方向)へ伸びる。
+    if (angleDeg > 0) {
+      area.style.setProperty('transform-origin', '0 100%', 'important');
+      set(area, 'auto', anchorX + 'px', 'auto', (window.innerHeight - anchorY) + 'px', 'rotate(' + angleDeg + 'deg)');
+    } else {
+      area.style.setProperty('transform-origin', '0 0', 'important');
+      set(area, anchorY + 'px', anchorX + 'px', 'auto', 'auto', 'rotate(' + angleDeg + 'deg)');
+    }
   };
 
   var handRow   = document.querySelector('.jt-hand-tiles-row');
