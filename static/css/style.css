@@ -4984,11 +4984,11 @@ body.is-battle-page .app-main.battle-main {
 /* 鳴き選択ボタン群 */
 .call-actions { flex-wrap: wrap; gap: 6px; }
 
-.btn-pon  { background: linear-gradient(145deg, #4a7cdc, #2a4c9c); border-color: #6a9cff; color: #fff; }
-.btn-chi  { background: linear-gradient(145deg, #3a9c5c, #1a6c3c); border-color: #5acc7c; color: #fff; }
-.btn-kan  { background: linear-gradient(145deg, #9c4a7c, #6c1a4c); border-color: #cc6aac; color: #fff; }
-.btn-ankan { background: linear-gradient(145deg, #7c3a7c, #4c0a4c); border-color: #ac5aac; font-size: 0.78rem; color: #fff; }
-.btn-skip-call { background: rgba(80,80,80,0.6); border-color: rgba(180,180,180,0.3); color: #fff; }
+.btn-pon  { background: linear-gradient(145deg, #4a7cdc, #2a4c9c); border-color: #6a9cff; }
+.btn-chi  { background: linear-gradient(145deg, #3a9c5c, #1a6c3c); border-color: #5acc7c; }
+.btn-kan  { background: linear-gradient(145deg, #9c4a7c, #6c1a4c); border-color: #cc6aac; }
+.btn-ankan { background: linear-gradient(145deg, #7c3a7c, #4c0a4c); border-color: #ac5aac; font-size: 0.78rem; }
+.btn-skip-call { background: rgba(80,80,80,0.6); border-color: rgba(180,180,180,0.3); }
 
 .btn-call, .btn-skip-call, .btn-ankan {
   padding: 7px 14px;
@@ -5934,14 +5934,6 @@ body.is-battle-page {
 }
 .battle-main .jt-center-score-item .pts.plus { color: #8ff0b3; }
 .battle-main .jt-center-score-item .pts.minus { color: #ff9a8a; }
-/* 友人戦：ダイヤモンド化後は .jt-diamond-edge 側にも同じ色分けを適用 */
-.battle-main .jt-diamond-edge .pts.plus { color: #8ff0b3; }
-.battle-main .jt-diamond-edge .pts.minus { color: #ff9a8a; }
-/* 友人戦：持ち時間タイマーはダイヤモンドの下に小さく表示 */
-.fr-diamond-timer {
-  width: 120px;
-  margin: 6px auto 0;
-}
 .fr-turn-timer {
   position: relative;
   height: 18px;
@@ -6285,13 +6277,10 @@ body.is-battle-page {
 .player-meld-area.seat-left,
 .player-meld-area.seat-right {
   flex-direction: row !important;
-  /* nowrapだと画面外にはみ出すため、自分と同じwrap（折り返しあり）に戻す */
-  flex-wrap: wrap !important;
-  /* max-widthが無いとwrapが実際には発生せず、セットが増えるほど
-     横に際限なく伸びてしまう（幅に制限が無いflex containerは
-     折り返すより1行に収めようとするため）。上限を設けて必ず
-     折り返させることで、90°/-90°回転後に縦方向へ暴走するのを防ぐ */
-  max-width: 170px !important;
+  /* wrapだと複数セットが折り返して縦に積まれて見えることがあるため、
+     常に1行に収まるnowrapにする（position:fixedで幅制限が無いため
+     牌が増えても画面外に伸びるだけで折り返さない） */
+  flex-wrap: nowrap !important;
 }
 
 /* 上家・下家は「牌ごと」「セットごと」の個別回転をやめ、

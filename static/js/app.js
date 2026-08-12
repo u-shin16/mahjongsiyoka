@@ -827,35 +827,21 @@ function positionMeldAreas() {
   // 組み立て、その完成した箱を90°/-90°回転させて配置する
   // （牌ごとの回転だと、回転後の見た目サイズとレイアウト上のサイズが
   //   ズレて複数セット時にうまく横に並ばなかったため）
-  //
-  // 基準点は伏せ手牌(.jt-hidden-left/right)ではなく中央ダイヤモンドにする。
-  // 伏せ手牌自体がCSSで回転・センタリングされている特殊な要素で、
-  // それを基準に座標計算すると鳴きが増えたときに位置が大きく崩れる
-  // ことがあったため、Phase1で「回転させない安定した基準点」として
-  // 設計したダイヤモンドの中心を使う
-  var positionRotatedSeat = function(area, refCx, refCy, angleDeg, lift, gap, refHalf) {
-    if (!area) return;
+  var positionRotatedSeat = function(area, handEl, angleDeg, lift, gap, handHalf) {
+    if (!area || !handEl) return;
     if (gap == null) gap = GAP;
+    var hr = handEl.getBoundingClientRect();
+    var hcx = (hr.left + hr.right) / 2;
+    var hcy = (hr.top + hr.bottom) / 2;
     var areaW = area.offsetWidth;
     var areaH = area.offsetHeight;
-    var ox = refHalf + gap + areaW / 2; // 基準点から「右へ」に相当
-    var oy = -lift;                      // 基準点から「上へ」に相当
+    var ox = handHalf + gap + areaW / 2; // 自分の「右へ」に相当
+    var oy = -lift;                       // 自分の「上へ」に相当
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
-    var centerX = refCx + rx;
-    var centerY = refCy + ry;
-
-    // 鳴くほどセットが増えて箱が大きくなり、画面外にはみ出すことがあるため、
-    // 中心座標を画面内に収まる範囲へクランプする。
-    // 90°/-90°回転後の見た目の幅・高さは areaH/areaW と入れ替わる
-    var visHalfW = areaH / 2;
-    var visHalfH = areaW / 2;
-    var margin = 8;
-    var topSafe = 64; // 右上の「退出/設定」ボタンと被らないための余白
-    centerX = Math.min(Math.max(centerX, visHalfW + margin), window.innerWidth - visHalfW - margin);
-    centerY = Math.min(Math.max(centerY, visHalfH + topSafe), window.innerHeight - visHalfH - margin);
-
+    var centerX = hcx + rx;
+    var centerY = hcy + ry;
     set(area,
       (centerY - areaH / 2) + 'px',
       (centerX - areaW / 2) + 'px',
@@ -863,39 +849,22 @@ function positionMeldAreas() {
       'rotate(' + angleDeg + 'deg)');
   };
 
-  var handRow   = document.querySelector('.jt-hand-tiles-row');
-  var oppHand   = document.querySelector('.jt-hidden-top');
-  var leftHand  = document.querySelector('.jt-hidden-left');
+  var handRow  = document.querySelector('.jt-hand-tiles-row');
+  var oppHand  = document.querySelector('.jt-hidden-top');
+  var leftHand = document.querySelector('.jt-hidden-left');
   var rightHand = document.querySelector('.jt-hidden-right');
-
-  // 上家(seat-left)も下家(seat-right)と全く同じ「伏せ手牌基準」の式に揃える。
-  // 前回、上家だけダイヤモンド基準の専用式に変えたが、そもそもの暴走の
-  // 原因は副露エリアにmax-widthが無く折り返しが発生しなかったこと
-  // （直前の修正で対応済み）だったため、他の3席と同じ関係性に戻す
-  var leftCx = 0, leftCy = 0;
-  if (leftHand) {
-    var lhr = leftHand.getBoundingClientRect();
-    leftCx = (lhr.left + lhr.right) / 2;
-    leftCy = (lhr.top + lhr.bottom) / 2;
-  }
-  var rightCx = 0, rightCy = 0;
-  if (rightHand) {
-    var rhr = rightHand.getBoundingClientRect();
-    rightCx = (rhr.left + rhr.right) / 2;
-    rightCy = (rhr.top + rhr.bottom) / 2;
-  }
 
   // 副露エリア
   positionForSeat(document.querySelector('.player-meld-area.seat-self'), handRow, 0, MELD_LIFT, GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-meld-area.seat-opposite'), oppHand, 180, MELD_LIFT, GAP, CPU_HAND_HALF);
-  if (leftHand) positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftCx, leftCy, 90, MELD_LIFT, GAP, CPU_HAND_HALF);
-  if (rightHand) positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightCx, rightCy, -90, MELD_LIFT, GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftHand, 90, MELD_LIFT, GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightHand, -90, MELD_LIFT, GAP, CPU_HAND_HALF);
 
   // 北抜きエリア（副露とは独立配置。手牌が縮んでも動かないよう同じ固定半幅を使う）
   positionForSeat(document.querySelector('.player-nuki-area.seat-self'), handRow, 0, NUKI_LIFT, NUKI_GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-nuki-area.seat-opposite'), oppHand, 180, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  if (leftHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftCx, leftCy, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  if (rightHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightCx, rightCy, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftHand, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightHand, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
 }
 
 // ウィンドウリサイズ時も再配置
@@ -1500,27 +1469,21 @@ var App = {
 
       var mg=mgs[0];var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
       var ch5mg2Hints = [
-        'この問題は「同じ牌3枚の刻子が役牌になれるか、なれるなら三元牌と風牌のどちらか」を問うもの。役牌とは<strong>刻子を作ると役（得点の権利）になる特定の牌</strong>のこと',
-        '<strong>白・發・中（三元牌）</strong>の刻子はいつでも「役牌（三元牌）」。<strong>場の風牌・自分の風牌</strong>の刻子は「役牌（風牌）」。それ以外の牌の刻子は役牌にならないよ',
+        'この問題は「同じ牌3枚の刻子が役牌になれるか？」を問うもの。役牌とは<strong>刻子を作ると役（得点の権利）になる特定の牌</strong>のこと',
+        '役牌になれる牌は決まっている：<strong>白・發・中（三元牌）</strong>と、<strong>場の風牌</strong>と<strong>自分の風牌</strong>。それ以外の牌の刻子は役牌にならないよ',
       ];
       var hLvCh5 = 0;
       main.innerHTML=chHeader('第5章 役牌を作ろう',mg.title,pct,correct,mg.passNeeded)+
         '<div class="game-instruction">'+mg.instruction+'</div>'+
         '<div class="game-area"><div class="tiles-row">'+q.tiles.map(function(t){return Tiles.renderTile(Tiles.make(t.suit,t.num),{noHover:true});}).join('')+'</div>'+
-        '<div class="choice-grid" style="margin-top:14px">'+
-          '<button class="btn-choice" data-ans="dragon">役牌（三元牌）</button>'+
-          '<button class="btn-choice" data-ans="wind">役牌（風牌）</button>'+
-          '<button class="btn-choice" data-ans="none">役牌でない</button>'+
-        '</div>'+
+        '<div class="yn-panel" style="margin-top:14px"><button class="btn btn-yes" id="btnY">○ 役牌</button><button class="btn btn-no" id="btnN">✕ 役牌でない</button></div>'+
         '<div id="feedback"></div></div>'+
         '<div class="btn-row"><button class="btn btn-hint" id="btnHintCh5">💡 ヒントを見る</button></div>'+
         '<div class="hint-box" id="hintBoxCh5"></div>';
       var handleYN=function(ch){if(showingFb)return;showingFb=true;var ok=ch===q.answer;if(ok)correct++;
-        document.querySelectorAll('.choice-grid .btn-choice').forEach(function(b){b.classList.add(b.dataset.ans===q.answer?'correct-ans':'wrong-ans');});
         showFeedback(ok,q.fb,function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){showClear(5,3);}else render();});};
-      document.querySelectorAll('.choice-grid .btn-choice').forEach(function(el){
-        el.addEventListener('click',function(){handleYN(el.dataset.ans);});
-      });
+      document.getElementById('btnY').addEventListener('click',function(){handleYN(true);});
+      document.getElementById('btnN').addEventListener('click',function(){handleYN(false);});
       document.getElementById('btnHintCh5').addEventListener('click', function() {
         var hb=document.getElementById('hintBoxCh5'), btn=document.getElementById('btnHintCh5');
         hLvCh5=Math.min(hLvCh5+1,ch5mg2Hints.length);
@@ -2088,6 +2051,13 @@ var App = {
       var html = meldSetHtml(g.melds && g.melds[seat]);
       return html ? '<div class="fr-melds">' + html + '</div>' : '';
     };
+    var nukiHtml = function(seat) {
+      var tiles = g.nuki && g.nuki[seat] ? g.nuki[seat] : [];
+      if (!tiles.length) return '';
+      return '<div class="fr-nuki-row"><span>抜き北</span>' + tiles.map(function(t) {
+        return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
+      }).join('') + '</div>';
+    };
     var riverHtml = function(seat) {
       return '<div class="fr-river">' + (g.discards[seat] || []).map(function(t) {
         return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' + (t.riichiDiscard ? ' fr-riichi-tile' : '') });
@@ -2207,15 +2177,7 @@ var App = {
           rank.map(function(x, i) { return '<div class="fr-row"><span>' + (i + 1) + '位</span><span class="fr-name">' + esc(x.nm) + '</span><span class="fr-score">' + x.sc.toLocaleString() + '点</span></div>'; }).join('') +
           '<div class="btn-row" style="margin-top:12px"><button class="btn btn-primary" id="btnFrExit">部屋を出る</button></div></div></div>';
       } else if (r && r.type === 'ryukyoku') {
-        var nagashiSeats = r.nagashiMangan || [];
-        var nagashiHtml = nagashiSeats.length
-          ? '<div style="margin:8px 0"><span style="color:var(--gold);font-weight:900">流し満貫！</span>' +
-            nagashiSeats.map(function(ns) { return '<div class="fr-row"><span>' + esc(names[ns]) + '</span></div>'; }).join('') +
-            (r.deltas ? r.deltas.map(function(d, i) { return d !== 0 ? '<div class="fr-row"><span>' + esc(names[i]) + '</span><span style="color:' + (d > 0 ? 'var(--gold)' : '#ff9a8a') + '">' + (d > 0 ? '+' : '') + d.toLocaleString() + '</span></div>' : ''; }).join('') : '') +
-            '</div>'
-          : '';
         endHtml = '<div class="fr-result-float"><div class="fr-panel"><strong>流局</strong>（山がなくなりました）' +
-          nagashiHtml +
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
       } else if (r) {
@@ -2290,35 +2252,22 @@ var App = {
         '</div>' +
       '</div>';
     };
-    // seat → ダイヤモンドの辺（CPU戦と同じ構成：自分=下、対面=上、下家=右、上家=左）
-    var seatEdgeCls = {};
-    seatEdgeCls[my] = 'bottom';
-    seatEdgeCls[topSeat] = 'top';
-    seatEdgeCls[rightSeat] = 'right';
-    if (leftSeat >= 0) seatEdgeCls[leftSeat] = 'left';
-    var centerEdgesHtml = visualSeats.map(function(seat) {
-      var edge = seatEdgeCls[seat];
-      if (!edge) return '';
-      return '<div class="jt-diamond-edge jt-diamond-edge-' + edge + ' seat-' + seat + ' ' + (seat === my ? 'me' : '') + '">' +
-        '<span class="wind">' + seatWind(seat) + '</span>' +
-        '<span class="pts ' + (showDiff && seat !== my ? (g.scores[seat] >= g.scores[my] ? 'plus' : 'minus') : '') + '">' + scoreText(seat) + '</span>' +
-        (isDisconnected(seat) ? '<span class="fr-disconnect-mark">⚡</span>' : '') +
-        (g.riichi[seat] ? '<span class="riichi">R</span>' : '') +
-        (isSanma && nukiCount(seat) > 0 ? '<span class="nuki">北' + nukiCount(seat) + '</span>' : '') +
-      '</div>';
-    }).join('');
-    var centerHtml = '<div class="jt-center">' +
-      '<div class="jt-center-panel jt-center-panel-diamond fr-score-toggle" id="frScoreToggle" title="点差表示">' +
-        '<div class="jt-center-diamond">' +
-          '<div class="jt-center-diamond-inner">' +
-            '<div class="jt-diamond-roundline">東' + g.round + '局</div>' +
-            '<div class="jt-diamond-wall">山' + g.wall.length + '枚</div>' +
-          '</div>' +
-        '</div>' +
-        centerEdgesHtml +
-      '</div>' +
-      (timerHtml ? '<div class="fr-diamond-timer">' + timerHtml + '</div>' : '') +
-    '</div>';
+    var centerScoresHtml = '<div class="jt-center-score-list">' +
+      visualSeats.map(function(seat) {
+        return '<div class="jt-center-score-item seat-' + seat + ' ' + (seat === my ? 'me' : '') + '">' +
+          '<span class="wind">' + seatWind(seat) + '</span>' +
+          '<span class="name">' + esc(names[seat] || ('P' + (seat + 1))) + '</span>' +
+          '<span class="pts ' + (showDiff && seat !== my ? (g.scores[seat] >= g.scores[my] ? 'plus' : 'minus') : '') + '">' + scoreText(seat) + '</span>' +
+          (isDisconnected(seat) ? '<span class="fr-disconnect-mark">⚡</span>' : '') +
+          (g.riichi[seat] ? '<span class="riichi">R</span>' : '') +
+          (isSanma && nukiCount(seat) > 0 ? '<span class="nuki">北' + nukiCount(seat) + '</span>' : '') +
+        '</div>';
+      }).join('') + '</div>';
+    var centerHtml = '<div class="jt-center"><div class="jt-center-panel fr-score-toggle" id="frScoreToggle" title="点差表示">' +
+      '<div class="jt-center-roundline">東' + g.round + '局<span>山' + g.wall.length + '枚</span></div>' +
+      timerHtml +
+      centerScoresHtml +
+    '</div></div>';
     var doraHtml = '<div class="jt-table-dora">ドラ表示：' +
       Tiles.renderTile(g.doraInd, { noHover: true, extraClass: 'xxs' }) +
       ((g.kanDoraInds || []).length ? (g.kanDoraInds || []).map(function(t) {
@@ -2345,9 +2294,7 @@ var App = {
       '<span class="fr-table-msg">' + msg + '</span>' +
       actionBtns +
     '</div>';
-    // 副露(.player-meld-area)と北抜き(.player-nuki-area)はCPU戦と同じく別要素にする
     var perPlayerMeldsHtml = '';
-    var perPlayerNukiHtml = '';
     var seatCls = {};
     seatCls[my] = 'seat-self';
     seatCls[topSeat] = 'seat-opposite';
@@ -2355,13 +2302,9 @@ var App = {
     if (leftSeat >= 0) seatCls[leftSeat] = 'seat-left';
     visualSeats.forEach(function(seat) {
       var sets = meldSetHtml(g.melds && g.melds[seat]);
-      if (sets) perPlayerMeldsHtml += '<div class="player-meld-area ' + seatCls[seat] + '">' + sets + '</div>';
-
-      var nukiTiles = (isSanma && g.nuki && g.nuki[seat]) || [];
-      if (nukiTiles.length) {
-        var nukiTilesHtml = nukiTiles.map(function(t) { return Tiles.renderTile(t, { noHover: true }); }).join('');
-        perPlayerNukiHtml += '<div class="player-nuki-area ' + seatCls[seat] + '">' + nukiTilesHtml + '</div>';
-      }
+      var nuki = nukiHtml(seat);
+      if (!sets && !nuki) return;
+      perPlayerMeldsHtml += '<div class="player-meld-area ' + seatCls[seat] + '">' + sets + nuki + '</div>';
     });
 
     main.innerHTML = '<div class="jt-outer fr-jt-outer">' +
@@ -2401,7 +2344,6 @@ var App = {
             actionHtml +
           '</div>' +
           perPlayerMeldsHtml +
-          perPlayerNukiHtml +
           endHtml +
           waitsBtnHtml +
         '</div>' +
@@ -2409,9 +2351,6 @@ var App = {
       '</div>' +
     '</div>';
     positionDiscardRivers();
-    positionMeldAreas();
-    requestAnimationFrame(positionDiscardRivers);
-    requestAnimationFrame(positionMeldAreas);
 
     var sendFrAction = function(type, payload) {
       FriendGame.sendAction(type, payload)['catch'](function(e) {
