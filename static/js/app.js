@@ -842,6 +842,17 @@ function positionMeldAreas() {
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
     var centerX = hcx + rx;
     var centerY = hcy + ry;
+    // 下家（-90°）は鳴きが増えて縦列が伸びると、上端が右上の「退出/設定」
+    // ボタンと重なってしまうことがあるため、実際に画面上へ描画される
+    // 上端がtopSafeより上に出ないようにクランプする。
+    // ±90°回転では見た目の高さ＝回転前の幅(areaW)になる（縦横が入れ替わる）
+    // ため、centerYの調整もareaWを基準に行う必要がある（他の位置関係・
+    // 伸びる向きはそのまま）。
+    var topSafe = 64;
+    var renderedHalfHeight = areaW / 2;
+    if (centerY - renderedHalfHeight < topSafe) {
+      centerY = topSafe + renderedHalfHeight;
+    }
     set(area,
       (centerY - areaH / 2) + 'px',
       (centerX - areaW / 2) + 'px',
