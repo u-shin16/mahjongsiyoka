@@ -879,12 +879,28 @@ function positionMeldAreas() {
     // 90°(上家)は基準点を左上角に固定すると画面外(左)へ伸びる向きになるため、
     // 基準点を左下角に固定して上方向へ伸びるようにする(回転後は右方向=画面内側へ伸びる)。
     // -90°(下家)は左上角固定のままで画面内側(右方向)へ伸びる。
+    area.style.removeProperty('max-width');
     if (angleDeg > 0) {
       area.style.setProperty('transform-origin', '0 100%', 'important');
       set(area, 'auto', anchorX + 'px', 'auto', (window.innerHeight - anchorY) + 'px', 'rotate(' + angleDeg + 'deg)');
     } else {
       area.style.setProperty('transform-origin', '0 0', 'important');
       set(area, anchorY + 'px', anchorX + 'px', 'auto', 'auto', 'rotate(' + angleDeg + 'deg)');
+    }
+
+    // 鳴き/北抜きが増え続けると、1本の縦列のまま画面外まではみ出して
+    // しまうため、実際にはみ出した分だけ max-width（回転前の「伸びる
+    // 方向」の長さ）を制限し、flex-wrap:wrap（CSS側）で2列目に折り返す。
+    // 90°/-90°回転は拡大縮小を伴わないため、回転前のwidthと回転後の
+    // heightは1:1で対応する。よって実測のはみ出し量をそのまま
+    // max-widthの削減量として使える（事前の角度計算で予測するより、
+    // 実際に描画してから測る方が確実というこのセッションで得た教訓に従う）。
+    var bottomSafe = window.innerHeight - 110; // 手牌操作エリアと被らない余白
+    var rect = area.getBoundingClientRect();
+    var overflow = angleDeg > 0 ? (rect.bottom - bottomSafe) : (topSafe - rect.top);
+    if (overflow > 0) {
+      var cappedWidth = Math.max(rect.height - overflow, 40);
+      area.style.setProperty('max-width', cappedWidth + 'px', 'important');
     }
   };
 
