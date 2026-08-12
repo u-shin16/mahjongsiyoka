@@ -6288,6 +6288,17 @@ body.is-battle-page {
   flex-wrap: nowrap !important;
   width: max-content !important;
 }
+/* 上家・下家は基準点(アンカー)を「列の先頭側」に固定しているため、
+   通常のrow順のままだと最初に鳴いたセットがアンカー(手牌の近く)に
+   居座り続け、後から鳴いたセットだけが遠くに追加されていってしまう。
+   自分・対面は逆に「アンカーが列の末尾側」にあるため、後から鳴いた
+   セットがアンカー付近に来て、先に鳴いたセットが押し出されるように
+   見える。上家・下家もrow-reverseで並び順を逆にし、後から鳴いた
+   セットが常にアンカー付近（手牌の近く）に来るように揃える。 */
+.player-meld-area.seat-left,
+.player-meld-area.seat-right {
+  flex-direction: row-reverse !important;
+}
 
 /* 自分(seat-self)は幅制限なしで横に並べ続ける設計だが、
    position:fixed + left指定のみ(right:auto)だと、実際の幅は
@@ -6354,7 +6365,9 @@ body.is-battle-page {
 .player-nuki-area.seat-right {
   width: max-content !important;
   flex-wrap: nowrap !important;
-  flex-direction: row !important;
+  /* 副露と同じ理由で、後から抜いた北がアンカー(手牌の近く)に
+     来るようにrow-reverseにする */
+  flex-direction: row-reverse !important;
 }
 /* 対面は牌を180°回転（副露と同じ考え方）。上家・下家はエリア全体を
    JS側で丸ごと回転させるので、牌自体は回転させない */
