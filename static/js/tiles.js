@@ -8,14 +8,48 @@ const Tiles = (() => {
   const NUM_KANJI = ['一','二','三','四','五','六','七','八','九'];
   const SPRITE = {
     url: '/static/img/mahjong-tiles.png',
-    sheetW: 1600,
-    sheetH: 890,
-    tileW: 107,
-    tileH: 147,
-    xs: [66, 236, 406, 576, 747, 917, 1087, 1257, 1428],
-    ys: [74, 273, 471, 669],
+    sheetW: 1448,
+    sheetH: 1086,
     displayW: 52,
+    displayH: 71.443,
     smallW: 40,
+    smallH: 54.953,
+    rects: {
+      east: { x: 77, y: 115, w: 133, h: 181 },
+      south: { x: 245, y: 115, w: 132, h: 181 },
+      west: { x: 408, y: 115, w: 133, h: 182 },
+      north: { x: 574, y: 115, w: 131, h: 181 },
+      haku: { x: 739, y: 115, w: 137, h: 181 },
+      hatsu: { x: 916, y: 115, w: 136, h: 181 },
+      chun: { x: 1091, y: 115, w: 136, h: 181 },
+      man1: { x: 46, y: 328, w: 131, h: 184 },
+      man2: { x: 197, y: 328, w: 130, h: 184 },
+      man3: { x: 348, y: 329, w: 133, h: 184 },
+      man4: { x: 499, y: 329, w: 131, h: 184 },
+      man5: { x: 648, y: 329, w: 132, h: 184 },
+      man6: { x: 799, y: 329, w: 133, h: 184 },
+      man7: { x: 953, y: 329, w: 134, h: 184 },
+      man8: { x: 1109, y: 329, w: 154, h: 184 },
+      man9: { x: 1291, y: 330, w: 133, h: 183 },
+      pin1: { x: 46, y: 548, w: 136, h: 189 },
+      pin2: { x: 198, y: 549, w: 129, h: 188 },
+      pin3: { x: 349, y: 549, w: 132, h: 188 },
+      pin4: { x: 499, y: 549, w: 130, h: 187 },
+      pin5: { x: 648, y: 549, w: 131, h: 187 },
+      pin6: { x: 799, y: 549, w: 134, h: 187 },
+      pin7: { x: 955, y: 549, w: 140, h: 188 },
+      pin8: { x: 1119, y: 549, w: 138, h: 188 },
+      pin9: { x: 1284, y: 549, w: 140, h: 188 },
+      sou1: { x: 46, y: 770, w: 135, h: 194 },
+      sou2: { x: 202, y: 771, w: 125, h: 194 },
+      sou3: { x: 350, y: 771, w: 128, h: 194 },
+      sou4: { x: 499, y: 771, w: 132, h: 194 },
+      sou5: { x: 648, y: 771, w: 131, h: 194 },
+      sou6: { x: 799, y: 771, w: 135, h: 194 },
+      sou7: { x: 956, y: 771, w: 136, h: 194 },
+      sou8: { x: 1118, y: 771, w: 140, h: 194 },
+      sou9: { x: 1284, y: 771, w: 140, h: 195 },
+    },
   };
 
   let _idSeq = 0;
@@ -114,23 +148,24 @@ const Tiles = (() => {
   }
 
   function spritePosition(tile) {
-    if (tile.suit === 'wind') return { x: SPRITE.xs[tile.num - 1], y: SPRITE.ys[0] };
-    if (tile.suit === 'dragon') return { x: SPRITE.xs[tile.num + 3], y: SPRITE.ys[0] };
-    if (tile.suit === 'man') return { x: SPRITE.xs[tile.num - 1], y: SPRITE.ys[1] };
-    if (tile.suit === 'pin') return { x: SPRITE.xs[tile.num - 1], y: SPRITE.ys[2] };
-    if (tile.suit === 'sou') return { x: SPRITE.xs[tile.num - 1], y: SPRITE.ys[3] };
+    if (tile.suit === 'wind') return SPRITE.rects[['east', 'south', 'west', 'north'][tile.num - 1]];
+    if (tile.suit === 'dragon') return SPRITE.rects[['haku', 'hatsu', 'chun'][tile.num - 1]];
+    if (tile.suit === 'man') return SPRITE.rects['man' + tile.num];
+    if (tile.suit === 'pin') return SPRITE.rects['pin' + tile.num];
+    if (tile.suit === 'sou') return SPRITE.rects['sou' + tile.num];
     return null;
   }
 
   function spriteStyle(pos, small) {
-    const scale = (small ? SPRITE.smallW : SPRITE.displayW) / SPRITE.tileW;
-    const px = n => `${n.toFixed(3)}px`;
+    const boxW = small ? SPRITE.smallW : SPRITE.displayW;
+    const boxH = small ? SPRITE.smallH : SPRITE.displayH;
+    const scaleX = boxW / pos.w;
+    const scaleY = boxH / pos.h;
+    const px = n => `${Math.round(n)}px`;
     return [
-      `width:${px(SPRITE.tileW * scale)}`,
-      `height:${px(SPRITE.tileH * scale)}`,
-      `background-image:url(${SPRITE.url})`,
-      `background-size:${px(SPRITE.sheetW * scale)} ${px(SPRITE.sheetH * scale)}`,
-      `background-position:${px(-pos.x * scale)} ${px(-pos.y * scale)}`,
+      `width:${px(boxW)}`,
+      `height:${px(boxH)}`,
+      `background:url(${SPRITE.url}) no-repeat ${px(-pos.x * scaleX)} ${px(-pos.y * scaleY)}/${px(SPRITE.sheetW * scaleX)} ${px(SPRITE.sheetH * scaleY)}`,
     ].join(';');
   }
 

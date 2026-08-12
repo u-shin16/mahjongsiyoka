@@ -3576,24 +3576,8 @@ body.is-battle-page .app-main.battle-main {
 }
 
 /* ============================================================
-   USER FIXES: 9索赤・捨て牌配置・対面向き
+   USER FIXES: 捨て牌配置・対面向き
    ============================================================ */
-
-/* 1) 9索の真ん中を赤く */
-.tile[data-suit="sou"][data-num="9"] { position: relative; }
-.tile[data-suit="sou"][data-num="9"]::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 24%;
-  height: 18%;
-  background: #c0392b;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 6;
-}
 
 /* 2) 全員6枚改行 — サイドゾーン幅を6タイル分に拡張 */
 /* zoom 0.54 → 52px × 0.54 ≈ 28px/tile。6枚 + 5gap(2px) = 178px */
@@ -3825,6 +3809,9 @@ body.is-battle-page .app-main.battle-main {
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
   justify-content: center !important;
+  /* overflow-x:auto にすると overflow-y も auto 扱いになり、
+     選択時に浮き上がる牌の上端が見切れるため、逃げ用の余白を確保 */
+  padding-top: 14px !important;
 }
 .jt-hand-in-table .mj-sorted-tiles .tile,
 .jt-hand-in-table .mj-drew-area .tile {
@@ -3833,7 +3820,8 @@ body.is-battle-page .app-main.battle-main {
   cursor: pointer !important;
   flex-shrink: 0 !important;
 }
-.jt-hand-in-table .mj-sorted-tiles .tile.selected {
+.jt-hand-in-table .mj-sorted-tiles .tile.selected,
+.jt-hand-in-table .mj-drew-area .tile.selected {
   transform: translateY(-10px) !important;
   box-shadow: 0 0 0 2px rgba(232,184,75,0.8) !important;
 }
@@ -3842,7 +3830,8 @@ body.is-battle-page .app-main.battle-main {
   cursor: default !important;
   pointer-events: none !important;
 }
-.jt-hand-in-table .mj-sorted-tiles .tile:hover:not(.t-lock) {
+.jt-hand-in-table .mj-sorted-tiles .tile:hover:not(.t-lock),
+.jt-hand-in-table .mj-drew-area .tile:hover {
   transform: translateY(-6px) !important;
 }
 .jt-hand-in-table .mj-hand-sep {
@@ -4984,11 +4973,11 @@ body.is-battle-page .app-main.battle-main {
 /* 鳴き選択ボタン群 */
 .call-actions { flex-wrap: wrap; gap: 6px; }
 
-.btn-pon  { background: linear-gradient(145deg, #4a7cdc, #2a4c9c); border-color: #6a9cff; }
-.btn-chi  { background: linear-gradient(145deg, #3a9c5c, #1a6c3c); border-color: #5acc7c; }
-.btn-kan  { background: linear-gradient(145deg, #9c4a7c, #6c1a4c); border-color: #cc6aac; }
-.btn-ankan { background: linear-gradient(145deg, #7c3a7c, #4c0a4c); border-color: #ac5aac; font-size: 0.78rem; }
-.btn-skip-call { background: rgba(80,80,80,0.6); border-color: rgba(180,180,180,0.3); }
+.btn-pon  { background: linear-gradient(145deg, #4a7cdc, #2a4c9c); border-color: #6a9cff; color: #fff; }
+.btn-chi  { background: linear-gradient(145deg, #3a9c5c, #1a6c3c); border-color: #5acc7c; color: #fff; }
+.btn-kan  { background: linear-gradient(145deg, #9c4a7c, #6c1a4c); border-color: #cc6aac; color: #fff; }
+.btn-ankan { background: linear-gradient(145deg, #7c3a7c, #4c0a4c); border-color: #ac5aac; font-size: 0.78rem; color: #fff; }
+.btn-skip-call { background: rgba(80,80,80,0.6); border-color: rgba(180,180,180,0.3); color: #fff; }
 
 .btn-call, .btn-skip-call, .btn-ankan {
   padding: 7px 14px;
@@ -5628,8 +5617,8 @@ body.is-battle-page {
 
 /* ── 4. 鳴きフロートパネルをコンパクト化 ── */
 .hand-action-float {
-  bottom: 158px !important;
-  right: 10px !important;
+  bottom: 230px !important; /* 抜き北（自分）と被らないよう上に移動 */
+  right: 140px !important; /* 副露・北抜き（自分）と被らないよう内側に移動 */
   max-width: 210px !important;
   gap: 4px !important;
   padding: 4px 6px !important;
@@ -5648,13 +5637,13 @@ body.is-battle-page {
   line-height: 1.2 !important;
 }
 
-/* 鳴きボタン自体を小さく */
+/* 鳴きボタン */
 .hand-action-float [class*="btn-"] {
-  height: 28px !important;
-  padding: 2px 9px !important;
-  font-size: 0.73rem !important;
+  height: 42px !important;
+  padding: 4px 16px !important;
+  font-size: 0.95rem !important;
   border-radius: 999px !important;
-  min-width: 40px !important;
+  min-width: 60px !important;
 }
 
 /* ── 5. 副露牌サイズを少し縮小（0.55 → 0.48）── */
@@ -5934,6 +5923,14 @@ body.is-battle-page {
 }
 .battle-main .jt-center-score-item .pts.plus { color: #8ff0b3; }
 .battle-main .jt-center-score-item .pts.minus { color: #ff9a8a; }
+/* 友人戦：ダイヤモンド化後は .jt-diamond-edge 側にも同じ色分けを適用 */
+.battle-main .jt-diamond-edge .pts.plus { color: #8ff0b3; }
+.battle-main .jt-diamond-edge .pts.minus { color: #ff9a8a; }
+/* 友人戦：持ち時間タイマーはダイヤモンドの下に小さく表示 */
+.fr-diamond-timer {
+  width: 120px;
+  margin: 6px auto 0;
+}
 .fr-turn-timer {
   position: relative;
   height: 18px;
@@ -6304,6 +6301,13 @@ body.is-battle-page {
 .player-meld-area.seat-right .meld-called {
   transform: rotate(-90deg) !important;
   margin: 0 4px !important;
+}
+/* 自分の副露エリアはposition:fixed + left指定のみ(right:auto)だと、
+   実際の幅が画面右端までの残り幅で頭打ちになり、鳴きが増えて
+   残り幅を超えると2行に折り返されてしまう。width:max-contentで
+   画面幅に関係なく必ず1行のまま伸びるようにする。 */
+.player-meld-area.seat-self {
+  width: max-content !important;
 }
 
 /* ============================================================

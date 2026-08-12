@@ -871,6 +871,115 @@ function positionMeldAreas() {
 window.addEventListener('resize', positionDiscardRivers);
 window.addEventListener('resize', positionMeldAreas);
 
+// ============================================================
+// 雀卓UI共通ヘルパー: CPU戦(renderGame)・友人戦(_renderFriend)の
+// 両方から使う「見た目だけ」の純粋な描画関数。ゲームロジックには
+// 一切依存しない（Battle/FriendGameを直接参照しない）ことで、
+// 雀卓の見た目に関する修正が両モードに自動的に反映されるようにする。
+// ============================================================
+var RIVER_COLS = 6;
+var RIVER_ROWS = 4;
+
+function renderHiddenHand(prefix, count, max) {
+  var total = Math.min(count || 0, max || 13);
+  var html = '';
+  for (var i = 0; i < total; i++) {
+    html += Tiles.renderTile({ suit: 'back', num: 0, id: prefix + i }, { faceDown: true, noHover: true, extraClass: 'xxs' });
+  }
+  return html;
+}
+
+function renderDiscardRiverShared(discards, seat, riichiIdx) {
+  var tiles = (discards || []).slice(0, RIVER_COLS * RIVER_ROWS).map(function(d, i) {
+    var tile = (d && d.tile) ? d.tile : d;
+    var isRiichi = (d && d.isRiichiDiscard) || (tile && tile.riichiDiscard) || (riichiIdx != null && i === riichiIdx);
+    var cls = 'river-tile' + (isRiichi ? ' river-riichi' : '');
+    var tileHtml = Tiles.renderTile(tile, { noHover: true, extraClass: cls });
+    var col = i % RIVER_COLS;
+    var rowIdx = Math.floor(i / RIVER_COLS);
+    var gridColumn = (seat === 'opposite') ? (RIVER_COLS - col) : (col + 1);
+    var gridRow = (seat === 'opposite') ? (RIVER_ROWS - rowIdx) : (rowIdx + 1);
+    return '<div class="rtile-wrap" style="grid-column:' + gridColumn + ';grid-row:' + gridRow + '">' + tileHtml + '</div>';
+  }).join('');
+  return '<div class="disc-river disc-river-' + seat + '">' + tiles + '</div>';
+}
+
+function renderSeatBadgeShared(idx, pos, playerCount, name, avatarText, score) {
+  if (idx < 0 || idx >= playerCount) return '';
+  return '<div class="jt-seat jt-seat-' + pos + ' seat-' + idx + '">' +
+    '<div class="jt-seat-avatar"><span>' + esc(avatarText) + '</span></div>' +
+    '<div class="jt-seat-caption">' +
+      '<div class="jt-seat-name">' + esc(name) + '</div>' +
+      '<div class="jt-seat-points">' + score.toLocaleString() + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// opts: { roundLabel, wallCount, seats, edgeOf, selfIdx, windOf(seat), ptsOf(seat),
+//         isRiichi(seat), nukiCountOf(seat), isSanma, diffCls(seat)?, disconnectedOf(seat)?,
+//         clickableId?, timerHtml? }
+function renderCenterDiamondShared(opts) {
+  var centerEdgesHtml = opts.seats.map(function(seat) {
+    var edge = opts.edgeOf[seat];
+    if (!edge) return '';
+    return '<div class="jt-diamond-edge jt-diamond-edge-' + edge + ' seat-' + seat + ' ' + (seat === opts.selfIdx ? 'me' : '') + '">' +
+      '<span class="wind">' + opts.windOf(seat) + '</span>' +
+      '<span class="pts' + (opts.diffCls ? (' ' + opts.diffCls(seat)) : '') + '">' + opts.ptsOf(seat) + '</span>' +
+      (opts.disconnectedOf && opts.disconnectedOf(seat) ? '<span class="fr-disconnect-mark">⚡</span>' : '') +
+      (opts.isRiichi(seat) ? '<span class="riichi">R</span>' : '') +
+      (opts.isSanma && opts.nukiCountOf(seat) > 0 ? '<span class="nuki">北' + opts.nukiCountOf(seat) + '</span>' : '') +
+    '</div>';
+  }).join('');
+  return '<div class="jt-center">' +
+    '<div class="jt-center-panel jt-center-panel-diamond' + (opts.clickableId ? ' fr-score-toggle' : '') + '"' +
+      (opts.clickableId ? (' id="' + opts.clickableId + '" title="点差表示"') : '') + '>' +
+      '<div class="jt-center-diamond">' +
+        '<div class="jt-center-diamond-inner">' +
+          '<div class="jt-diamond-roundline">' + opts.roundLabel + '</div>' +
+          '<div class="jt-diamond-wall">山' + opts.wallCount + '枚</div>' +
+        '</div>' +
+      '</div>' +
+      centerEdgesHtml +
+    '</div>' +
+    (opts.timerHtml ? '<div class="fr-diamond-timer">' + opts.timerHtml + '</div>' : '') +
+  '</div>';
+}
+
+// melds/nuki: seatIdx -> array。seatClsMap: seatIdx -> 'seat-self'等。
+// 戻り値: { melds: html, nuki: html }
+function renderMeldAndNukiAreasShared(melds, nuki, playerCount, seatClsMap, isSanma) {
+  var perPlayerMeldsHtml = '';
+  var perPlayerNukiHtml = '';
+  var buildMeldSets = function(pi) {
+    return (melds[pi] || []).map(function(meld) {
+      var typeLabel = meld.type === 'pon' ? 'ポン' : meld.type === 'chi' ? 'チー' : meld.type === 'kan' ? 'カン' : '暗カン';
+      var meldTiles = meld.tiles.map(function(t, ti) {
+        var isCalled = meld.calledTile && t.id === meld.calledTile.id && ti === meld.tiles.length - 1;
+        var isHidden = meld.type === 'ankan' && (ti === 0 || ti === 3);
+        if (isHidden) return Tiles.renderTile({ suit: 'back', num: 0, id: 'meldh' + pi + '_' + ti }, { faceDown: true, noHover: true, extraClass: 'meld-tile' });
+        return Tiles.renderTile(t, { noHover: true, extraClass: 'meld-tile' + (isCalled ? ' meld-called' : '') });
+      }).join('');
+      return '<div class="meld-set meld-' + meld.type + '"><span class="meld-type-label">' + typeLabel + '</span>' + meldTiles + '</div>';
+    }).join('');
+  };
+  var buildNukiTiles = function(pi) {
+    return ((nuki && nuki[pi]) || []).map(function(t) {
+      return Tiles.renderTile(t, { noHover: true, extraClass: 'meld-tile' });
+    }).join('');
+  };
+  for (var pi = 0; pi < playerCount; pi++) {
+    var cls = seatClsMap[pi];
+    if (!cls) continue;
+    if (melds[pi] && melds[pi].length > 0) {
+      perPlayerMeldsHtml += '<div class="player-meld-area ' + cls + '">' + buildMeldSets(pi) + '</div>';
+    }
+    if (isSanma && nuki && nuki[pi] && nuki[pi].length > 0) {
+      perPlayerNukiHtml += '<div class="player-nuki-area ' + cls + '">' + buildNukiTiles(pi) + '</div>';
+    }
+  }
+  return { melds: perPlayerMeldsHtml, nuki: perPlayerNukiHtml };
+}
+
 // ===== App =====
 var App = {
   history: [],
@@ -1469,21 +1578,27 @@ var App = {
 
       var mg=mgs[0];var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
       var ch5mg2Hints = [
-        'この問題は「同じ牌3枚の刻子が役牌になれるか？」を問うもの。役牌とは<strong>刻子を作ると役（得点の権利）になる特定の牌</strong>のこと',
-        '役牌になれる牌は決まっている：<strong>白・發・中（三元牌）</strong>と、<strong>場の風牌</strong>と<strong>自分の風牌</strong>。それ以外の牌の刻子は役牌にならないよ',
+        'この問題は「同じ牌3枚の刻子が役牌になれるか、なれるなら三元牌と風牌のどちらか」を問うもの。役牌とは<strong>刻子を作ると役（得点の権利）になる特定の牌</strong>のこと',
+        '<strong>白・發・中（三元牌）</strong>の刻子はいつでも「役牌（三元牌）」。<strong>場の風牌・自分の風牌</strong>の刻子は「役牌（風牌）」。それ以外の牌の刻子は役牌にならないよ',
       ];
       var hLvCh5 = 0;
       main.innerHTML=chHeader('第5章 役牌を作ろう',mg.title,pct,correct,mg.passNeeded)+
         '<div class="game-instruction">'+mg.instruction+'</div>'+
         '<div class="game-area"><div class="tiles-row">'+q.tiles.map(function(t){return Tiles.renderTile(Tiles.make(t.suit,t.num),{noHover:true});}).join('')+'</div>'+
-        '<div class="yn-panel" style="margin-top:14px"><button class="btn btn-yes" id="btnY">○ 役牌</button><button class="btn btn-no" id="btnN">✕ 役牌でない</button></div>'+
+        '<div class="choice-grid" style="margin-top:14px">'+
+          '<button class="btn-choice" data-ans="dragon">役牌（三元牌）</button>'+
+          '<button class="btn-choice" data-ans="wind">役牌（風牌）</button>'+
+          '<button class="btn-choice" data-ans="none">役牌でない</button>'+
+        '</div>'+
         '<div id="feedback"></div></div>'+
         '<div class="btn-row"><button class="btn btn-hint" id="btnHintCh5">💡 ヒントを見る</button></div>'+
         '<div class="hint-box" id="hintBoxCh5"></div>';
       var handleYN=function(ch){if(showingFb)return;showingFb=true;var ok=ch===q.answer;if(ok)correct++;
+        document.querySelectorAll('.choice-grid .btn-choice').forEach(function(b){b.classList.add(b.dataset.ans===q.answer?'correct-ans':'wrong-ans');});
         showFeedback(ok,q.fb,function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){showClear(5,3);}else render();});};
-      document.getElementById('btnY').addEventListener('click',function(){handleYN(true);});
-      document.getElementById('btnN').addEventListener('click',function(){handleYN(false);});
+      document.querySelectorAll('.choice-grid .btn-choice').forEach(function(el){
+        el.addEventListener('click',function(){handleYN(el.dataset.ans);});
+      });
       document.getElementById('btnHintCh5').addEventListener('click', function() {
         var hb=document.getElementById('hintBoxCh5'), btn=document.getElementById('btnHintCh5');
         hLvCh5=Math.min(hLvCh5+1,ch5mg2Hints.length);
@@ -2041,22 +2156,15 @@ var App = {
         var tiles = (m.tiles || []).map(function(t, ti) {
           var isCalled = m.calledTile && t.id === m.calledTile.id;
           var isHidden = m.type === 'ankan' && (ti === 0 || ti === 3);
-          if (isHidden) return Tiles.renderTile({ suit: 'back', num: 0, id: 'frh_' + mi + '_' + ti }, { faceDown: true, noHover: true, extraClass: 'xxs' });
-          return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' + (isCalled ? ' meld-called' : '') });
+          if (isHidden) return Tiles.renderTile({ suit: 'back', num: 0, id: 'frh_' + mi + '_' + ti }, { faceDown: true, noHover: true, extraClass: 'meld-tile' });
+          return Tiles.renderTile(t, { noHover: true, extraClass: 'meld-tile' + (isCalled ? ' meld-called' : '') });
         }).join('');
-        return '<div class="fr-meld-set meld-set meld-' + esc(m.type) + '"><span class="meld-type-label">' + typeLabel + '</span>' + tiles + '</div>';
+        return '<div class="meld-set meld-' + esc(m.type) + '"><span class="meld-type-label">' + typeLabel + '</span>' + tiles + '</div>';
       }).join('');
     };
     var meldHtml = function(seat) {
       var html = meldSetHtml(g.melds && g.melds[seat]);
       return html ? '<div class="fr-melds">' + html + '</div>' : '';
-    };
-    var nukiHtml = function(seat) {
-      var tiles = g.nuki && g.nuki[seat] ? g.nuki[seat] : [];
-      if (!tiles.length) return '';
-      return '<div class="fr-nuki-row"><span>抜き北</span>' + tiles.map(function(t) {
-        return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
-      }).join('') + '</div>';
     };
     var riverHtml = function(seat) {
       return '<div class="fr-river">' + (g.discards[seat] || []).map(function(t) {
@@ -2120,15 +2228,12 @@ var App = {
     var ankanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkAnkan(my) : [];
     var kakanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkKakan(my) : [];
     var canNuki = g.isSanma && myTurn && g.phase === 'turn' && myHand.some(function(t) { return FriendGame.isNukiTile(t); });
+    // CPU戦と同じく、鳴き選択・北抜き・暗カン/加カンは手牌右上の
+    // フロートパネル(frCallFloatHtml)に、ツモ・リーチ・ロンは
+    // 手牌下のアクション行(actionBtns)に分けて表示する
     var actionBtns = '';
+    var frCallFloatHtml = '';
     if (myTurn && g.phase === 'turn' && Agari.isWinningHand(myHand)) actionBtns += '<button class="btn-battle btn-tsumo" id="btnFrTsumo">ツモ！</button>';
-    if (canNuki) actionBtns += '<button class="btn-battle btn-nuki" id="btnFrNuki">北抜き</button>';
-    ankanCands.forEach(function(c, ci) {
-      actionBtns += '<button class="btn-battle btn-ankan" data-ankan-idx="' + ci + '">暗カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
-    });
-    kakanCands.forEach(function(c, ci) {
-      actionBtns += '<button class="btn-battle btn-ankan" data-kakan-idx="' + ci + '">加カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
-    });
     var canRiichi = false;
     if (myTurn && g.phase === 'turn' && isClosed && !g.riichi[my] && g.scores[my] >= 1000 && myHand.length % 3 === 2) {
       // どれか1枚を切ればテンパイになる手かどうかを確認してからボタンを出す
@@ -2144,14 +2249,33 @@ var App = {
       actionBtns += '<button class="btn-battle btn-ron" id="btnFrRon">ロン！</button>' +
               '<button class="btn-battle btn-skip" id="btnFrPass">スルー</button>';
     }
+
     if (g.phase === 'call_wait' && g.call && g.call.candidates.indexOf(my) >= 0 && !this._frResponseSent) {
       var callOpts = (g.call.optionsBySeat && g.call.optionsBySeat[my]) || [];
+      var callBtnsHtml = '';
       callOpts.forEach(function(opt, oi) {
         var label = opt.type === 'pon' ? 'ポン' : opt.type === 'chi' ? 'チー' : 'カン';
         var callClass = opt.type === 'pon' ? 'btn-pon' : opt.type === 'chi' ? 'btn-chi' : 'btn-kan';
-        actionBtns += '<button class="btn-battle ' + callClass + '" data-call-idx="' + oi + '" data-call-type="' + esc(opt.type) + '">' + label + '</button>';
+        callBtnsHtml += '<button class="btn-battle btn-call ' + callClass + '" data-call-idx="' + oi + '" data-call-type="' + esc(opt.type) + '">' + label + '</button>';
       });
-      actionBtns += '<button class="btn-battle btn-skip-call" id="btnFrPass">スルー</button>';
+      var callFromName = names[g.call.from] || ('P' + (g.call.from + 1));
+      var callTileLabel = Tiles.label(g.call.tile);
+      frCallFloatHtml =
+        '<div class="hand-action-float">' +
+          '<div class="naki-banner-float">' + esc(callFromName) + ' が <strong>' + esc(callTileLabel) + '</strong> を捨てました</div>' +
+          callBtnsHtml +
+          '<button class="btn-battle btn-skip-call" id="btnFrPass">スキップ</button>' +
+        '</div>';
+    } else {
+      var floatBtnsFr = '';
+      if (canNuki) floatBtnsFr += '<button class="btn-battle btn-nuki" id="btnFrNuki">北抜き</button>';
+      ankanCands.forEach(function(c, ci) {
+        floatBtnsFr += '<button class="btn-battle btn-ankan" data-ankan-idx="' + ci + '">暗カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
+      });
+      kakanCands.forEach(function(c, ci) {
+        floatBtnsFr += '<button class="btn-battle btn-ankan" data-kakan-idx="' + ci + '">加カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
+      });
+      if (floatBtnsFr) frCallFloatHtml = '<div class="hand-action-float">' + floatBtnsFr + '</div>';
     }
     var waitsBtnHtml = '';
     if (myWaits.length > 0) {
@@ -2177,7 +2301,15 @@ var App = {
           rank.map(function(x, i) { return '<div class="fr-row"><span>' + (i + 1) + '位</span><span class="fr-name">' + esc(x.nm) + '</span><span class="fr-score">' + x.sc.toLocaleString() + '点</span></div>'; }).join('') +
           '<div class="btn-row" style="margin-top:12px"><button class="btn btn-primary" id="btnFrExit">部屋を出る</button></div></div></div>';
       } else if (r && r.type === 'ryukyoku') {
+        var nagashiSeats = r.nagashiMangan || [];
+        var nagashiHtml = nagashiSeats.length
+          ? '<div style="margin:8px 0"><span style="color:var(--gold);font-weight:900">流し満貫！</span>' +
+            nagashiSeats.map(function(ns) { return '<div class="fr-row"><span>' + esc(names[ns]) + '</span></div>'; }).join('') +
+            (r.deltas ? r.deltas.map(function(d, i) { return d !== 0 ? '<div class="fr-row"><span>' + esc(names[i]) + '</span><span style="color:' + (d > 0 ? 'var(--gold)' : '#ff9a8a') + '">' + (d > 0 ? '+' : '') + d.toLocaleString() + '</span></div>' : ''; }).join('') : '') +
+            '</div>'
+          : '';
         endHtml = '<div class="fr-result-float"><div class="fr-panel"><strong>流局</strong>（山がなくなりました）' +
+          nagashiHtml +
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
       } else if (r) {
@@ -2214,60 +2346,39 @@ var App = {
     var visualSeats = [selfSeat, rightSeat, topSeat].concat(leftSeat >= 0 ? [leftSeat] : []);
     var isSanma = n === 3;
 
-    var hiddenTiles = function(prefix, count, max) {
-      var total = Math.min(count || 0, max || 13);
-      var html = '';
-      for (var i = 0; i < total; i++) {
-        html += Tiles.renderTile({ suit: 'back', num: 0, id: prefix + i }, { faceDown: true, noHover: true, extraClass: 'xxs' });
-      }
-      return html;
-    };
-    var renderDiscardRiver = function(discards, seat) {
-      var RIVER_COLS = 6;
-      var RIVER_ROWS = 4;
-      var tiles = (discards || []).slice(0, RIVER_COLS * RIVER_ROWS).map(function(tile, i) {
-        var isRiichi = tile && tile.riichiDiscard;
-        var cls = 'river-tile' + (isRiichi ? ' river-riichi' : '');
-        var tileHtml = Tiles.renderTile(tile, { noHover: true, extraClass: cls });
-        var col = i % RIVER_COLS;
-        var rowIdx = Math.floor(i / RIVER_COLS);
-        var gridColumn = seat === 'opposite' ? (RIVER_COLS - col) : (col + 1);
-        var gridRow = seat === 'opposite' ? (RIVER_ROWS - rowIdx) : (rowIdx + 1);
-        return '<div class="rtile-wrap" style="grid-column:' + gridColumn + ';grid-row:' + gridRow + '">' + tileHtml + '</div>';
-      }).join('');
-      return '<div class="disc-river disc-river-' + seat + '">' + tiles + '</div>';
-    };
+    // 雀卓UI共通ヘルパー（CPU戦のrenderGameと共有）を使う
+    var hiddenTiles = renderHiddenHand;
+    var renderDiscardRiver = renderDiscardRiverShared;
     var seatAvatarText = function(seat) {
       if (seat === my) return '私';
       var nm = names[seat] || ('P' + (seat + 1));
       return esc(nm.slice(0, 1));
     };
     var seatBadge = function(seat, pos) {
-      if (seat < 0 || seat >= n) return '';
-      return '<div class="jt-seat jt-seat-' + pos + ' seat-' + seat + '">' +
-        '<div class="jt-seat-avatar"><span>' + seatAvatarText(seat) + '</span></div>' +
-        '<div class="jt-seat-caption">' +
-          '<div class="jt-seat-name">' + esc(names[seat] || ('P' + (seat + 1))) + '</div>' +
-          '<div class="jt-seat-points">' + g.scores[seat].toLocaleString() + '</div>' +
-        '</div>' +
-      '</div>';
+      return renderSeatBadgeShared(seat, pos, n, names[seat] || ('P' + (seat + 1)), seatAvatarText(seat), g.scores[seat]);
     };
-    var centerScoresHtml = '<div class="jt-center-score-list">' +
-      visualSeats.map(function(seat) {
-        return '<div class="jt-center-score-item seat-' + seat + ' ' + (seat === my ? 'me' : '') + '">' +
-          '<span class="wind">' + seatWind(seat) + '</span>' +
-          '<span class="name">' + esc(names[seat] || ('P' + (seat + 1))) + '</span>' +
-          '<span class="pts ' + (showDiff && seat !== my ? (g.scores[seat] >= g.scores[my] ? 'plus' : 'minus') : '') + '">' + scoreText(seat) + '</span>' +
-          (isDisconnected(seat) ? '<span class="fr-disconnect-mark">⚡</span>' : '') +
-          (g.riichi[seat] ? '<span class="riichi">R</span>' : '') +
-          (isSanma && nukiCount(seat) > 0 ? '<span class="nuki">北' + nukiCount(seat) + '</span>' : '') +
-        '</div>';
-      }).join('') + '</div>';
-    var centerHtml = '<div class="jt-center"><div class="jt-center-panel fr-score-toggle" id="frScoreToggle" title="点差表示">' +
-      '<div class="jt-center-roundline">東' + g.round + '局<span>山' + g.wall.length + '枚</span></div>' +
-      timerHtml +
-      centerScoresHtml +
-    '</div></div>';
+    // seat → ダイヤモンドの辺（CPU戦と同じ構成：自分=下、対面=上、下家=右、上家=左）
+    var seatEdgeCls = {};
+    seatEdgeCls[my] = 'bottom';
+    seatEdgeCls[topSeat] = 'top';
+    seatEdgeCls[rightSeat] = 'right';
+    if (leftSeat >= 0) seatEdgeCls[leftSeat] = 'left';
+    var centerHtml = renderCenterDiamondShared({
+      roundLabel: '東' + g.round + '局',
+      wallCount: g.wall.length,
+      seats: visualSeats,
+      edgeOf: seatEdgeCls,
+      selfIdx: my,
+      windOf: seatWind,
+      ptsOf: scoreText,
+      isRiichi: function(seat) { return !!g.riichi[seat]; },
+      nukiCountOf: nukiCount,
+      isSanma: isSanma,
+      diffCls: function(seat) { return showDiff && seat !== my ? (g.scores[seat] >= g.scores[my] ? 'plus' : 'minus') : ''; },
+      disconnectedOf: isDisconnected,
+      clickableId: 'frScoreToggle',
+      timerHtml: timerHtml,
+    });
     var doraHtml = '<div class="jt-table-dora">ドラ表示：' +
       Tiles.renderTile(g.doraInd, { noHover: true, extraClass: 'xxs' }) +
       ((g.kanDoraInds || []).length ? (g.kanDoraInds || []).map(function(t) {
@@ -2294,18 +2405,15 @@ var App = {
       '<span class="fr-table-msg">' + msg + '</span>' +
       actionBtns +
     '</div>';
-    var perPlayerMeldsHtml = '';
+    // 副露(.player-meld-area)と北抜き(.player-nuki-area)はCPU戦と共通の雀卓UIヘルパーを使う
     var seatCls = {};
     seatCls[my] = 'seat-self';
     seatCls[topSeat] = 'seat-opposite';
     seatCls[rightSeat] = 'seat-right';
     if (leftSeat >= 0) seatCls[leftSeat] = 'seat-left';
-    visualSeats.forEach(function(seat) {
-      var sets = meldSetHtml(g.melds && g.melds[seat]);
-      var nuki = nukiHtml(seat);
-      if (!sets && !nuki) return;
-      perPlayerMeldsHtml += '<div class="player-meld-area ' + seatCls[seat] + '">' + sets + nuki + '</div>';
-    });
+    var meldAreasFr = renderMeldAndNukiAreasShared(g.melds || {}, g.nuki, n, seatCls, isSanma);
+    var perPlayerMeldsHtml = meldAreasFr.melds;
+    var perPlayerNukiHtml = meldAreasFr.nuki;
 
     main.innerHTML = '<div class="jt-outer fr-jt-outer">' +
       '<div class="jt-game-topbar">' +
@@ -2343,7 +2451,9 @@ var App = {
             '<div class="jt-hand-tiles-row fr-table-hand" id="frHand"><div class="mj-sorted-tiles">' + handTilesHtml + '</div></div>' +
             actionHtml +
           '</div>' +
+          frCallFloatHtml +
           perPlayerMeldsHtml +
+          perPlayerNukiHtml +
           endHtml +
           waitsBtnHtml +
         '</div>' +
@@ -2351,6 +2461,9 @@ var App = {
       '</div>' +
     '</div>';
     positionDiscardRivers();
+    positionMeldAreas();
+    requestAnimationFrame(positionDiscardRivers);
+    requestAnimationFrame(positionMeldAreas);
 
     var sendFrAction = function(type, payload) {
       FriendGame.sendAction(type, payload)['catch'](function(e) {
@@ -3323,60 +3436,15 @@ var App = {
         '</div>';
       }
 
-      // ── DiscardRiver: Jantama風河コンポーネント ──
-      // props: discards (tile配列), seat ('self'|'opposite'|'left'|'right')
-      // 各捨て牌は {tile, isRiichiDiscard, calledBy} を持てる構造
-      //
-      // 全プレイヤー共通定数（CSSの .disc-river と必ず一致させること）
-      //   zoom 0.50 → tile 26×35px → grid-cell 26×36px + gap 3px
-      //   RIVER_W = 26×6 + 3×5 = 171px
-      //   RIVER_H = 36×4 + 3×3 = 153px
-      var RIVER_COLS = 6;
-      var RIVER_ROWS = 4;
-
-      var renderDiscardRiver = function(discards, seat, riichiIdx) {
-        var tiles = discards.slice(0, RIVER_COLS * RIVER_ROWS).map(function(d, i) {
-          var tile = (d && d.tile) ? d.tile : d;
-          var isRiichi = (d && d.isRiichiDiscard) || (riichiIdx != null && i === riichiIdx);
-          var cls = 'river-tile' + (isRiichi ? ' river-riichi' : '');
-          var tileHtml = Tiles.renderTile(tile, {noHover: true, extraClass: cls});
-
-          // 全員共通: explicit grid-column / grid-row 指定
-          // 空白セル・placeholder は一切描画しない（実在する牌だけ）
-          var _col    = i % RIVER_COLS;                 // 0-indexed: 0=1枚目の列
-          var _rowIdx = Math.floor(i / RIVER_COLS);     // 0-indexed行
-          // gridColumn:
-          //   opposite → 対面視点の左端＝こちらから見て右端から: RIVER_COLS - _col = 6,5,4,3,2,1
-          //   self/left/right → 左→右: _col + 1 = 1,2,3,4,5,6
-          var gridColumn = (seat === 'opposite')
-            ? (RIVER_COLS - _col)
-            : (_col + 1);
-          // gridRow:
-          //   opposite → 下段(4)=中央寄りから上（対面側）へ: RIVER_ROWS - _rowIdx = 4,3,2,1
-          //   self/left/right → 上段(1)から下へ: _rowIdx + 1 = 1,2,3,4
-          var gridRow = (seat === 'opposite')
-            ? (RIVER_ROWS - _rowIdx)
-            : (_rowIdx + 1);
-
-          return '<div class="rtile-wrap" style="grid-column:' + gridColumn
-               + ';grid-row:' + gridRow + '">' + tileHtml + '</div>';
-        }).join('');
-        return '<div class="disc-river disc-river-' + seat + '">' + tiles + '</div>';
-      };
+      // ── DiscardRiver / 伏せ手牌: 雀卓UI共通ヘルパー（renderDiscardRiverShared/renderHiddenHand）を使う ──
+      var renderDiscardRiver = renderDiscardRiverShared;
+      var hiddenTiles = renderHiddenHand;
 
       // ── Helper: render kawa tiles (後方互換) ──
       var kawa = function(discards, max, size) {
         return discards.slice(-max).map(function(t) {
           return Tiles.renderTile(t, {noHover:true, extraClass: size || 'xxs'});
         }).join('');
-      };
-      var hiddenTiles = function(prefix, count, max) {
-        var total = Math.min(count || 0, max || 13);
-        var html = '';
-        for (var i = 0; i < total; i++) {
-          html += Tiles.renderTile({suit:'back', num:0, id:prefix + i}, {faceDown:true, noHover:true, extraClass:'xxs'});
-        }
-        return html;
       };
 
       // Seating: T=対面(2), L=上家(3), R=下家(1)
@@ -3403,16 +3471,9 @@ var App = {
           (s.riichi[idx]?'<span class="rm">R</span>':'') +
         '</div>';
       }
+      var seatMarks = ['私','姫','雀','月'];
       function seatBadge(idx, pos) {
-        if (idx < 0 || idx >= Battle.PLAYER_NAMES.length) return '';
-        var marks = ['私','姫','雀','月'];
-        return '<div class="jt-seat jt-seat-'+pos+' seat-'+idx+'">' +
-          '<div class="jt-seat-avatar"><span>'+marks[idx]+'</span></div>' +
-          '<div class="jt-seat-caption">' +
-            '<div class="jt-seat-name">'+esc(Battle.PLAYER_NAMES[idx])+'</div>' +
-            '<div class="jt-seat-points">'+s.scores[idx].toLocaleString()+'</div>' +
-          '</div>' +
-        '</div>';
+        return renderSeatBadgeShared(idx, pos, Battle.PLAYER_NAMES.length, Battle.PLAYER_NAMES[idx], seatMarks[idx], s.scores[idx]);
       }
 
       // ── 中央ダイアモンド ──
@@ -3425,31 +3486,24 @@ var App = {
       seatEdgeCls[T] = 'top';
       seatEdgeCls[R] = 'right';
       if (L >= 0) seatEdgeCls[L] = 'left';
-      var centerEdgesHtml = Battle.PLAYER_NAMES.map(function(nm, i) {
-        var edge = seatEdgeCls[i];
-        if (!edge) return ''; // 三麻は上家なし
-        return '<div class="jt-diamond-edge jt-diamond-edge-'+edge+' seat-'+i+' '+(i===0?'me':'')+'">' +
-          '<span class="wind">'+Battle.WIND_NAMES[i]+'</span>' +
-          '<span class="pts">'+s.scores[i].toLocaleString()+'</span>' +
-          (s.riichi[i] ? '<span class="riichi">R</span>' : '') +
-          (isSanma && nukiCount(i) > 0 ? '<span class="nuki">北'+nukiCount(i)+'</span>' : '') +
-        '</div>';
-      }).join('');
-      var centerHtml = '<div class="jt-center">' +
-        '<div class="jt-center-panel jt-center-panel-diamond">' +
-          '<div class="jt-center-diamond">' +
-            '<div class="jt-center-diamond-inner">' +
-              '<div class="jt-diamond-roundline">'+Battle.getRoundLabel()+'</div>' +
-              '<div class="jt-diamond-wall">山'+s.wall.length+'枚</div>' +
-            '</div>' +
-          '</div>' +
-          centerEdgesHtml +
-        '</div>' +
-      '</div>';
+      var battleSeats = Battle.PLAYER_NAMES.map(function(nm, i) { return i; });
+      var centerHtml = renderCenterDiamondShared({
+        roundLabel: Battle.getRoundLabel(),
+        wallCount: s.wall.length,
+        seats: battleSeats,
+        edgeOf: seatEdgeCls,
+        selfIdx: 0,
+        windOf: function(i) { return Battle.WIND_NAMES[i]; },
+        ptsOf: function(i) { return s.scores[i].toLocaleString(); },
+        isRiichi: function(i) { return !!s.riichi[i]; },
+        nukiCountOf: nukiCount,
+        isSanma: isSanma,
+      });
 
       // ── 手牌HTML（tableHtml より先に定義） ──
-      // ── 暗カン候補 ──
+      // ── 暗カン・加カン候補 ──
       var ankanCands = (s.phase === 'player_turn') ? Battle.checkAnkan() : [];
+      var kakanCands = (s.phase === 'player_turn') ? Battle.checkKakan() : [];
 
       // ─────────────────────────────────────────────────────────
       // callFloatHtml: 手牌右上に固定表示する鳴き選択 / 北抜き / 暗カン
@@ -3468,13 +3522,10 @@ var App = {
             callBtns += '<button class="btn-battle btn-call btn-chi" data-call-idx="'+idx+'">チー ('+setLabel+')</button>';
           }
         });
-        var fromName = cp ? Battle.PLAYER_NAMES[cp.fromPlayer] : '';
-        var tileLabel = cp ? Tiles.label(cp.tile) : '';
         callFloatHtml =
           '<div class="hand-action-float">' +
-            '<div class="naki-banner-float">'+esc(fromName)+' が <strong>'+esc(tileLabel)+'</strong> を捨てました</div>' +
             callBtns +
-            '<button class="btn-battle btn-skip-call" id="btnSkipCall">スキップ</button>' +
+            '<button class="btn-battle btn-skip-call" id="btnSkipCall">スルー</button>' +
           '</div>';
       } else if (s.phase === 'player_turn' || s.phase === 'naki_discard') {
         var floatBtns = '';
@@ -3483,7 +3534,10 @@ var App = {
           floatBtns += '<button class="btn-battle btn-nuki" id="btnNuki">'+(selectedIsNuki0 ? '北を抜く' : '北抜き')+'</button>';
         }
         ankanCands.forEach(function(ak) {
-          floatBtns += '<button class="btn-battle btn-ankan" data-tile="'+esc(JSON.stringify(ak.tiles[0]))+'">暗カン('+Tiles.label(ak.tiles[0])+')</button>';
+          floatBtns += '<button class="btn-battle btn-ankan" data-tile="'+esc(JSON.stringify(ak.tiles[0]))+'">カン</button>';
+        });
+        kakanCands.forEach(function(kk) {
+          floatBtns += '<button class="btn-battle btn-ankan" data-kakan-tile="'+esc(JSON.stringify(kk.tiles[0]))+'">カン</button>';
         });
         if (floatBtns) {
           callFloatHtml = '<div class="hand-action-float">'+floatBtns+'</div>';
@@ -3496,54 +3550,16 @@ var App = {
       var allMeldsHtml = '';  // 旧グローバルパネルは使用しない
       var perPlayerMeldsHtml = '';
       var perPlayerNukiHtml = '';
-      (function() {
-        if (!s.melds) return;
-        // プレイヤーインデックス → seat クラス名
-        var seatCls = {};
-        seatCls[0] = 'seat-self';
-        seatCls[T] = 'seat-opposite';
-        if (L >= 0) seatCls[L] = 'seat-left';
-        seatCls[R] = 'seat-right';
-
-        // 副露パネルHTML生成ヘルパー
-        var buildMeldSets = function(pi) {
-          return s.melds[pi].map(function(meld) {
-            var typeLabel = meld.type==='pon'?'ポン':meld.type==='chi'?'チー':meld.type==='kan'?'カン':'暗カン';
-            var meldTiles = meld.tiles.map(function(t, ti) {
-              var isCalled = meld.calledTile && Tiles.isSame(t, meld.calledTile) && ti === meld.tiles.length - 1;
-              var isHidden = meld.type === 'ankan' && (ti === 0 || ti === 3);
-              if (isHidden) return Tiles.renderTile({suit:'back',num:0,id:'ah'+pi+'_'+ti}, {faceDown:true, noHover:true, extraClass:'meld-tile'});
-              return Tiles.renderTile(t, {noHover:true, extraClass:'meld-tile'+(isCalled?' meld-called':'')});
-            }).join('');
-            return '<div class="meld-set meld-'+meld.type+'"><span class="meld-type-label">'+typeLabel+'</span>'+meldTiles+'</div>';
-          }).join('');
-        };
-
-        // 抜き北パネルHTML生成ヘルパー（実際の牌画像を表示）
-        var buildNukiTiles = function(pi) {
-          return (s.nuki[pi] || []).map(function(t) {
-            return Tiles.renderTile(t, {noHover:true, extraClass:'meld-tile'});
-          }).join('');
-        };
-
-        // 副露(.player-meld-area)と北抜き(.player-nuki-area)は別要素にする。
-        // 同じ箱に入れると、鳴きの有無でエリア全体のサイズが変わり
-        // 北抜きの位置までつられて動いてしまうため、それぞれ独立して配置する
-        for (var pi = 0; pi < s.playerCount; pi++) {
-          var cls = seatCls[pi];
-          if (!cls) continue;
-
-          var hasMelds = s.melds[pi] && s.melds[pi].length > 0;
-          if (hasMelds) {
-            perPlayerMeldsHtml += '<div class="player-meld-area '+cls+'">' + buildMeldSets(pi) + '</div>';
-          }
-
-          var hasNuki = isSanma && s.nuki && s.nuki[pi] && s.nuki[pi].length > 0;
-          if (hasNuki) {
-            perPlayerNukiHtml += '<div class="player-nuki-area '+cls+'">' + buildNukiTiles(pi) + '</div>';
-          }
-        }
-      })();
+      if (s.melds) {
+        var meldSeatCls = {};
+        meldSeatCls[0] = 'seat-self';
+        meldSeatCls[T] = 'seat-opposite';
+        if (L >= 0) meldSeatCls[L] = 'seat-left';
+        meldSeatCls[R] = 'seat-right';
+        var meldAreas = renderMeldAndNukiAreasShared(s.melds, s.nuki, s.playerCount, meldSeatCls, isSanma);
+        perPlayerMeldsHtml = meldAreas.melds;
+        perPlayerNukiHtml = meldAreas.nuki;
+      }
 
       // ─────────────────────────────────────────────────────────
       // actionHtml: 手牌エリア内のボタン（ツモ/リーチ/ヒント/AI のみ）
@@ -3636,8 +3652,6 @@ var App = {
             // ── 手牌エリア（テーブル上に表示） ──
             '<div class="jt-hand-in-table">' +
               '<div class="jt-hand-infobar">' +
-                '<span><span class="wind">'+Battle.WIND_NAMES[0]+'</span> あなた</span>' +
-                '<span class="score">'+s.scores[0].toLocaleString()+'点</span>' +
                 (isSanma ? '<span class="mj-nuki-count">抜き北 '+nukiCount(0)+'</span>' : '') +
                 (isRiichi ? '<span class="mj-riichi-badge">リーチ中</span>' : '') +
                 (!isRiichi && canRiichi ? '<span class="mj-tenpai-notice">🀄 テンパイ！</span>' : '') +
@@ -3848,6 +3862,18 @@ var App = {
             var ok = Battle.playerAnkan(tile);
             if (ok) clearBattleAdvice();
             if (ok) { log('暗カン！', 'ev-discard'); afterDiscard(); }
+          } catch(e) {}
+        });
+      });
+
+      // 加カンボタン
+      document.querySelectorAll('.btn-ankan[data-kakan-tile]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          try {
+            var kTile = JSON.parse(btn.dataset.kakanTile);
+            var ok = Battle.playerKakan(kTile);
+            if (ok) clearBattleAdvice();
+            if (ok) { log('加カン！', 'ev-discard'); afterDiscard(); }
           } catch(e) {}
         });
       });
