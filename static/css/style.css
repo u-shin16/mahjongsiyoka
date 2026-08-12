@@ -6277,31 +6277,16 @@ body.is-battle-page {
   /* nowrapだと画面外にはみ出すため、自分と同じwrap（折り返しあり）に戻す */
   flex-wrap: wrap !important;
 }
-/* 上家・下家は箱ごと90°/-90°回転するため、セット同士が横に並んだまま
-   増えると、回転後は縦方向へ際限なく暴走してしまう。
-   flex-wrap+max-widthで折り返す方式だと、折り返した各行が箱の
-   最大幅いっぱいまで引き伸ばされてしまい（内容が1セット分しか無くても）、
-   回転後の見た目の高さが常に上限値に張り付いて縦長に見えてしまうため、
-   flex-direction:columnで「セットを縦に積む」形に切り替える。
-   回転後はこの列がそのまま横方向の並びになるため、セットが
-   増えるほど横に伸びる（対面・自分と同じ見た目）。
-   対面は牌1枚ずつ180°回転するだけで箱自体は回転しないため、
-   自分(seat-self)と同じくrow+wrapのまま(max-width制限も不要)。 */
+/* 上家・下家は箱ごと90°/-90°回転する。セット内の牌(row方向)と
+   セット同士の並び(親のrow方向)を同じ軸に揃えることで、複数セットが
+   「横に別カラムで並ぶ」のではなく、1セット目の牌の続きとして
+   2セット目の牌がそのまま縦に連結される（1本の縦列）ようにする。
+   （親をcolumnにすると、セット内はrow・セット同士はcolumnという
+   直交した軸になり、回転後に2列のグリッド状になってしまっていた） */
 .player-meld-area.seat-left,
 .player-meld-area.seat-right {
   flex-wrap: nowrap !important;
-  width: fit-content !important;
-}
-/* 90°回転する上家は column、-90°回転する下家は column-reverse。
-   回転方向によって「積む方向」を逆にしないと、画面外(左方向)に
-   はみ出す向きに伸びてしまうため（positionRotatedSeatの
-   transform-origin:0 0 と組み合わせて、どちらも画面内側＝
-   セルフや対面と同じ横方向へ伸びるように揃えている） */
-.player-meld-area.seat-left {
-  flex-direction: column-reverse !important;
-}
-.player-meld-area.seat-right {
-  flex-direction: column !important;
+  width: max-content !important;
 }
 
 /* 自分(seat-self)は幅制限なしで横に並べ続ける設計だが、
@@ -6361,21 +6346,15 @@ body.is-battle-page {
 .player-nuki-area.seat-self {
   width: max-content !important;
 }
-/* 上家・下家の北抜きも副露と同じ考え方（自分の位置関係を回転させて
-   再現する）で配置する。副露と同じ軸で画面内側へ伸びるが、
-   GAP(NUKI_GAP_SIDE)を副露より大きくして別レーンに逃がすことで
-   重ならないようにする。副露と同じくflex-direction:column系で
-   「回転前の高さ」を伸ばし、回転後は横方向に安定して伸びる。 */
+/* 上家・下家の北抜きも副露と全く同じrow方向のレイアウトで配置する。
+   副露とのレーン分けはJS側のNUKI_LIFT_SIDE（画面の横方向オフセットに
+   変換されるLIFT値）で行う（GAP側で分けると、伸びる方向＝画面の
+   縦方向に沿ってズラすだけになり、牌が増えると結局追いついて重なる）。 */
 .player-nuki-area.seat-left,
 .player-nuki-area.seat-right {
-  width: fit-content !important;
+  width: max-content !important;
   flex-wrap: nowrap !important;
-}
-.player-nuki-area.seat-left {
-  flex-direction: column-reverse !important;
-}
-.player-nuki-area.seat-right {
-  flex-direction: column !important;
+  flex-direction: row !important;
 }
 /* 対面は牌を180°回転（副露と同じ考え方）。上家・下家はエリア全体を
    JS側で丸ごと回転させるので、牌自体は回転させない */
