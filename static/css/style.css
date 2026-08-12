@@ -6361,21 +6361,15 @@ body.is-battle-page {
 .player-nuki-area.seat-self {
   width: max-content !important;
 }
-/* 上家・下家は副露エリアと同じくJSで箱ごと回転させる。デフォルトの
-   横並び(row)のままだと、北抜きが増えるほど回転前の「幅」が伸び、
-   回転後は画面の縦方向にズレて見えてしまうため、副露エリアと同じ
-   flex-direction:columnにして「回転前の高さ」が伸びる形に揃える
-   （回転後は横方向に伸びるようになり、位置が固定されたままになる） */
+/* 上家・下家の北抜きは、副露と同じ軸(画面内側=横方向)に伸ばすと、
+   複数セットの副露エリアと場所を取り合って重なってしまう
+   （副露が伸びる分だけ場所を空けておく設計ではないため）。
+   北抜きはデフォルトのrow(牌が横並びのまま=回転前の幅が伸びる)を
+   維持し、JS側のpositionRotatedSeat(growDown)で画面下方向へ
+   伸ばすことで、副露と軸を変えて衝突を避ける。 */
 .player-nuki-area.seat-left,
 .player-nuki-area.seat-right {
   width: fit-content !important;
-}
-/* 副露エリアと同じ理由でcolumn/column-reverseを回転方向ごとに使い分ける */
-.player-nuki-area.seat-left {
-  flex-direction: column-reverse !important;
-}
-.player-nuki-area.seat-right {
-  flex-direction: column !important;
 }
 /* 対面は牌を180°回転（副露と同じ考え方）。上家・下家はエリア全体を
    JS側で丸ごと回転させるので、牌自体は回転させない */

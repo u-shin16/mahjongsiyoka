@@ -792,8 +792,12 @@ function positionMeldAreas() {
   // 常に使うことで、鳴いても位置が動かないようにする）。
   var GAP            = 10;  // 手牌の端からの隙間(px)
   var MELD_LIFT       = 54;  // 副露の、手牌中央からのオフセット(px)
-  var NUKI_GAP        = 70;  // 北抜きの、手牌の端からの隙間(px)（副露よりさらに右）
-  var NUKI_LIFT        = 110; // 北抜きの、手牌中央からのオフセット(px)
+  var NUKI_GAP        = 70;  // 北抜きの、手牌の端からの隙間(px)（副露よりさらに右）※自分・対面用
+  var NUKI_LIFT        = 110; // 北抜きの、手牌中央からのオフセット(px)※自分・対面用
+  // 上家・下家の北抜きは副露と軸を変えて画面下方向へ伸ばす(growDown)ため、
+  // 副露の下端(高さ固定・約86px)より確実に下から始まるよう別の定数を使う
+  var NUKI_GAP_SIDE   = -10; // 上家・下家用：値が小さいほど副露の下端から離れる
+  var NUKI_LIFT_SIDE  = 110; // 上家・下家用：手牌からの横方向オフセット
   var SELF_HAND_HALF  = 373; // 自分の手牌(52px牌×13+ツモ牌+区切り線)の満卓時の半幅
   var CPU_HAND_HALF   = 187; // CPUの伏せ手牌(26px牌×13)の満卓時の半幅
 
@@ -833,7 +837,7 @@ function positionMeldAreas() {
   // それを基準に座標計算すると鳴きが増えたときに位置が大きく崩れる
   // ことがあったため、Phase1で「回転させない安定した基準点」として
   // 設計したダイヤモンドの中心を使う
-  var positionRotatedSeat = function(area, refCx, refCy, angleDeg, lift, gap, refHalf) {
+  var positionRotatedSeat = function(area, refCx, refCy, angleDeg, lift, gap, refHalf, growDown) {
     if (!area) return;
     if (gap == null) gap = GAP;
     // 基準点(anchorX/anchorY)は箱自身の現在のサイズに一切依存させない固定値にする。
@@ -856,6 +860,18 @@ function positionMeldAreas() {
     var topSafe = 64; // 右上の「退出/設定」ボタンと被らないための余白
     anchorX = Math.min(Math.max(anchorX, margin), window.innerWidth - margin);
     anchorY = Math.min(Math.max(anchorY, topSafe), window.innerHeight - margin);
+
+    if (growDown) {
+      // 北抜き用: 副露と同じ軸(画面内側=横方向)に伸ばすと、複数セットの
+      // 副露と同じ場所を取り合って重なってしまう。北抜きは牌の並び方向
+      // (flex-direction:row)を副露と変えず、画面下方向へ伸ばすことで
+      // 副露と衝突しないようにする。上家はx=0(左端)、下家はx=100%(右端)
+      // を基準にすると、どちらも回転後は画面下方向へ伸びる。
+      var originX = angleDeg > 0 ? '0' : '100%';
+      area.style.setProperty('transform-origin', originX + ' 0', 'important');
+      set(area, anchorY + 'px', anchorX + 'px', 'auto', 'auto', 'rotate(' + angleDeg + 'deg)');
+      return;
+    }
 
     // 90°(上家)は基準点を左上角に固定すると画面外(左)へ伸びる向きになるため、
     // 基準点を左下角に固定して上方向へ伸びるようにする(回転後は右方向=画面内側へ伸びる)。
@@ -900,8 +916,8 @@ function positionMeldAreas() {
   // 北抜きエリア（副露とは独立配置。手牌が縮んでも動かないよう同じ固定半幅を使う）
   positionForSeat(document.querySelector('.player-nuki-area.seat-self'), handRow, 0, NUKI_LIFT, NUKI_GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-nuki-area.seat-opposite'), oppHand, 180, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  if (leftHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftCx, leftCy, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  if (rightHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightCx, rightCy, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
+  if (leftHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftCx, leftCy, 90, NUKI_LIFT_SIDE, NUKI_GAP_SIDE, CPU_HAND_HALF, true);
+  if (rightHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightCx, rightCy, -90, NUKI_LIFT_SIDE, NUKI_GAP_SIDE, CPU_HAND_HALF, true);
 }
 
 // ウィンドウリサイズ時も再配置
