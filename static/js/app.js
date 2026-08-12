@@ -822,11 +822,11 @@ function positionMeldAreas() {
     set(area, ay + 'px', ax + 'px', 'auto', 'auto', 'translate(' + tx + '%, ' + ty + '%)');
   };
 
-  // 上家・下家は「牌ごとに回転」ではなく「エリア全体を1つの箱として
-  // 丸ごと回転」させる。内部は自分と同じ普通の横並びレイアウトのまま
-  // 組み立て、その完成した箱を90°/-90°回転させて配置する
-  // （牌ごとの回転だと、回転後の見た目サイズとレイアウト上のサイズが
-  //   ズレて複数セット時にうまく横に並ばなかったため）
+  // 上家・下家の副露/北抜きも、対面と同じく牌は回転させず(＝読める向きのまま)、
+  // 位置だけその席の近くに置く。以前は箱ごと90°/-90°回転させて奥行きを
+  // 出していたが、「自分や対面と同じ向きで読みたい」という指摘のため、
+  // 箱の回転はやめて自分/対面と全く同じ見た目(横一列、鳴いた牌だけ
+  // meld-called で-90°に傾く)に統一する。
   //
   // 基準点は伏せ手牌(.jt-hidden-left/right)ではなく中央ダイヤモンドにする。
   // 伏せ手牌自体がCSSで回転・センタリングされている特殊な要素で、
@@ -836,14 +836,8 @@ function positionMeldAreas() {
   var positionRotatedSeat = function(area, refCx, refCy, angleDeg, lift, gap, refHalf) {
     if (!area) return;
     if (gap == null) gap = GAP;
-    // 基準点(anchorX/anchorY)は箱自身の現在のサイズに一切依存させない固定値にする。
-    // 以前は箱の中心を基準点に合わせていたため、鳴き/北抜きが増えて箱が
-    // 大きくなるたびに中心を保ったまま上下左右へ均等に広がって見えていた
-    // （90°/-90°回転した席では、この「箱の半分ぶん」のズレがそのまま
-    // 画面の縦方向へ変換されるため、鳴くたびに上へズレていくように見えた）。
-    // 代わりに transform-origin を箱の左上角に固定し、その角を基準点に
-    // ピン留めしたまま回転させることで、箱は常にその角から一方向にだけ
-    // 伸びるようになり、基準点自体は完全に不動になる。
+    // 基準点(anchorX/anchorY)は箱自身の現在のサイズに一切依存させない固定値にする
+    // （鳴き/北抜きが増えて箱が大きくなっても基準点自体は動かないようにするため）。
     var ox = refHalf + gap; // 基準点から「右へ」に相当（固定値）
     var oy = -lift;          // 基準点から「上へ」に相当
     var rad = angleDeg * Math.PI / 180;
@@ -857,16 +851,12 @@ function positionMeldAreas() {
     anchorX = Math.min(Math.max(anchorX, margin), window.innerWidth - margin);
     anchorY = Math.min(Math.max(anchorY, topSafe), window.innerHeight - margin);
 
-    // 90°(上家)は基準点を左上角に固定すると画面外(左)へ伸びる向きになるため、
-    // 基準点を左下角に固定して上方向へ伸びるようにする(回転後は右方向=画面内側へ伸びる)。
-    // -90°(下家)は左上角固定のままで画面内側(右方向)へ伸びる。
-    if (angleDeg > 0) {
-      area.style.setProperty('transform-origin', '0 100%', 'important');
-      set(area, 'auto', anchorX + 'px', 'auto', (window.innerHeight - anchorY) + 'px', 'rotate(' + angleDeg + 'deg)');
-    } else {
-      area.style.setProperty('transform-origin', '0 0', 'important');
-      set(area, anchorY + 'px', anchorX + 'px', 'auto', 'auto', 'rotate(' + angleDeg + 'deg)');
-    }
+    // 箱は回転させない。90°(上家)は画面内側=右方向へ伸ばしたいので左端(tx=0)基準、
+    // -90°(下家)は画面内側=左方向へ伸ばしたいので右端(tx=-100)基準にする。
+    // 縦方向は中央基準(ty=-50%)：幅は max-content で折り返さないため
+    // 高さは常に1行分で一定になり、中央基準でもズレは発生しない。
+    var tx = angleDeg > 0 ? 0 : -100;
+    set(area, anchorY + 'px', anchorX + 'px', 'auto', 'auto', 'translate(' + tx + '%, -50%)');
   };
 
   var handRow   = document.querySelector('.jt-hand-tiles-row');
