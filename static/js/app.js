@@ -794,10 +794,11 @@ function positionMeldAreas() {
   var MELD_LIFT       = 54;  // 副露の、手牌中央からのオフセット(px)
   var NUKI_GAP        = 70;  // 北抜きの、手牌の端からの隙間(px)（副露よりさらに右）※自分・対面用
   var NUKI_LIFT        = 110; // 北抜きの、手牌中央からのオフセット(px)※自分・対面用
-  // 上家・下家の北抜きは副露と軸を変えて画面下方向へ伸ばす(growDown)ため、
-  // 副露の下端(高さ固定・約86px)より確実に下から始まるよう別の定数を使う
-  var NUKI_GAP_SIDE   = -10; // 上家・下家用：値が小さいほど副露の下端から離れる
-  var NUKI_LIFT_SIDE  = 110; // 上家・下家用：手牌からの横方向オフセット
+  // 上家・下家の北抜きも、副露と全く同じ考え方(自分と同じ関係を回転させる)で
+  // 位置決めする。副露と同じ軸で伸びるが、GAPを副露より大きくして
+  // 別レーンに逃がすことで重ならないようにする（自分がNUKI_GAP=70 > GAP=10で
+  // 副露よりさらに手前に配置しているのと同じ考え方）
+  var NUKI_GAP_SIDE   = 150; // 上家・下家用：副露(GAP=10)より大きくして別レーンに
   var SELF_HAND_HALF  = 373; // 自分の手牌(52px牌×13+ツモ牌+区切り線)の満卓時の半幅
   var CPU_HAND_HALF   = 187; // CPUの伏せ手牌(26px牌×13)の満卓時の半幅
 
@@ -916,8 +917,8 @@ function positionMeldAreas() {
   // 北抜きエリア（副露とは独立配置。手牌が縮んでも動かないよう同じ固定半幅を使う）
   positionForSeat(document.querySelector('.player-nuki-area.seat-self'), handRow, 0, NUKI_LIFT, NUKI_GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-nuki-area.seat-opposite'), oppHand, 180, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  if (leftHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftCx, leftCy, 90, NUKI_LIFT_SIDE, NUKI_GAP_SIDE, CPU_HAND_HALF, true);
-  if (rightHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightCx, rightCy, -90, NUKI_LIFT_SIDE, NUKI_GAP_SIDE, CPU_HAND_HALF, true);
+  if (leftHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftCx, leftCy, 90, MELD_LIFT, NUKI_GAP_SIDE, CPU_HAND_HALF);
+  if (rightHand) positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightCx, rightCy, -90, MELD_LIFT, NUKI_GAP_SIDE, CPU_HAND_HALF);
 }
 
 // ウィンドウリサイズ時も再配置
