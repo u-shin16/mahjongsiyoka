@@ -51,6 +51,8 @@ var Battle = (function() {
       ippatsuActive: makePlayerArray(playerCount, false),
       riichiDouble: makePlayerArray(playerCount, false),
       rinshanPending: false,
+      tempFuriten: makePlayerArray(playerCount, false),
+      riichiFuriten: makePlayerArray(playerCount, false),
       nuki: makePlayerArray(playerCount, function() { return []; }),
       melds:  makePlayerArray(playerCount, function() { return []; }),
       callPending:    null,   // pending_call 時に鳴き選択肢を保存
@@ -88,6 +90,8 @@ var Battle = (function() {
     state.ippatsuActive     = makePlayerArray(state.playerCount, false);
     state.riichiDouble      = makePlayerArray(state.playerCount, false);
     state.rinshanPending    = false;
+    state.tempFuriten      = makePlayerArray(state.playerCount, false);
+    state.riichiFuriten    = makePlayerArray(state.playerCount, false);
     state.nuki             = makePlayerArray(state.playerCount, function() { return []; });
     state.melds            = makePlayerArray(state.playerCount, function() { return []; });
     state.callPending      = null;
@@ -246,6 +250,23 @@ var Battle = (function() {
     });
   }
 
+  // フリテン：以下のいずれかに該当する席はロン不可（ツモは可）
+  // 1. 自分の捨て牌の中に、今の待ち牌が含まれている（永久）
+  // 2. 同巡内に一度でも当たり牌の見逃しがあった（次の自分の打牌まで）
+  // 3. リーチ後に当たり牌を見逃した（そのまま局が終わるまで）
+  function isFuriten(seat) {
+    if (state.riichiFuriten[seat]) return true;
+    if (state.tempFuriten[seat]) return true;
+    var waits = getBattleWaits(state.hands[seat]);
+    return Yaku.isFuritenBySelf(waits, state.discards[seat]);
+  }
+
+  // 当たり牌の見逃し（ロンできたのにしなかった）をフリテンとして記録する
+  function markMissedRon(seat) {
+    if (state.riichi[seat]) state.riichiFuriten[seat] = true;
+    else state.tempFuriten[seat] = true;
+  }
+
   function calcShanten(tiles) {
     var sorted = Tiles.sortTiles(tiles);
     var n = sorted.length;
@@ -310,14 +331,17 @@ var Battle = (function() {
     state.discards[0].push(discarded);
     state.selectedIdx = -1;
     state.drewTile = null;
+    // 自分の打牌で同巡内フリテンは解消（永久フリテンは解消されない）
+    state.tempFuriten[0] = false;
 
     // リーチ宣言後、自分の次の打牌が来たら一発のチャンスは終わり
     if (state.ippatsuActive[0]) {
       state.ippatsuActive[0] = false;
     }
 
-    // CPU ロンチェック
+    // CPU ロンチェック（フリテンの席はロンできない）
     for (var i = 1; i < state.playerCount; i++) {
+      if (isFuriten(i)) continue;
       var test = state.hands[i].slice();
       test.push(discarded);
       if (Agari.isWinningHand(test)) {
@@ -356,11 +380,14 @@ var Battle = (function() {
     state.discards[0].push(discarded);
     state.selectedIdx = -1;
     state.drewTile = null;
+    // 自分の打牌で同巡内フリテンは解消（永久フリテンは解消されない）
+    state.tempFuriten[0] = false;
     // （鳴いた時点で全員の一発は既に消えている。念のためここでも保証）
     state.ippatsuActive = makePlayerArray(state.playerCount, false);
 
-    // CPU ロンチェック
+    // CPU ロンチェック（フリテンの席はロンできない）
     for (var i = 1; i < state.playerCount; i++) {
+      if (isFuriten(i)) continue;
       var test = state.hands[i].slice();
       test.push(discarded);
       if (Agari.isWinningHand(test)) {
@@ -416,7 +443,7 @@ var Battle = (function() {
 
   // テンパイできるかつ、どの牌を切ればテンパイかを返す（リーチ候補牌のactual index一覧）
   function getRiichiCandidates() {
-    if (!state || state.riichi[0] || state.scores[0] < 1000) return [];
+    if (!state || state.riichi[0] || state.scores[0] < 1000 || !isClosed(0)) return [];
     var candidates = [];
     state.hands[0].forEach(function(_, i) {
       var test = state.hands[0].filter(function(_, j) { return j !== i; });
@@ -437,6 +464,9 @@ var Battle = (function() {
   }
 
   function playerRonSkip() {
+    // ロンできたのに見送った＝フリテン（リーチ中なら局が終わるまで、
+    // そうでなければ自分の次の打牌までロン不可）
+    if (state.pendingRon) markMissedRon(0);
     var nextCpu = state.pendingRon ? state.pendingRon.from + 1 : state.playerCount;
     state.pendingRon = null;
     if (nextCpu >= state.playerCount) drawForPlayer();
@@ -478,11 +508,13 @@ var Battle = (function() {
       var di = cpuChooseDiscard(pidx);
       var disc = state.hands[pidx].splice(di, 1)[0];
       state.discards[pidx].push(disc);
+      // 自分の打牌で同巡内フリテンは解消（永久フリテンは解消されない）
+      state.tempFuriten[pidx] = false;
 
-      // プレイヤー ロンチェック
+      // プレイヤー ロンチェック（フリテンならロンできないので聞かずスルー扱い）
       var playerTest = state.hands[0].slice();
       playerTest.push(disc);
-      if (Agari.isWinningHand(playerTest)) {
+      if (!isFuriten(0) && Agari.isWinningHand(playerTest)) {
         state.pendingRon = { tile: disc, from: pidx };
         state.phase = 'pending_ron';
         return;
@@ -853,10 +885,12 @@ var Battle = (function() {
     var di = cpuChooseDiscard(pidx);
     var disc = state.hands[pidx].splice(di, 1)[0];
     state.discards[pidx].push(disc);
-    // プレイヤー ロン確認
+    // 自分の打牌で同巡内フリテンは解消（永久フリテンは解消されない）
+    state.tempFuriten[pidx] = false;
+    // プレイヤー ロン確認（フリテンならロンできない）
     var playerTest = state.hands[0].slice();
     playerTest.push(disc);
-    if (Agari.isWinningHand(playerTest)) {
+    if (!isFuriten(0) && Agari.isWinningHand(playerTest)) {
       state.pendingRon = { tile: disc, from: pidx };
       state.phase = 'pending_ron';
     }
@@ -978,12 +1012,13 @@ var Battle = (function() {
     calcScore: calcScore,
     settleScore: settleScore,
     getRiichiCandidates: getRiichiCandidates,
+    isFuriten: function(seat) { return !!state && isFuriten(seat == null ? 0 : seat); },
     playerNuki: playerNuki,
     canNuki: function() { return !!(state && state.isSanma && state.phase === 'player_turn' && findNukiIdx(0) >= 0); },
     isNukiTile: isNukiTile,
     canTsumo: function() { return state && Agari.isWinningHand(state.hands[0]); },
     canRiichi: function() {
-      if (!state || state.riichi[0] || state.scores[0] < 1000) return false;
+      if (!state || state.riichi[0] || state.scores[0] < 1000 || !isClosed(0)) return false;
       var h = state.hands[0];
       for (var i = 0; i < h.length; i++) {
         var rest = h.filter(function(_, j) { return j !== i; });

@@ -44,6 +44,17 @@ var Yaku = (function() {
     return (tiles || []).filter(function(t) { return Tiles.isSame(t, kind); }).length;
   }
 
+  // フリテン（自分の捨て牌によるもの）：現在の待ち牌(waits)のいずれかが
+  // 自分の捨て牌(discards)に含まれていればロン不可（ツモは可）。
+  // 待ちの算出（三麻の特殊フィルタ等）は呼び出し側(battle.js/friend.js)の
+  // 責務のため、ここでは算出済みのwaitsを受け取るだけにする。
+  function isFuritenBySelf(waits, discards) {
+    if (!waits || waits.length === 0) return false;
+    return (discards || []).some(function(d) {
+      return waits.some(function(w) { return Tiles.isSame(d, w); });
+    });
+  }
+
   // 手牌（面子・雀頭）を役判定用のグループ配列に組み立てる。
   // 副露（ポン・チー・カン・暗カン）も含めて全ての面子を統一形式で返す。
   function buildHandGroups(hand, openMelds) {
@@ -313,6 +324,7 @@ var Yaku = (function() {
     isRyanmenWait: isRyanmenWait,
     doraFromIndicator: doraFromIndicator,
     countMatch: countMatch,
+    isFuritenBySelf: isFuritenBySelf,
     buildHandGroups: buildHandGroups,
     computeShapeYaku: computeShapeYaku,
     calcPoints: calcPoints,

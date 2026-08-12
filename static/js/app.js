@@ -3425,6 +3425,7 @@ var App = {
       var canTsumo = Battle.canTsumo();
       var canRiichi = Battle.canRiichi();
       var canNuki = Battle.canNuki();
+      var isFuriten = Battle.isFuriten(0);
 
       // ── テンパイ候補牌を計算（表示インデックス→actual index のマップ） ──
       var riichiActualIdxs = canRiichi ? Battle.getRiichiCandidates() : [];
@@ -3544,11 +3545,11 @@ var App = {
         if (isSanma && canNuki) {
           floatBtns += '<button class="btn-battle btn-nuki" id="btnNuki">'+(selectedIsNuki0 ? '北を抜く' : '北抜き')+'</button>';
         }
-        ankanCands.forEach(function(ak) {
-          floatBtns += '<button class="btn-battle btn-ankan" data-tile="'+esc(JSON.stringify(ak.tiles[0]))+'">カン</button>';
+        ankanCands.forEach(function(ak, ai) {
+          floatBtns += '<button class="btn-battle btn-ankan" data-ankan-idx="'+ai+'">カン</button>';
         });
-        kakanCands.forEach(function(kk) {
-          floatBtns += '<button class="btn-battle btn-ankan" data-kakan-tile="'+esc(JSON.stringify(kk.tiles[0]))+'">カン</button>';
+        kakanCands.forEach(function(kk, ki) {
+          floatBtns += '<button class="btn-battle btn-ankan" data-kakan-idx="'+ki+'">カン</button>';
         });
         if (floatBtns) {
           callFloatHtml = '<div class="hand-action-float">'+floatBtns+'</div>';
@@ -3667,6 +3668,7 @@ var App = {
                 (isRiichi ? '<span class="mj-riichi-badge">リーチ中</span>' : '') +
                 (!isRiichi && canRiichi ? '<span class="mj-tenpai-notice">🀄 テンパイ！</span>' : '') +
                 (canTsumo ? '<span class="mj-tsumo-flag">▲ツモ可</span>' : '') +
+                (isFuriten ? '<span class="mj-furiten-badge">フリテン</span>' : '') +
               '</div>' +
               waitsHtml +
               '<div class="jt-hand-tiles-row">' +
@@ -3866,26 +3868,31 @@ var App = {
       });
 
       // 暗カンボタン
-      document.querySelectorAll('.btn-ankan[data-tile]').forEach(function(btn) {
+      // （以前はdata-tile属性にJSON.stringifyした牌をそのまま埋め込んでいたが、
+      //   esc()が二重引用符をエスケープしないためHTML属性値が牌のidの"で
+      //   途切れてしまい、JSON.parseが常に失敗してカンが一切効かなくなって
+      //   いた。鳴き選択ボタン(data-call-idx)と同じ「配列のindexだけを
+      //   属性に持たせる」安全な方式に統一する）
+      document.querySelectorAll('[data-ankan-idx]').forEach(function(btn) {
         btn.addEventListener('click', function() {
-          try {
-            var tile = JSON.parse(btn.dataset.tile);
-            var ok = Battle.playerAnkan(tile);
-            if (ok) clearBattleAdvice();
-            if (ok) { log('暗カン！', 'ev-discard'); afterDiscard(); }
-          } catch(e) {}
+          var idx = parseInt(btn.dataset.ankanIdx, 10);
+          var cand = ankanCands[idx];
+          if (!cand) return;
+          var ok = Battle.playerAnkan(cand.tiles[0]);
+          if (ok) clearBattleAdvice();
+          if (ok) { log('暗カン！', 'ev-discard'); afterDiscard(); }
         });
       });
 
       // 加カンボタン
-      document.querySelectorAll('.btn-ankan[data-kakan-tile]').forEach(function(btn) {
+      document.querySelectorAll('[data-kakan-idx]').forEach(function(btn) {
         btn.addEventListener('click', function() {
-          try {
-            var kTile = JSON.parse(btn.dataset.kakanTile);
-            var ok = Battle.playerKakan(kTile);
-            if (ok) clearBattleAdvice();
-            if (ok) { log('加カン！', 'ev-discard'); afterDiscard(); }
-          } catch(e) {}
+          var idx = parseInt(btn.dataset.kakanIdx, 10);
+          var cand = kakanCands[idx];
+          if (!cand) return;
+          var ok = Battle.playerKakan(cand.tiles[0]);
+          if (ok) clearBattleAdvice();
+          if (ok) { log('加カン！', 'ev-discard'); afterDiscard(); }
         });
       });
 
