@@ -4003,17 +4003,12 @@ var App = {
         loserLine = '<div class="agr-loser">← '+esc(loserName)+' の捨て牌</div>';
       }
 
-      // 手牌 HTML（友人戦の結果パネルと同じ形式：面子・雀頭ごとに理牌して1行に並べる）
+      // 手牌 HTML（面子・雀頭ごとに分けると一盃口などが分かりにくいとの指摘のため、
+      // 自分の手牌表示と同じ理牌方法（Tiles.sortTiles：スート→数字順）で1グループに並べる）
       var resultHandTiles = (s.hands[winner] || []).slice();
-      var resultDecomp = Agari.decomposeWinningHand(resultHandTiles);
-      var resultGroups = resultDecomp
-        ? (resultDecomp.type === 'chiitoitsu' ? resultDecomp.groups.slice() : resultDecomp.melds.concat([resultDecomp.pair]))
-        : [Tiles.sortTiles(resultHandTiles)];
-      var handHtml = resultGroups.map(function(g) {
-        return '<span class="agr-tile-group">' + g.map(function(t) {
-          return Tiles.renderTile(t, { noHover: true, small: true });
-        }).join('') + '</span>';
-      }).join('');
+      var handHtml = '<span class="agr-tile-group">' + Tiles.sortTiles(resultHandTiles).map(function(t) {
+        return Tiles.renderTile(t, { noHover: true, small: true });
+      }).join('') + '</span>';
 
       // 副露（鳴き牌）
       var winnerMelds = (s.melds && s.melds[winner]) || [];

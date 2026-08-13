@@ -339,12 +339,12 @@ var Battle = (function() {
       state.ippatsuActive[0] = false;
     }
 
-    // CPU ロンチェック（フリテンの席はロンできない）
+    // CPU ロンチェック（フリテン・役なしの席はロンできない）
     for (var i = 1; i < state.playerCount; i++) {
       if (isFuriten(i)) continue;
       var test = state.hands[i].slice();
       test.push(discarded);
-      if (Agari.isWinningHand(test)) {
+      if (Agari.isWinningHand(test) && hasYaku(i, 'ron', discarded)) {
         state.hands[i].push(discarded);
         state.winner = i; state.loser = 0;
         state.winType = 'ron'; state.winTile = discarded;
@@ -385,12 +385,12 @@ var Battle = (function() {
     // （鳴いた時点で全員の一発は既に消えている。念のためここでも保証）
     state.ippatsuActive = makePlayerArray(state.playerCount, false);
 
-    // CPU ロンチェック（フリテンの席はロンできない）
+    // CPU ロンチェック（フリテン・役なしの席はロンできない）
     for (var i = 1; i < state.playerCount; i++) {
       if (isFuriten(i)) continue;
       var test = state.hands[i].slice();
       test.push(discarded);
-      if (Agari.isWinningHand(test)) {
+      if (Agari.isWinningHand(test) && hasYaku(i, 'ron', discarded)) {
         state.hands[i].push(discarded);
         state.winner = i; state.loser = 0;
         state.winType = 'ron'; state.winTile = discarded;
@@ -495,8 +495,8 @@ var Battle = (function() {
         state.rinshanPending = true;
       }
 
-      // CPU ツモ和了チェック
-      if (Agari.isWinningHand(state.hands[pidx])) {
+      // CPU ツモ和了チェック（役なしのアガリは成立しない）
+      if (Agari.isWinningHand(state.hands[pidx]) && hasYaku(pidx, 'tsumo', drew)) {
         state.winner = pidx;
         state.loser = -1;
         state.winType = 'tsumo';
@@ -511,10 +511,10 @@ var Battle = (function() {
       // 自分の打牌で同巡内フリテンは解消（永久フリテンは解消されない）
       state.tempFuriten[pidx] = false;
 
-      // プレイヤー ロンチェック（フリテンならロンできないので聞かずスルー扱い）
+      // プレイヤー ロンチェック（フリテン・役なしならロンできないので聞かずスルー扱い）
       var playerTest = state.hands[0].slice();
       playerTest.push(disc);
-      if (!isFuriten(0) && Agari.isWinningHand(playerTest)) {
+      if (!isFuriten(0) && Agari.isWinningHand(playerTest) && hasYaku(0, 'ron', disc)) {
         state.pendingRon = { tile: disc, from: pidx };
         state.phase = 'pending_ron';
         return;
@@ -887,31 +887,26 @@ var Battle = (function() {
     state.discards[pidx].push(disc);
     // 自分の打牌で同巡内フリテンは解消（永久フリテンは解消されない）
     state.tempFuriten[pidx] = false;
-    // プレイヤー ロン確認（フリテンならロンできない）
+    // プレイヤー ロン確認（フリテン・役なしならロンできない）
     var playerTest = state.hands[0].slice();
     playerTest.push(disc);
-    if (!isFuriten(0) && Agari.isWinningHand(playerTest)) {
+    if (!isFuriten(0) && Agari.isWinningHand(playerTest) && hasYaku(0, 'ron', disc)) {
       state.pendingRon = { tile: disc, from: pidx };
       state.phase = 'pending_ron';
     }
   }
 
-  function calcScore() {
-    if (state.winner < 0) return null;
-    var w = state.winner;
-    var hand = state.hands[w];
-    var winType = state.winType;
-    var winningTile = state.winTile;
-    var closed = isClosed(w);
-    var scoringTiles = getScoringTiles(w);
+  // ドラ・カンドラ・裏ドラ・抜き北を除いた「本当の役」の一覧を組み立てる。
+  // アガリが確定する前の判定（役なしアガリの禁止）にも使うため、
+  // state.winner/winType/winTileではなく引数だけで動くようにしてある。
+  function buildYakuBeforeDora(seat, winType, winningTile) {
+    var closed = isClosed(seat);
+    var yaku = computeShapeYaku(seat, winType, winningTile);
 
-    // 役の内訳を組み立てる（合計翻＝内訳の合計になるよう一本化）
-    var yaku = computeShapeYaku(w, winType, winningTile);
-
-    if (state.riichi[w]) {
-      if (state.riichiDouble && state.riichiDouble[w]) yaku.push({ name: 'ダブルリーチ', han: 2 });
+    if (state.riichi[seat]) {
+      if (state.riichiDouble && state.riichiDouble[seat]) yaku.push({ name: 'ダブルリーチ', han: 2 });
       else yaku.push({ name: '立直', han: 1 });
-      if (state.ippatsuActive && state.ippatsuActive[w]) yaku.push({ name: '一発', han: 1 });
+      if (state.ippatsuActive && state.ippatsuActive[seat]) yaku.push({ name: '一発', han: 1 });
     }
     if (winType === 'tsumo' && closed) yaku.push({ name: '門前清自摸和', han: 1 });
     if (winType === 'tsumo' && state.rinshanPending) yaku.push({ name: '嶺上開花', han: 1 });
@@ -924,11 +919,29 @@ var Battle = (function() {
     // このアプリのCPU戦は席が常に固定（seat0=あなた=常に東）なので、
     // 座席そのものが親判定になる（人和はロン経路の特殊条件のため対象外）。
     var noCallsYet = state.melds.every(function(m) { return !m || m.length === 0; });
-    var winnerHasNotDiscarded = (state.discards[w] || []).length === 0;
+    var winnerHasNotDiscarded = (state.discards[seat] || []).length === 0;
     if (winType === 'tsumo' && noCallsYet && winnerHasNotDiscarded) {
-      if (w === 0) yaku.push({ name: '天和', han: Yaku.YAKUMAN_HAN, yakuman: true });
+      if (seat === 0) yaku.push({ name: '天和', han: Yaku.YAKUMAN_HAN, yakuman: true });
       else yaku.push({ name: '地和', han: Yaku.YAKUMAN_HAN, yakuman: true });
     }
+    return yaku;
+  }
+
+  // 役なしアガリ禁止：ドラ以外に本当の役が1つも無ければロン・ツモは成立しない
+  // （ドラだけでは和了できない）。ロン/ツモを許可する前に必ずこれを通す。
+  function hasYaku(seat, winType, winningTile) {
+    return buildYakuBeforeDora(seat, winType, winningTile).length > 0;
+  }
+
+  function calcScore() {
+    if (state.winner < 0) return null;
+    var w = state.winner;
+    var winType = state.winType;
+    var winningTile = state.winTile;
+    var scoringTiles = getScoringTiles(w);
+
+    // 役の内訳を組み立てる（合計翻＝内訳の合計になるよう一本化）
+    var yaku = buildYakuBeforeDora(w, winType, winningTile);
 
     var nuki = state.nuki && state.nuki[w] ? state.nuki[w].length : 0;
     var dora = Yaku.countMatch(scoringTiles, getDora());
@@ -1013,10 +1026,17 @@ var Battle = (function() {
     settleScore: settleScore,
     getRiichiCandidates: getRiichiCandidates,
     isFuriten: function(seat) { return !!state && isFuriten(seat == null ? 0 : seat); },
+    hasYaku: function(seat, winType, winningTile) { return !!state && hasYaku(seat == null ? 0 : seat, winType, winningTile); },
     playerNuki: playerNuki,
     canNuki: function() { return !!(state && state.isSanma && state.phase === 'player_turn' && findNukiIdx(0) >= 0); },
     isNukiTile: isNukiTile,
-    canTsumo: function() { return state && Agari.isWinningHand(state.hands[0]); },
+    canTsumo: function() {
+      if (!state) return false;
+      var hand = state.hands[0];
+      if (!Agari.isWinningHand(hand)) return false;
+      var winTile = hand[hand.length - 1];
+      return hasYaku(0, 'tsumo', winTile);
+    },
     canRiichi: function() {
       if (!state || state.riichi[0] || state.scores[0] < 1000 || !isClosed(0)) return false;
       var h = state.hands[0];
