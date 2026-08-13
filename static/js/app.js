@@ -2310,7 +2310,7 @@ var App = {
       }).join('');
     };
     var selectedWaitsHtml = selectedWaits.length > 0
-      ? '<div class="mj-waits-area"><span class="mj-waits-label">この牌を切ったら：</span>' + frRenderWaitTiles(selectedWaits) + '</div>'
+      ? '<div class="mj-waits-area">' + frRenderWaitTiles(selectedWaits) + '</div>'
       : '';
     var waitsBtnHtml = '';
     if (tsumogiriWaits.length > 0) {
@@ -3480,7 +3480,7 @@ var App = {
         }).join('');
       };
       var selectedWaitsHtml = selectedWaits.length > 0
-        ? '<div class="mj-waits-area"><span class="mj-waits-label">この牌を切ったら：</span>' + renderWaitTiles(selectedWaits) + '</div>'
+        ? '<div class="mj-waits-area">' + renderWaitTiles(selectedWaits) + '</div>'
         : '';
       var waitsBtnHtml = '';
       if (tsumogiriWaits.length > 0) {
