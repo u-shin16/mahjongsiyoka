@@ -3850,8 +3850,11 @@ body.is-battle-page .app-main.battle-main {
 }
 .jt-hand-in-table .mj-sorted-tiles .tile.selected,
 .jt-hand-in-table .mj-drew-area .tile.selected {
-  transform: translateY(-10px) !important;
-  box-shadow: 0 0 0 2px rgba(232,184,75,0.8) !important;
+  transform: translateY(-16px) !important;
+  box-shadow: 0 0 0 3px #ffe38a, 0 0 22px 7px rgba(255,215,106,0.9), 0 10px 16px rgba(0,0,0,0.45) !important;
+  filter: brightness(1.4) saturate(1.2) !important;
+  z-index: 6 !important;
+  position: relative !important;
 }
 .jt-hand-in-table .mj-sorted-tiles .tile.t-lock {
   opacity: 0.5 !important;
