@@ -1364,12 +1364,12 @@ button { font-family: inherit; cursor: pointer; }
 .btn-battle { padding: 10px 18px; border-radius: var(--radius-sm); font-weight: 700; font-size: 0.88rem; border: none; cursor: pointer; transition: transform 0.15s; }
 .btn-battle:hover { transform: translateY(-2px); }
 .btn-battle:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-.btn-tsumo { background: #e74c3c; color: #fff; font-size: 1rem; padding: 12px 24px; }
-.btn-ron { background: #c0392b; color: #fff; font-size: 1rem; padding: 12px 24px; }
-.btn-riichi { background: var(--gold); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.35); }
+.btn-tsumo { background: linear-gradient(145deg, #ff7a5a, #c0392b); border: 1px solid #ff9a7a; color: #fff; font-size: 1rem; padding: 12px 24px; text-shadow: 0 1px 2px rgba(0,0,0,0.4); box-shadow: 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18); }
+.btn-ron { background: linear-gradient(145deg, #e74c3c, #8c1a1a); border: 1px solid #ff8a7a; color: #fff; font-size: 1rem; padding: 12px 24px; text-shadow: 0 1px 2px rgba(0,0,0,0.4); box-shadow: 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18); }
+.btn-riichi { background: linear-gradient(145deg, var(--gold), var(--gold-dark)); border: 1px solid #f5d585; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.35); box-shadow: 0 2px 6px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18); }
 .btn-nuki { background: #2471a3; color: #fff; }
 .btn-discard-sel { background: #e74c3c; color: #fff; }
-.btn-skip { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--text-light); }
+.btn-skip { background: rgba(20,30,50,0.9); border: 1px solid rgba(100,130,180,0.35); color: rgba(190,205,230,0.9); }
 
 .battle-event-log { background: rgba(0,0,0,0.25); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.82rem; color: #8ab89c; max-height: 90px; overflow-y: auto; }
 .battle-event-log p { margin: 2px 0; }
@@ -3357,6 +3357,26 @@ body.is-battle-page .app-main.battle-main {
   border: 1px solid rgba(246, 211, 112, 0.34);
   background: linear-gradient(180deg, rgba(28, 82, 49, 0.94), rgba(16, 55, 32, 0.94));
   box-shadow: 0 4px 10px rgba(0,0,0,0.28);
+}
+.battle-main .btn-tsumo {
+  background: linear-gradient(180deg, #ff8a6a, #c0392b);
+  border-color: rgba(255, 154, 122, 0.55);
+  color: #fff;
+}
+.battle-main .btn-ron {
+  background: linear-gradient(180deg, #ff6a6a, #8c1a1a);
+  border-color: rgba(255, 138, 122, 0.55);
+  color: #fff;
+}
+.battle-main .btn-riichi {
+  background: linear-gradient(180deg, #f5d585, #b88a1a);
+  border-color: rgba(245, 213, 133, 0.6);
+  color: #fff;
+}
+.battle-main .btn-skip {
+  background: linear-gradient(180deg, rgba(40,50,70,0.9), rgba(15,20,35,0.9));
+  border-color: rgba(100, 130, 180, 0.35);
+  color: rgba(190, 205, 230, 0.9);
 }
 .battle-main .battle-event-log {
   display: none;
@@ -5608,7 +5628,8 @@ body.is-battle-page {
   border-radius: 999px !important;
   line-height: 1 !important;
 }
-.jt-hand-in-table .btn-tsumo {
+.jt-hand-in-table .btn-tsumo,
+.jt-hand-in-table .btn-riichi {
   height: 32px !important;
   padding: 3px 14px !important;
   font-size: 0.84rem !important;
