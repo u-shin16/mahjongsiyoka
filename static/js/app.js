@@ -2457,6 +2457,7 @@ var App = {
               '<span class="score">' + g.scores[my].toLocaleString() + '点</span>' +
               (isSanma ? '<span class="mj-nuki-count">抜き北 ' + nukiCount(my) + '</span>' : '') +
               (g.riichi[my] ? '<span class="mj-riichi-badge">リーチ中</span>' : '') +
+              (FriendGame.isFuriten(my) ? '<span class="mj-furiten-badge">フリテン</span>' : '') +
               (isDisconnected(my) ? '<span class="fr-disconnect-mark">⚡ 切断扱い</span>' : '') +
             '</div>' +
             '<div class="jt-hand-tiles-row fr-table-hand" id="frHand"><div class="mj-sorted-tiles">' + handTilesHtml + '</div></div>' +
@@ -3427,12 +3428,18 @@ var App = {
       var canNuki = Battle.canNuki();
       var isFuriten = Battle.isFuriten(0);
 
-      // ── テンパイ時の待ち牌（ツモ切りした場合の待ち）。リーチ後は
-      // 別枠(waitsHtml)で常時表示するのでここでは対象外にする ──
+      // ── テンパイ時の待ち牌。牌を選択していればその牌を切った場合の待ちを、
+      // 何も選択していなければツモ切り（引いた牌をそのまま切る）した場合の
+      // 待ちを表示する（切る牌によって待ちが変わることがあるため）。
+      // リーチ後は別枠(waitsHtml)で常時表示するのでここでは対象外にする ──
       var myWaits = [];
-      if (!isRiichi && sortedHand.length % 3 === 1) {
-        myWaits = Agari.getTenpaiWaits(sortedHand);
-        if (isSanma) myWaits = myWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+      if (!isRiichi) {
+        var waitsRemoveIdx = (selectedIdx >= 0 && selectedIdx < displayOrder.length) ? selectedIdx : sortedLen;
+        var waitsTestHand = displayOrder.filter(function(_, wi) { return wi !== waitsRemoveIdx; });
+        if (waitsTestHand.length % 3 === 1) {
+          myWaits = Agari.getTenpaiWaits(waitsTestHand);
+          if (isSanma) myWaits = myWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+        }
       }
       var waitsBtnHtml = '';
       if (myWaits.length > 0) {

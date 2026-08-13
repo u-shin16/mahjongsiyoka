@@ -713,6 +713,8 @@ var FriendGame = (function() {
     state.ippatsuActive = makeArray(n, false);
     state.riichiDouble = makeArray(n, false);
     state.rinshanPending = false;
+    state.tempFuriten = makeArray(n, false);
+    state.riichiFuriten = makeArray(n, false);
     state.result = null;
     state.ron = null;
     state.call = null;
@@ -839,12 +841,12 @@ var FriendGame = (function() {
     return Yaku.computeShapeYaku(hand, openMelds, isClosed(state, winner), seatWindNum(state, winner), roundWindNum(state), winType, winningTile);
   }
 
-  function _finishHand(state, winner, winType, fromSeat, winningTile, isChankan) {
-    var hand = state.hands[winner];
-    var scoringTiles = getScoringTiles(state, winner);
+  // ドラ・カンドラ・裏ドラ・抜き北を除いた「本当の役」の一覧を組み立てる。
+  // アガリが確定する前の判定（役なしアガリの禁止）にも使うため、
+  // state.result等に触れず、引数だけで動くようにしてある。
+  function buildYakuBeforeDora(state, winner, winType, fromSeat, winningTile, isChankan) {
     var closed = isClosed(state, winner);
-    var resolvedWinTile = winningTile || (winType === 'tsumo' ? hand.find(function(t) { return t.id === state.drawnId; }) : null);
-    var yaku = computeShapeYaku(state, winner, winType, fromSeat, resolvedWinTile);
+    var yaku = computeShapeYaku(state, winner, winType, fromSeat, winningTile);
 
     if (state.riichi[winner]) {
       if (state.riichiDouble && state.riichiDouble[winner]) yaku.push({ name: 'ダブルリーチ', han: 2 });
@@ -873,6 +875,39 @@ var FriendGame = (function() {
         yaku.push({ name: '人和', han: Yaku.YAKUMAN_HAN, yakuman: true });
       }
     }
+    return yaku;
+  }
+
+  // 役なしアガリ禁止：ドラ以外に本当の役が1つも無ければロン・ツモは成立しない
+  function hasYaku(state, winner, winType, fromSeat, winningTile, isChankan) {
+    return buildYakuBeforeDora(state, winner, winType, fromSeat, winningTile, isChankan).length > 0;
+  }
+
+  // フリテン：以下のいずれかに該当する席はロン不可（ツモは可）
+  // 1. 自分の捨て牌の中に、今の待ち牌が含まれている（永久）
+  // 2. 同巡内に一度でも当たり牌の見逃しがあった（次の自分の打牌まで）
+  // 3. リーチ後に当たり牌を見逃した（そのまま局が終わるまで）
+  function isFuriten(state, seat) {
+    ensureRuntimeArrays(state);
+    if (state.riichiFuriten && state.riichiFuriten[seat]) return true;
+    if (state.tempFuriten && state.tempFuriten[seat]) return true;
+    var waits = getValidWaits(state, state.hands[seat] || []);
+    return Yaku.isFuritenBySelf(waits, state.discards[seat]);
+  }
+
+  // 当たり牌の見逃し（ロンできたのにしなかった）をフリテンとして記録する
+  function markMissedRon(state, seat) {
+    if (!state.tempFuriten) state.tempFuriten = makeArray(state.playerCount, false);
+    if (!state.riichiFuriten) state.riichiFuriten = makeArray(state.playerCount, false);
+    if (state.riichi[seat]) state.riichiFuriten[seat] = true;
+    else state.tempFuriten[seat] = true;
+  }
+
+  function _finishHand(state, winner, winType, fromSeat, winningTile, isChankan) {
+    var hand = state.hands[winner];
+    var scoringTiles = getScoringTiles(state, winner);
+    var resolvedWinTile = winningTile || (winType === 'tsumo' ? hand.find(function(t) { return t.id === state.drawnId; }) : null);
+    var yaku = buildYakuBeforeDora(state, winner, winType, fromSeat, resolvedWinTile, isChankan);
 
     var nuki = state.nuki && state.nuki[winner] ? state.nuki[winner].length : 0;
     var dora = countMatch(scoringTiles, doraFromInd(state.doraInd));
@@ -1014,7 +1049,8 @@ var FriendGame = (function() {
     var ronCandidates = [];
     for (var i = 0; i < state.playerCount; i++) {
       if (i === seat) continue;
-      if (Agari.isWinningHand((state.hands[i] || []).concat([tile]))) ronCandidates.push(i);
+      if (isFuriten(state, i)) continue;
+      if (Agari.isWinningHand((state.hands[i] || []).concat([tile])) && hasYaku(state, i, 'ron', seat, tile)) ronCandidates.push(i);
     }
     var callMap = buildCallMap(state, seat, tile);
 
@@ -1124,7 +1160,8 @@ var FriendGame = (function() {
     var ronCandidates = [];
     for (var s = 0; s < state.playerCount; s++) {
       if (s === seat) continue;
-      if (Agari.isWinningHand((state.hands[s] || []).concat([addedTile]))) ronCandidates.push(s);
+      if (isFuriten(state, s)) continue;
+      if (Agari.isWinningHand((state.hands[s] || []).concat([addedTile])) && hasYaku(state, s, 'ron', seat, addedTile, true)) ronCandidates.push(s);
     }
     if (ronCandidates.length > 0) {
       var autoWinner = ronCandidates.find(function(c) { return shouldAutoAgari(state, c); });
@@ -1165,7 +1202,8 @@ var FriendGame = (function() {
     var ronCandidates = [];
     for (var i = 0; i < state.playerCount; i++) {
       if (i === seat) continue;
-      if (Agari.isWinningHand((state.hands[i] || []).concat([tile]))) ronCandidates.push(i);
+      if (isFuriten(state, i)) continue;
+      if (Agari.isWinningHand((state.hands[i] || []).concat([tile])) && hasYaku(state, i, 'ron', seat, tile)) ronCandidates.push(i);
     }
     if (ronCandidates.length > 0) {
       var autoWinner = ronCandidates.find(function(c) { return shouldAutoAgari(state, c); });
@@ -1221,6 +1259,8 @@ var FriendGame = (function() {
     state.hands[seat] = Tiles.sortTiles(hand);
     tile.riichiDiscard = !!riichi;
     state.discards[seat].push(tile);
+    // 自分の打牌で同巡内フリテンは解消（永久フリテンは解消されない）
+    if (state.tempFuriten) state.tempFuriten[seat] = false;
     state.drawnId = null;
     _afterDiscard(state, seat, tile);
     return true;
@@ -1303,6 +1343,7 @@ var FriendGame = (function() {
       state.ron.candidates.forEach(function(c) {
         if (shouldSkipReactions(state, c) && state.ron.responses[c] !== 'pass') {
           state.ron.responses[c] = 'pass';
+          markMissedRon(state, c);
           changed = true;
         }
       });
@@ -1337,7 +1378,9 @@ var FriendGame = (function() {
       }
       var timer = state.turnTimer;
       var flags = getAutoFlags(state, seat);
-      var canWin = state.phase === 'turn' && Agari.isWinningHand(state.hands[seat] || []);
+      var drawnTileForWin = (state.hands[seat] || []).find(function(t) { return t.id === state.drawnId; });
+      var canWin = state.phase === 'turn' && Agari.isWinningHand(state.hands[seat] || []) &&
+        hasYaku(state, seat, 'tsumo', null, drawnTileForWin);
       if (canWin && shouldAutoAgari(state, seat) && now >= timer.canAutoAt) {
         _consumeTurnTimer(state, seat);
         _finishHand(state, seat, 'tsumo', null);
@@ -1379,7 +1422,9 @@ var FriendGame = (function() {
         ok = _discard(state, seat, a.idx, a.type === 'riichi');
 
       } else if (a.type === 'tsumo') {
-        if (state.phase === 'turn' && seat === state.turn && Agari.isWinningHand(state.hands[seat])) {
+        var drawnTileForTsumoAction = (state.hands[seat] || []).find(function(t) { return t.id === state.drawnId; });
+        if (state.phase === 'turn' && seat === state.turn && Agari.isWinningHand(state.hands[seat]) &&
+            hasYaku(state, seat, 'tsumo', null, drawnTileForTsumoAction)) {
           _consumeTurnTimer(state, seat);
           _finishHand(state, seat, 'tsumo', null);
           ok = true;
@@ -1414,6 +1459,7 @@ var FriendGame = (function() {
             ok = true;
           } else {
             state.ron.responses[seat] = 'pass';
+            markMissedRon(state, seat);
             if (state.ron.candidates.every(function(c) { return state.ron.responses[c] === 'pass'; })) {
               _resolveRonPasses(state);
             }
@@ -1480,5 +1526,9 @@ var FriendGame = (function() {
     isNukiTile: function(tile) { return isNukiTile(_game, tile); },
     checkAnkan: function(seat) { return checkAnkanCandidates(_game, seat); },
     checkKakan: function(seat) { return checkKakanCandidates(_game, seat); },
+    isFuriten: function(seat) { return !!_game && isFuriten(_game, seat == null ? mySeat() : seat); },
+    hasYaku: function(seat, winType, fromSeat, winningTile, isChankan) {
+      return !!_game && hasYaku(_game, seat == null ? mySeat() : seat, winType, fromSeat, winningTile, isChankan);
+    },
   };
 })();
