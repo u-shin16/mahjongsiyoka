@@ -2227,20 +2227,27 @@ var App = {
     });
     var displayEntries = sortedEntries.concat(drawnEntry ? [drawnEntry] : []);
 
-    // 待ち牌：牌を選択していればその牌を切った場合の待ちを、何も選択して
-    // いなければツモ切り（引いた牌をそのまま切る）した場合の待ちを表示する
-    // （切る牌によって待ちが変わることがあるため）
-    var waitsRemoveEntry = (self._frSelectedIdx != null && self._frSelectedIdx >= 0)
+    // 待ち牌。表示形式を2種類に分ける:
+    // 1. 牌を選択中 → その牌を切った場合の待ちを、手牌のすぐ下にインライン表示
+    // 2. 何も選択していない → ツモ切りした場合の待ちを、右下のボタンを
+    //    押している間だけ表示（従来通り）
+    var frSelectedEntry = (self._frSelectedIdx != null && self._frSelectedIdx >= 0)
       ? (displayEntries.filter(function(e) { return e.idx === self._frSelectedIdx; })[0] || null)
       : null;
-    if (!waitsRemoveEntry) waitsRemoveEntry = drawnEntry;
-    var standingHandTiles = displayEntries
-      .filter(function(e) { return e !== waitsRemoveEntry; })
-      .map(function(e) { return e.tile; });
-    var myWaits = [];
-    if (standingHandTiles.length % 3 === 1) {
-      myWaits = Agari.getTenpaiWaits(standingHandTiles);
-      if (g.isSanma) myWaits = myWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+    var selectedWaits = [];
+    var tsumogiriWaits = [];
+    if (frSelectedEntry) {
+      var selHandTiles = displayEntries.filter(function(e) { return e !== frSelectedEntry; }).map(function(e) { return e.tile; });
+      if (selHandTiles.length % 3 === 1) {
+        selectedWaits = Agari.getTenpaiWaits(selHandTiles);
+        if (g.isSanma) selectedWaits = selectedWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+      }
+    } else {
+      var tsumoHandTiles = displayEntries.filter(function(e) { return e !== drawnEntry; }).map(function(e) { return e.tile; });
+      if (tsumoHandTiles.length % 3 === 1) {
+        tsumogiriWaits = Agari.getTenpaiWaits(tsumoHandTiles);
+        if (g.isSanma) tsumogiriWaits = tsumogiriWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+      }
     }
 
     var myMelds = (g.melds && g.melds[my]) || [];
@@ -2297,18 +2304,20 @@ var App = {
       });
       if (floatBtnsFr) frCallFloatHtml = '<div class="hand-action-float">' + floatBtnsFr + '</div>';
     }
-    var waitsBtnHtml = '';
-    if (myWaits.length > 0) {
-      var waitsTilesHtml = myWaits.map(function(w) {
-        return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xxs' });
+    var frRenderWaitTiles = function(waits) {
+      return waits.map(function(w) {
+        return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xs' });
       }).join('');
-      // 牌を選択して「この牌を切ったら待ちが変わる」を比較しているときは、
-      // ボタンを押さなくても選択した瞬間に待ちパネルを自動で開いておく
-      var waitsAutoOpenFr = self._frSelectedIdx != null && self._frSelectedIdx >= 0;
-      waitsBtnHtml = '<div class="fr-waits-fab-wrap' + (waitsAutoOpenFr ? ' open' : '') + '">' +
+    };
+    var selectedWaitsHtml = selectedWaits.length > 0
+      ? '<div class="mj-waits-area"><span class="mj-waits-label">この牌を切ったら：</span>' + frRenderWaitTiles(selectedWaits) + '</div>'
+      : '';
+    var waitsBtnHtml = '';
+    if (tsumogiriWaits.length > 0) {
+      waitsBtnHtml = '<div class="fr-waits-fab-wrap">' +
         '<div class="fr-waits-panel">' +
-          '<div class="fr-waits-panel-title">待ち牌</div>' +
-          '<div class="fr-waits-panel-tiles">' + waitsTilesHtml + '</div>' +
+          '<div class="fr-waits-panel-title">ツモ切りの待ち</div>' +
+          '<div class="fr-waits-panel-tiles">' + frRenderWaitTiles(tsumogiriWaits) + '</div>' +
         '</div>' +
         '<button type="button" class="fr-waits-fab" id="btnFrShowWaits">待ちを表示</button>' +
       '</div>';
@@ -2473,6 +2482,7 @@ var App = {
               (isDisconnected(my) ? '<span class="fr-disconnect-mark">⚡ 切断扱い</span>' : '') +
             '</div>' +
             '<div class="jt-hand-tiles-row fr-table-hand" id="frHand"><div class="mj-sorted-tiles">' + handTilesHtml + '</div></div>' +
+            selectedWaitsHtml +
             actionHtml +
           '</div>' +
           frCallFloatHtml +
@@ -3440,31 +3450,44 @@ var App = {
       var canNuki = Battle.canNuki();
       var isFuriten = Battle.isFuriten(0);
 
-      // ── テンパイ時の待ち牌。牌を選択していればその牌を切った場合の待ちを、
-      // 何も選択していなければツモ切り（引いた牌をそのまま切る）した場合の
-      // 待ちを表示する（切る牌によって待ちが変わることがあるため）。
+      // ── テンパイ時の待ち牌。表示形式を2種類に分ける:
+      //   1. 牌を選択中 → その牌を切った場合の待ちを、手牌のすぐ下にインライン表示
+      //      （切る牌によって待ちが変わることがあるため、選択に連動させる）
+      //   2. 何も選択していない → ツモ切り（引いた牌をそのまま切る）した場合の
+      //      待ちを、右下のボタンを押している間だけ表示（従来通り）
       // リーチ後は別枠(waitsHtml)で常時表示するのでここでは対象外にする ──
-      var myWaits = [];
+      var selectedWaits = [];
+      var tsumogiriWaits = [];
       if (!isRiichi) {
-        var waitsRemoveIdx = (selectedIdx >= 0 && selectedIdx < displayOrder.length) ? selectedIdx : sortedLen;
-        var waitsTestHand = displayOrder.filter(function(_, wi) { return wi !== waitsRemoveIdx; });
-        if (waitsTestHand.length % 3 === 1) {
-          myWaits = Agari.getTenpaiWaits(waitsTestHand);
-          if (isSanma) myWaits = myWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+        var hasSelection = selectedIdx >= 0 && selectedIdx < displayOrder.length;
+        if (hasSelection) {
+          var selHand = displayOrder.filter(function(_, wi) { return wi !== selectedIdx; });
+          if (selHand.length % 3 === 1) {
+            selectedWaits = Agari.getTenpaiWaits(selHand);
+            if (isSanma) selectedWaits = selectedWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+          }
+        } else {
+          var tsumoHand = displayOrder.filter(function(_, wi) { return wi !== sortedLen; });
+          if (tsumoHand.length % 3 === 1) {
+            tsumogiriWaits = Agari.getTenpaiWaits(tsumoHand);
+            if (isSanma) tsumogiriWaits = tsumogiriWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+          }
         }
       }
-      var waitsBtnHtml = '';
-      if (myWaits.length > 0) {
-        var waitsTilesHtml = myWaits.map(function(w) {
-          return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xxs' });
+      var renderWaitTiles = function(waits) {
+        return waits.map(function(w) {
+          return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xs' });
         }).join('');
-        // 牌を選択して「この牌を切ったら待ちが変わる」を比較しているときは、
-        // ボタンを押さなくても選択した瞬間に待ちパネルを自動で開いておく
-        var waitsAutoOpen = selectedIdx >= 0 && selectedIdx < displayOrder.length;
-        waitsBtnHtml = '<div class="fr-waits-fab-wrap' + (waitsAutoOpen ? ' open' : '') + '">' +
+      };
+      var selectedWaitsHtml = selectedWaits.length > 0
+        ? '<div class="mj-waits-area"><span class="mj-waits-label">この牌を切ったら：</span>' + renderWaitTiles(selectedWaits) + '</div>'
+        : '';
+      var waitsBtnHtml = '';
+      if (tsumogiriWaits.length > 0) {
+        waitsBtnHtml = '<div class="fr-waits-fab-wrap">' +
           '<div class="fr-waits-panel">' +
-            '<div class="fr-waits-panel-title">待ち牌</div>' +
-            '<div class="fr-waits-panel-tiles">' + waitsTilesHtml + '</div>' +
+            '<div class="fr-waits-panel-title">ツモ切りの待ち</div>' +
+            '<div class="fr-waits-panel-tiles">' + renderWaitTiles(tsumogiriWaits) + '</div>' +
           '</div>' +
           '<button type="button" class="fr-waits-fab" id="btnShowWaits">待ちを表示</button>' +
         '</div>';
@@ -3714,6 +3737,7 @@ var App = {
                 (isFuriten ? '<span class="mj-furiten-badge">フリテン</span>' : '') +
               '</div>' +
               waitsHtml +
+              selectedWaitsHtml +
               waitsBtnHtml +
               '<div class="jt-hand-tiles-row">' +
                 '<div class="mj-sorted-tiles" id="mjSorted">'+sortedHtml+'</div>' +
