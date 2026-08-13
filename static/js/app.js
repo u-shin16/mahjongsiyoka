@@ -2227,7 +2227,16 @@ var App = {
     });
     var displayEntries = sortedEntries.concat(drawnEntry ? [drawnEntry] : []);
 
-    var standingHandTiles = sortedEntries.map(function(e) { return e.tile; });
+    // 待ち牌：牌を選択していればその牌を切った場合の待ちを、何も選択して
+    // いなければツモ切り（引いた牌をそのまま切る）した場合の待ちを表示する
+    // （切る牌によって待ちが変わることがあるため）
+    var waitsRemoveEntry = (self._frSelectedIdx != null && self._frSelectedIdx >= 0)
+      ? (displayEntries.filter(function(e) { return e.idx === self._frSelectedIdx; })[0] || null)
+      : null;
+    if (!waitsRemoveEntry) waitsRemoveEntry = drawnEntry;
+    var standingHandTiles = displayEntries
+      .filter(function(e) { return e !== waitsRemoveEntry; })
+      .map(function(e) { return e.tile; });
     var myWaits = [];
     if (standingHandTiles.length % 3 === 1) {
       myWaits = Agari.getTenpaiWaits(standingHandTiles);
@@ -2293,7 +2302,10 @@ var App = {
       var waitsTilesHtml = myWaits.map(function(w) {
         return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xxs' });
       }).join('');
-      waitsBtnHtml = '<div class="fr-waits-fab-wrap">' +
+      // 牌を選択して「この牌を切ったら待ちが変わる」を比較しているときは、
+      // ボタンを押さなくても選択した瞬間に待ちパネルを自動で開いておく
+      var waitsAutoOpenFr = self._frSelectedIdx != null && self._frSelectedIdx >= 0;
+      waitsBtnHtml = '<div class="fr-waits-fab-wrap' + (waitsAutoOpenFr ? ' open' : '') + '">' +
         '<div class="fr-waits-panel">' +
           '<div class="fr-waits-panel-title">待ち牌</div>' +
           '<div class="fr-waits-panel-tiles">' + waitsTilesHtml + '</div>' +
@@ -3446,7 +3458,10 @@ var App = {
         var waitsTilesHtml = myWaits.map(function(w) {
           return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xxs' });
         }).join('');
-        waitsBtnHtml = '<div class="fr-waits-fab-wrap">' +
+        // 牌を選択して「この牌を切ったら待ちが変わる」を比較しているときは、
+        // ボタンを押さなくても選択した瞬間に待ちパネルを自動で開いておく
+        var waitsAutoOpen = selectedIdx >= 0 && selectedIdx < displayOrder.length;
+        waitsBtnHtml = '<div class="fr-waits-fab-wrap' + (waitsAutoOpen ? ' open' : '') + '">' +
           '<div class="fr-waits-panel">' +
             '<div class="fr-waits-panel-title">待ち牌</div>' +
             '<div class="fr-waits-panel-tiles">' + waitsTilesHtml + '</div>' +
