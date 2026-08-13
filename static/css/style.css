@@ -3861,6 +3861,13 @@ body.is-battle-page .app-main.battle-main {
   cursor: default !important;
   pointer-events: none !important;
 }
+/* ホバーの浮き上がりは選択中のライトアップを上書きしないよう
+   :not(.selected) に限定する（選択済みの牌はホバーしても
+   常に選択時のグローが優先される） */
+.jt-hand-in-table .mj-sorted-tiles .tile:hover:not(.t-lock):not(.selected),
+.jt-hand-in-table .mj-drew-area .tile:hover:not(.selected) {
+  transform: translateY(-6px) !important;
+}
 /* ホバーで浮き上がる効果は「選択中」のライトアップと紛らわしいため廃止。
    浮き上がり・グローは選択状態(.selected)だけが担う */
 .jt-hand-in-table .mj-hand-sep {
