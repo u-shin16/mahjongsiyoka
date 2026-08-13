@@ -3867,11 +3867,24 @@ var App = {
         el.addEventListener('pointerdown', function(e) {
           if (!allowDiscard()) return;
           e.preventDefault();
-          dragInfo = { active: true, idx: di, startX: e.clientX, startY: e.clientY, el: el };
+          var rect = el.getBoundingClientRect();
+          dragInfo = { active: true, moved: false, idx: di, startX: e.clientX, startY: e.clientY, el: el };
           // ドラッグ中はCSSのtransition/選択中・ホバーのライトアップに
-          // 引っ張られず、指/カーソルの動きにリアルタイムで追従させる
+          // 引っ張られず、指/カーソルの動きにリアルタイムで追従させる。
+          // position:fixedで元のレイアウト（overflow:autoの手牌列やz-index
+          // の積み重なり）から完全に切り離し、奥の要素に隠れて透けて
+          // 見える/見切れる問題を避ける。手牌はzoomで縮小表示している
+          // ため、zoomをキャンセルしないとleft/top/transformのpx指定が
+          // ズレる（zoomが自分自身の座標系まで拡縮してしまうため）
+          el.style.setProperty('zoom', '1', 'important');
+          el.style.setProperty('position', 'fixed', 'important');
+          el.style.setProperty('left', rect.left + 'px', 'important');
+          el.style.setProperty('top', rect.top + 'px', 'important');
+          el.style.setProperty('width', rect.width + 'px', 'important');
+          el.style.setProperty('height', rect.height + 'px', 'important');
+          el.style.setProperty('margin', '0', 'important');
           el.style.setProperty('transition', 'none', 'important');
-          el.style.setProperty('z-index', '20', 'important');
+          el.style.setProperty('z-index', '99999', 'important');
           try { el.setPointerCapture(e.pointerId); } catch(ex) {}
         });
 
@@ -3881,6 +3894,7 @@ var App = {
           var dx = e.clientX - dragInfo.startX;
           var dy = e.clientY - dragInfo.startY;
           if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+            dragInfo.moved = true;
             el.style.setProperty('transform', 'translate('+dx+'px,'+dy+'px)', 'important');
             el.style.opacity   = dy < -(DRAG_THRESHOLD * 0.6) ? '0.65' : '0.85';
           } else {
@@ -3893,8 +3907,17 @@ var App = {
         el.addEventListener('pointerup', function(e) {
           if (!dragInfo.active || dragInfo.idx !== di) return;
           var dy = e.clientY - dragInfo.startY;
+          var dx = e.clientX - dragInfo.startX;
+          var draggedThenReturned = dragInfo.moved && Math.abs(dx) < 15 && Math.abs(dy) < 15;
 
-          // 視覚状態をリセット
+          // 視覚状態をリセット（position:fixedもここで解除して元のレイアウトに戻す）
+          el.style.removeProperty('zoom');
+          el.style.removeProperty('position');
+          el.style.removeProperty('left');
+          el.style.removeProperty('top');
+          el.style.removeProperty('width');
+          el.style.removeProperty('height');
+          el.style.removeProperty('margin');
           el.style.removeProperty('transform');
           el.style.removeProperty('transition');
           el.style.removeProperty('z-index');
@@ -3907,8 +3930,11 @@ var App = {
           }
 
           // マウス操作：カーソルを合わせた時点（:hover）で選択中扱いにしているため、
-          // クリック1回でそのまま確定する（タッチのタップ/ダブルタップ判定は使わない）
+          // クリック1回でそのまま確定する（タッチのタップ/ダブルタップ判定は使わない）。
+          // ただし一度ドラッグしてから元の位置付近まで戻して離した場合は
+          // 「やっぱりやめた」とみなして切らない
           if (e.pointerType === 'mouse') {
+            if (draggedThenReturned) return;
             if (riichiArmed) {
               if (riichiActualIdxs.indexOf(getActualIdx(di)) < 0) return;
               doRiichiDiscardByDI(di);
@@ -3958,6 +3984,13 @@ var App = {
         // pointercancel: 視覚状態リセット
         el.addEventListener('pointercancel', function(e) {
           if (!dragInfo.active || dragInfo.idx !== di) return;
+          el.style.removeProperty('zoom');
+          el.style.removeProperty('position');
+          el.style.removeProperty('left');
+          el.style.removeProperty('top');
+          el.style.removeProperty('width');
+          el.style.removeProperty('height');
+          el.style.removeProperty('margin');
           el.style.removeProperty('transform');
           el.style.removeProperty('transition');
           el.style.removeProperty('z-index');
