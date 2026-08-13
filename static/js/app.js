@@ -3908,7 +3908,11 @@ var App = {
           if (!dragInfo.active || dragInfo.idx !== di) return;
           var dy = e.clientY - dragInfo.startY;
           var dx = e.clientX - dragInfo.startX;
-          var draggedThenReturned = dragInfo.moved && Math.abs(dx) < 15 && Math.abs(dy) < 15;
+          // ドラッグして手牌の並びの中／それより手前（下）で離した場合は
+          // 「やっぱりやめた」とみなして切らない（上に抜けて初めて確定）
+          var handRowEl = document.querySelector('.jt-hand-tiles-row');
+          var handRowTop = handRowEl ? handRowEl.getBoundingClientRect().top : null;
+          var draggedThenReturned = dragInfo.moved && (handRowTop == null || e.clientY >= handRowTop);
 
           // 視覚状態をリセット（position:fixedもここで解除して元のレイアウトに戻す）
           el.style.removeProperty('zoom');
@@ -3931,8 +3935,8 @@ var App = {
 
           // マウス操作：カーソルを合わせた時点（:hover）で選択中扱いにしているため、
           // クリック1回でそのまま確定する（タッチのタップ/ダブルタップ判定は使わない）。
-          // ただし一度ドラッグしてから元の位置付近まで戻して離した場合は
-          // 「やっぱりやめた」とみなして切らない
+          // ただし一度ドラッグしてから手牌の並びの中／それより手前（下）で
+          // 離した場合は「やっぱりやめた」とみなして切らない
           if (e.pointerType === 'mouse') {
             if (draggedThenReturned) return;
             if (riichiArmed) {
