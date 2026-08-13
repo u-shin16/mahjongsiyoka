@@ -3820,27 +3820,68 @@ var App = {
         afterDiscard();
       };
 
+      // ── マウス：カーソルを合わせた時点で待ちをプレビュー表示 ──
+      // （＝ホバー中は選択中扱いという方針のため、フルre-renderはせず
+      //   .mj-waits-area だけを直接差し込む。全体を再描画すると
+      //   ホバー中の要素ごと消えてチラつく/連鎖するため避ける）
+      var computeWaitsForDI = function(di) {
+        if (isRiichi) return [];
+        if (riichiArmed && riichiActualIdxs.indexOf(getActualIdx(di)) < 0) return [];
+        var testHand = displayOrder.filter(function(_, wi) { return wi !== di; });
+        if (testHand.length % 3 !== 1) return [];
+        var w = Agari.getTenpaiWaits(testHand);
+        if (isSanma) w = w.filter(function(x) { return x.suit !== 'man' || x.num === 1 || x.num === 9; });
+        return w;
+      };
+      var hoverWaitsArea = null;
+      var showHoverWaits = function(di) {
+        var waits = computeWaitsForDI(di);
+        if (waits.length === 0) { hideHoverWaits(); return; }
+        var container = document.querySelector('.jt-hand-in-table');
+        if (!container) return;
+        if (!hoverWaitsArea || !hoverWaitsArea.isConnected) {
+          hoverWaitsArea = document.createElement('div');
+          hoverWaitsArea.className = 'mj-waits-area mj-hover-waits';
+          var row = container.querySelector('.jt-hand-tiles-row');
+          if (row && row.parentNode) row.parentNode.insertBefore(hoverWaitsArea, row);
+        }
+        hoverWaitsArea.innerHTML = renderWaitTiles(waits);
+      };
+      var hideHoverWaits = function() {
+        if (hoverWaitsArea && hoverWaitsArea.isConnected) hoverWaitsArea.remove();
+      };
+
       // ── 手牌タイル汎用ポインタイベントバインド ──
       // allowDiscard: 捨て可能かどうかの関数（リーチ中かどうかで分岐）
       var bindTilePointer = function(el, di, allowDiscard) {
+        // pointerenter/leave：マウスのみ。ホバー時点で待ちをプレビュー表示する
+        el.addEventListener('pointerenter', function(e) {
+          if (e.pointerType !== 'mouse' || !allowDiscard()) return;
+          showHoverWaits(di);
+        });
+        el.addEventListener('pointerleave', function(e) {
+          if (e.pointerType !== 'mouse') return;
+          hideHoverWaits();
+        });
         // pointerdown: ドラッグ開始
         el.addEventListener('pointerdown', function(e) {
           if (!allowDiscard()) return;
           e.preventDefault();
-          dragInfo = { active: true, idx: di, startY: e.clientY, el: el };
+          dragInfo = { active: true, idx: di, startX: e.clientX, startY: e.clientY, el: el };
           // ドラッグ中はCSSのtransition/選択中・ホバーのライトアップに
           // 引っ張られず、指/カーソルの動きにリアルタイムで追従させる
           el.style.setProperty('transition', 'none', 'important');
+          el.style.setProperty('z-index', '20', 'important');
           try { el.setPointerCapture(e.pointerId); } catch(ex) {}
         });
 
-        // pointermove: ドラッグ視覚フィードバック（上方向のみ、リアルタイム追従）
+        // pointermove: ドラッグ視覚フィードバック（上下左右どちらにも自由に追従）
         el.addEventListener('pointermove', function(e) {
           if (!dragInfo.active || dragInfo.idx !== di) return;
+          var dx = e.clientX - dragInfo.startX;
           var dy = e.clientY - dragInfo.startY;
-          if (dy < -8) {
-            var lifted = Math.max(dy, -80);
-            el.style.setProperty('transform', 'translateY('+lifted+'px)', 'important');
+          if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+            el.style.setProperty('transform', 'translate('+dx+'px,'+dy+'px)', 'important');
             el.style.opacity   = dy < -(DRAG_THRESHOLD * 0.6) ? '0.65' : '0.85';
           } else {
             el.style.removeProperty('transform');
@@ -3856,6 +3897,7 @@ var App = {
           // 視覚状態をリセット
           el.style.removeProperty('transform');
           el.style.removeProperty('transition');
+          el.style.removeProperty('z-index');
           el.style.opacity   = '';
           dragInfo.active = false;
 
@@ -3918,6 +3960,7 @@ var App = {
           if (!dragInfo.active || dragInfo.idx !== di) return;
           el.style.removeProperty('transform');
           el.style.removeProperty('transition');
+          el.style.removeProperty('z-index');
           el.style.opacity   = '';
           dragInfo.active = false;
         });
