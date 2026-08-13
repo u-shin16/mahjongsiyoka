@@ -4300,6 +4300,13 @@ body.is-battle-page .app-main.battle-main {
   transform: rotate(90deg) !important;
 }
 
+/* 鳴き選択中：対象の捨て牌をライトアップして一目でわかるようにする */
+.disc-river .river-tile.river-call-target {
+  box-shadow: 0 0 0 3px #ffe38a, 0 0 16px 6px rgba(255,215,106,0.9);
+  filter: brightness(1.4) saturate(1.2);
+  z-index: 5;
+}
+
 /* ─────────────────────────────────
    自分（下/self）：6列、中央下部
 ───────────────────────────────── */

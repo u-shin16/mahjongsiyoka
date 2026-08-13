@@ -900,11 +900,12 @@ function renderHiddenHand(prefix, count, max) {
   return html;
 }
 
-function renderDiscardRiverShared(discards, seat, riichiIdx) {
+function renderDiscardRiverShared(discards, seat, riichiIdx, callTargetTileId) {
   var tiles = (discards || []).slice(0, RIVER_COLS * RIVER_ROWS).map(function(d, i) {
     var tile = (d && d.tile) ? d.tile : d;
     var isRiichi = (d && d.isRiichiDiscard) || (tile && tile.riichiDiscard) || (riichiIdx != null && i === riichiIdx);
-    var cls = 'river-tile' + (isRiichi ? ' river-riichi' : '');
+    var isCallTarget = callTargetTileId && tile && tile.id === callTargetTileId;
+    var cls = 'river-tile' + (isRiichi ? ' river-riichi' : '') + (isCallTarget ? ' river-call-target' : '');
     var tileHtml = Tiles.renderTile(tile, { noHover: true, extraClass: cls });
     var col = i % RIVER_COLS;
     var rowIdx = Math.floor(i / RIVER_COLS);
@@ -3453,6 +3454,10 @@ var App = {
       var isFuriten = Battle.isFuriten(0);
       if (isRiichi || !canRiichi || (s.phase !== 'player_turn' && s.phase !== 'naki_discard')) riichiArmed = false;
 
+      // 鳴き選択中：どの捨て牌が対象かひと目でわかるよう、河のその牌をライトアップする
+      var callTargetSeat = (s.phase === 'pending_call' && s.callPending) ? s.callPending.fromPlayer : -1;
+      var callTargetTileId = (s.phase === 'pending_call' && s.callPending && s.callPending.tile) ? s.callPending.tile.id : null;
+
       // ── テンパイ時の待ち牌（自分のツモ番）：牌を選択中のみ、その牌を切った場合の
       //      待ちを手牌のすぐ下にインライン表示する。CPU戦はターン進行が同期的で
       //      「他家のツモ番を眺めて待つ」UIが存在しないため、右下の待ちボタン
@@ -3705,22 +3710,22 @@ var App = {
             (L >= 0 ? '<div class="jt-hidden-hand jt-hidden-left">' + hiddenTiles('left-wall-', s.hands[L].length, 13) + '</div>' : '') +
             '<div class="jt-hidden-hand jt-hidden-right">' + hiddenTiles('right-wall-', s.hands[R].length, 13) + '</div>' +
             // 上河：CPU対面（18枚まで3行×6列）
-            renderDiscardRiver(s.discards[T], 'opposite', null) +
+            renderDiscardRiver(s.discards[T], 'opposite', null, T === callTargetSeat ? callTargetTileId : null) +
 
             // 中段
             '<div class="jt-table-mid">' +
               // 左河：CPU上家（15枚まで）
-              (L >= 0 ? renderDiscardRiver(s.discards[L], 'left', null) : '') +
+              (L >= 0 ? renderDiscardRiver(s.discards[L], 'left', null, L === callTargetSeat ? callTargetTileId : null) : '') +
 
               // 中央ダイアモンド
               centerHtml +
 
               // 右河：CPU下家（15枚まで）
-              renderDiscardRiver(s.discards[R], 'right', null) +
+              renderDiscardRiver(s.discards[R], 'right', null, R === callTargetSeat ? callTargetTileId : null) +
             '</div>' +
 
             // 下河：プレイヤー（18枚まで）
-            renderDiscardRiver(s.discards[0], 'self', s.riichiDiscardIdx != null ? s.riichiDiscardIdx : null) +
+            renderDiscardRiver(s.discards[0], 'self', s.riichiDiscardIdx != null ? s.riichiDiscardIdx : null, 0 === callTargetSeat ? callTargetTileId : null) +
 
             // ── 手牌エリア（テーブル上に表示） ──
             '<div class="jt-hand-in-table">' +
@@ -3855,7 +3860,19 @@ var App = {
             return;
           }
 
-          // リーチ武装中：候補外の牌は無視。候補牌は通常と同じ
+          // マウス操作：カーソルを合わせた時点（:hover）で選択中扱いにしているため、
+          // クリック1回でそのまま確定する（タッチのタップ/ダブルタップ判定は使わない）
+          if (e.pointerType === 'mouse') {
+            if (riichiArmed) {
+              if (riichiActualIdxs.indexOf(getActualIdx(di)) < 0) return;
+              doRiichiDiscardByDI(di);
+            } else {
+              doDiscardByDI(di);
+            }
+            return;
+          }
+
+          // リーチ武装中（タッチ操作）：候補外の牌は無視。候補牌は
           // 「ドラッグ上/ダブルタップで確定、シングルタップは選択（待ち牌プレビュー）」
           if (riichiArmed) {
             if (riichiActualIdxs.indexOf(getActualIdx(di)) < 0) return;
