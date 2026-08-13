@@ -3453,14 +3453,12 @@ var App = {
       var isFuriten = Battle.isFuriten(0);
       if (isRiichi || !canRiichi || (s.phase !== 'player_turn' && s.phase !== 'naki_discard')) riichiArmed = false;
 
-      // ── テンパイ時の待ち牌。表示形式を2種類に分ける:
-      //   1. 牌を選択中 → その牌を切った場合の待ちを、手牌のすぐ下にインライン表示
-      //      （切る牌によって待ちが変わることがあるため、選択に連動させる）
-      //   2. 何も選択していない → ツモ切り（引いた牌をそのまま切る）した場合の
-      //      待ちを、右下のボタンを押している間だけ表示（従来通り）
+      // ── テンパイ時の待ち牌（自分のツモ番）：牌を選択中のみ、その牌を切った場合の
+      //      待ちを手牌のすぐ下にインライン表示する。CPU戦はターン進行が同期的で
+      //      「他家のツモ番を眺めて待つ」UIが存在しないため、右下の待ちボタン
+      //      （フレンド対戦専用）はここでは出さない。
       // リーチ後は別枠(waitsHtml)で常時表示するのでここでは対象外にする ──
       var selectedWaits = [];
-      var tsumogiriWaits = [];
       if (!isRiichi) {
         var hasSelection = selectedIdx >= 0 && selectedIdx < displayOrder.length;
         if (hasSelection) {
@@ -3468,12 +3466,6 @@ var App = {
           if (selHand.length % 3 === 1) {
             selectedWaits = Agari.getTenpaiWaits(selHand);
             if (isSanma) selectedWaits = selectedWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
-          }
-        } else {
-          var tsumoHand = displayOrder.filter(function(_, wi) { return wi !== sortedLen; });
-          if (tsumoHand.length % 3 === 1) {
-            tsumogiriWaits = Agari.getTenpaiWaits(tsumoHand);
-            if (isSanma) tsumogiriWaits = tsumogiriWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
           }
         }
       }
@@ -3485,16 +3477,6 @@ var App = {
       var selectedWaitsHtml = selectedWaits.length > 0
         ? '<div class="mj-waits-area">' + renderWaitTiles(selectedWaits) + '</div>'
         : '';
-      var waitsBtnHtml = '';
-      if (tsumogiriWaits.length > 0) {
-        waitsBtnHtml = '<div class="fr-waits-fab-wrap">' +
-          '<div class="fr-waits-panel">' +
-            '<div class="fr-waits-panel-title">ツモ切りの待ち</div>' +
-            '<div class="fr-waits-panel-tiles">' + renderWaitTiles(tsumogiriWaits) + '</div>' +
-          '</div>' +
-          '<button type="button" class="fr-waits-fab" id="btnShowWaits">待ちを表示</button>' +
-        '</div>';
-      }
 
       // ── テンパイ候補牌を計算（表示インデックス→actual index のマップ） ──
       var riichiActualIdxs = canRiichi ? Battle.getRiichiCandidates() : [];
@@ -3555,8 +3537,11 @@ var App = {
       }
 
       // ── 中央ダイアモンド ──
+      // カンが発生してカンドラが増えたら、ドラ表示のすぐ右に追加していく
+      var kanDoraTop = (s.kanDoraIndicators || []).map(function(ind) { return Yaku.doraFromIndicator(ind); });
       var doraHtml = '<div class="jt-table-dora">ドラ：' +
         (dora ? Tiles.renderTile(dora,{noHover:true,extraClass:'xxs'}) : '─') +
+        kanDoraTop.map(function(t) { return Tiles.renderTile(t, {noHover:true, extraClass:'xxs'}); }).join('') +
       '</div>';
       // seat index → ダイヤモンドの辺（自分=下、対面=上、下家=右、上家=左）
       var seatEdgeCls = {};
@@ -3740,7 +3725,6 @@ var App = {
             // ── 手牌エリア（テーブル上に表示） ──
             '<div class="jt-hand-in-table">' +
               '<div class="jt-hand-infobar">' +
-                (isSanma ? '<span class="mj-nuki-count">抜き北 '+nukiCount(0)+'</span>' : '') +
                 (isRiichi ? '<span class="mj-riichi-badge">リーチ中</span>' : '') +
                 (!isRiichi && canRiichi ? '<span class="mj-tenpai-notice">🀄 テンパイ！</span>' : '') +
                 (canTsumo ? '<span class="mj-tsumo-flag">▲ツモ可</span>' : '') +
@@ -3748,7 +3732,6 @@ var App = {
               '</div>' +
               waitsHtml +
               selectedWaitsHtml +
-              waitsBtnHtml +
               '<div class="jt-hand-tiles-row">' +
                 '<div class="mj-sorted-tiles" id="mjSorted">'+sortedHtml+'</div>' +
                 (drewTile ? '<div class="mj-hand-sep"></div>'+drewHtml : '') +
@@ -3993,18 +3976,6 @@ var App = {
         });
       });
 
-      // 待ちを表示ボタン（押している間だけ待ち牌パネルを開く）
-      var waitsBtn = document.getElementById('btnShowWaits');
-      if (waitsBtn) {
-        var waitsWrap = waitsBtn.closest('.fr-waits-fab-wrap');
-        var showWaits = function(e) { e.preventDefault(); waitsWrap.classList.add('open'); };
-        var hideWaits = function() { waitsWrap.classList.remove('open'); };
-        waitsBtn.addEventListener('pointerdown', showWaits);
-        waitsBtn.addEventListener('pointerup', hideWaits);
-        waitsBtn.addEventListener('pointerleave', hideWaits);
-        waitsBtn.addEventListener('pointercancel', hideWaits);
-      }
-
       // ── Bind buttons ──
       var btnTsumo = document.getElementById('btnTsumo');
       if (btnTsumo) btnTsumo.addEventListener('click', function() {
@@ -4131,18 +4102,19 @@ var App = {
         return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
       }).join('') + '</div>' : '';
 
-      // ドラ・裏ドラ・カンドラ表示牌（リーチ時の裏ドラは和了時のみめくって見せる）
+      // ドラ・裏ドラ表示牌（リーチ時の裏ドラは和了時のみめくって見せる）
+      // カンドラ表示牌は別枠にせず、ドラ表示牌の横にそのまま追加していく
       var doraInd = s.doraIndicator;
+      var kanDoraInds = s.kanDoraIndicators || [];
       var doraRowHtml = doraInd
-        ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">ドラ表示牌</span>' + Tiles.renderTile(doraInd, { noHover: true, extraClass: 'xxs' }) + '</div>'
+        ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">ドラ表示牌</span>' +
+            Tiles.renderTile(doraInd, { noHover: true, extraClass: 'xxs' }) +
+            kanDoraInds.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') +
+          '</div>'
         : '';
       var uraInd = s.uraDoraIndicator;
       var uraRowHtml = (uraInd && s.riichi && s.riichi[winner])
         ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">裏ドラ表示牌</span>' + Tiles.renderTile(uraInd, { noHover: true, extraClass: 'xxs' }) + '</div>'
-        : '';
-      var kanDoraInds = s.kanDoraIndicators || [];
-      var kanDoraRowHtml = kanDoraInds.length
-        ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">カンドラ表示牌</span>' + kanDoraInds.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</div>'
         : '';
 
       // 役一覧 HTML
@@ -4173,7 +4145,6 @@ var App = {
             '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + hanText + ' ' + ptsText + '</div>' +
             doraRowHtml +
             uraRowHtml +
-            kanDoraRowHtml +
             deltaHtml +
             '<div class="btn-row" style="margin-top:10px">' +
               (matchOver

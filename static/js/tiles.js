@@ -141,9 +141,6 @@ const Tiles = (() => {
   }
 
   function honorFace(tile, mainLabel) {
-    if (tile.suit === 'wind') {
-      return `<span class="tile-reading">${windReading(tile)}</span><span class="tile-num">${mainLabel}</span>`;
-    }
     return `<span class="tile-num">${mainLabel}</span>`;
   }
 
@@ -193,9 +190,7 @@ const Tiles = (() => {
     const sub = suitSubLabel(tile);
     const sprite = spritePosition(tile);
     if (sprite) {
-      return `<div class="${classes} sprite-tile" data-id="${tile.id}" data-suit="${tile.suit}" data-num="${tile.num}" style="${spriteStyle(sprite, small)}">
-        ${tile.suit === 'wind' ? `<span class="tile-reading sprite-reading">${windReading(tile)}</span>` : ''}
-      </div>`;
+      return `<div class="${classes} sprite-tile" data-id="${tile.id}" data-suit="${tile.suit}" data-num="${tile.num}" style="${spriteStyle(sprite, small)}"></div>`;
     }
 
     let face = '';
