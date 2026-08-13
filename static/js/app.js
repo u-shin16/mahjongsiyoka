@@ -3427,6 +3427,27 @@ var App = {
       var canNuki = Battle.canNuki();
       var isFuriten = Battle.isFuriten(0);
 
+      // ── テンパイ時の待ち牌（ツモ切りした場合の待ち）。リーチ後は
+      // 別枠(waitsHtml)で常時表示するのでここでは対象外にする ──
+      var myWaits = [];
+      if (!isRiichi && sortedHand.length % 3 === 1) {
+        myWaits = Agari.getTenpaiWaits(sortedHand);
+        if (isSanma) myWaits = myWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
+      }
+      var waitsBtnHtml = '';
+      if (myWaits.length > 0) {
+        var waitsTilesHtml = myWaits.map(function(w) {
+          return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xxs' });
+        }).join('');
+        waitsBtnHtml = '<div class="fr-waits-fab-wrap">' +
+          '<div class="fr-waits-panel">' +
+            '<div class="fr-waits-panel-title">待ち牌</div>' +
+            '<div class="fr-waits-panel-tiles">' + waitsTilesHtml + '</div>' +
+          '</div>' +
+          '<button type="button" class="fr-waits-fab" id="btnShowWaits">待ちを表示</button>' +
+        '</div>';
+      }
+
       // ── テンパイ候補牌を計算（表示インデックス→actual index のマップ） ──
       var riichiActualIdxs = canRiichi ? Battle.getRiichiCandidates() : [];
       // display index → is riichi candidate?
@@ -3671,6 +3692,7 @@ var App = {
                 (isFuriten ? '<span class="mj-furiten-badge">フリテン</span>' : '') +
               '</div>' +
               waitsHtml +
+              waitsBtnHtml +
               '<div class="jt-hand-tiles-row">' +
                 '<div class="mj-sorted-tiles" id="mjSorted">'+sortedHtml+'</div>' +
                 (drewTile ? '<div class="mj-hand-sep"></div>'+drewHtml : '') +
@@ -3895,6 +3917,18 @@ var App = {
           if (ok) { log('加カン！', 'ev-discard'); afterDiscard(); }
         });
       });
+
+      // 待ちを表示ボタン（押している間だけ待ち牌パネルを開く）
+      var waitsBtn = document.getElementById('btnShowWaits');
+      if (waitsBtn) {
+        var waitsWrap = waitsBtn.closest('.fr-waits-fab-wrap');
+        var showWaits = function(e) { e.preventDefault(); waitsWrap.classList.add('open'); };
+        var hideWaits = function() { waitsWrap.classList.remove('open'); };
+        waitsBtn.addEventListener('pointerdown', showWaits);
+        waitsBtn.addEventListener('pointerup', hideWaits);
+        waitsBtn.addEventListener('pointerleave', hideWaits);
+        waitsBtn.addEventListener('pointercancel', hideWaits);
+      }
 
       // ── Bind buttons ──
       var btnTsumo = document.getElementById('btnTsumo');
