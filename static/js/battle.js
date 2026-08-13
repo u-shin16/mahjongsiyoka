@@ -1,10 +1,10 @@
 'use strict';
 
 var Battle = (function() {
-  var PLAYER_NAMES = ['あなた', 'CPU南', 'CPU西', 'CPU北'];
+  var PLAYER_NAMES = ['あなた', 'CPU1', 'CPU2', 'CPU3'];
   var PLAYER_NAME_SETS = {
-    3: ['あなた', 'CPU南', 'CPU西'],
-    4: ['あなた', 'CPU南', 'CPU西', 'CPU北'],
+    3: ['あなた', 'CPU1', 'CPU2'],
+    4: ['あなた', 'CPU1', 'CPU2', 'CPU3'],
   };
   var WIND_NAMES = ['東', '南', '西', '北'];
   var WIND_READINGS = ['トン', 'ナン', 'シャー', 'ペー'];
@@ -44,6 +44,9 @@ var Battle = (function() {
       roundLimit: getRoundLimit(opts.gameType, playerCount),
       gameType: opts.gameType || 'tonpu',
       roundWind: 0,
+      dealerSeat: 0,
+      honba: 0,
+      kyokuNum: 1,
       scores: makePlayerArray(playerCount, playerCount === 3 ? 35000 : 25000),
       doraIndicator: null,
       kanDoraIndicators: [],
@@ -83,7 +86,6 @@ var Battle = (function() {
     state.hands = hands;
     state.discards = discards;
     state.turn = 0;
-    state.roundWind = Math.floor((state.round - 1) / state.playerCount);
     state.doraIndicator = wall.pop();
     state.uraDoraIndicator = wall.pop();   // 裏ドラ表示牌（リーチしてアガったときだけ公開）
     state.riichi           = makePlayerArray(state.playerCount, false);
@@ -124,17 +126,32 @@ var Battle = (function() {
   function getRoundLabel() {
     if (!state) return '東1局';
     var wind = WIND_NAMES[Math.min(state.roundWind, WIND_NAMES.length - 1)];
-    var num = ((state.round - 1) % state.playerCount) + 1;
-    return wind + num + '局';
+    var label = wind + (state.kyokuNum || 1) + '局';
+    if (state.honba) label += ' ' + state.honba + '本場';
+    return label;
   }
 
+  // 親が和了ったら連荘（同じ人が親のまま、本場だけ増える）。
+  // それ以外（子が和了、または流局）は親が次の席に移り、方角（局）が進む。
   function nextRound() {
     if (!state) return false;
     if (state.round >= state.roundLimit) {
       state.phase = 'match_end';
       return false;
     }
+    var dealerWon = state.phase === 'end' && state.winner === state.dealerSeat;
     state.round++;
+    if (dealerWon) {
+      state.honba = (state.honba || 0) + 1;
+    } else {
+      state.dealerSeat = (state.dealerSeat + 1) % state.playerCount;
+      state.honba = 0;
+      state.kyokuNum = (state.kyokuNum || 1) + 1;
+      if (state.kyokuNum > state.playerCount) {
+        state.kyokuNum = 1;
+        state.roundWind = (state.roundWind || 0) + 1;
+      }
+    }
     startRound();
     return true;
   }
@@ -178,11 +195,11 @@ var Battle = (function() {
     return tiles;
   }
 
-  // このアプリのCPU戦では席の風はラウンドをまたいでも回転しない
-  // （seat0=あなた=常に東、WIND_NAMES[i]の表示と一致させる。app.js/battle.js内の
-  //   他の場所（例：CPUのポン判定 tile.num===(pidx+1)）とも同じ前提で揃えている。
-  //   友人戦(friend.js)は席が実際に回転するため、そちらは別の計算式を使う）
-  function seatWindNum(seat) { return seat + 1; }
+  // 親（dealerSeat）からの相対位置で自風を求める（親＝東、以下反時計回りに南→西→北）
+  function seatWindNum(seat) {
+    var n = state.playerCount;
+    return ((seat - state.dealerSeat + n) % n) + 1;
+  }
   function roundWindNum() { return state.roundWind + 1; }
 
   // 和了形から成立する役（形に依存するもの）を判定する。
@@ -770,7 +787,7 @@ var Battle = (function() {
     // ポン (2枚持ち): 役牌は積極的に、それ以外は30%
     if (same.length >= 2) {
       var isYaku = (tile.suit === 'dragon') ||
-        (tile.suit === 'wind' && (tile.num === (state.roundWind + 1) || tile.num === (pidx + 1)));
+        (tile.suit === 'wind' && (tile.num === (state.roundWind + 1) || tile.num === seatWindNum(pidx)));
       if (isYaku || Math.random() < 0.3) return 'pon';
     }
 
@@ -1060,5 +1077,6 @@ var Battle = (function() {
     PLAYER_NAMES:  PLAYER_NAMES,
     WIND_NAMES:    WIND_NAMES,
     WIND_READINGS: WIND_READINGS,
+    seatWindNum: function(seat) { return state ? seatWindNum(seat) : seat + 1; },
   };
 })();

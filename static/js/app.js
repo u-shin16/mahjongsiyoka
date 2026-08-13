@@ -3325,10 +3325,10 @@ var App = {
 
       return {
         round: Battle.getRoundLabel(),
-        honba: 0,
+        honba: s.honba || 0,
         kyotaku: 0,
         roundWind: Battle.WIND_NAMES[s.roundWind] || '東',
-        playerWind: Battle.WIND_NAMES[0] || '東',
+        playerWind: Battle.WIND_NAMES[Battle.seatWindNum(0) - 1] || '東',
         doraIndicators: adviceSeatTiles([s.doraIndicator].concat(s.kanDoraIndicators || [])),
         hand: adviceSeatTiles(s.hands[0] || []),
         drawnTile: tileToAdviceId(drawnTile),
@@ -3519,7 +3519,7 @@ var App = {
       var scoresBar = '<div class="jt-scores '+(isSanma ? 'sanma' : '')+'">' +
         Battle.PLAYER_NAMES.map(function(nm,i){
           return '<div class="jt-score-item '+(i===0?'me':'')+'">'+
-            '<div class="sname"><span class="swind">'+Battle.WIND_NAMES[i]+'</span> '+nm+
+            '<div class="sname"><span class="swind">'+Battle.WIND_NAMES[Battle.seatWindNum(i) - 1]+'</span> '+nm+
               (s.riichi[i]?' <span style="color:#e74c3c;font-size:0.6rem">R</span>':'')+'</div>'+
             '<div class="spts">'+s.scores[i].toLocaleString()+'点</div>'+
             (isSanma && nukiCount(i) > 0 ? '<div class="smeta">抜き北 '+nukiCount(i)+'</div>' : '')+
@@ -3529,7 +3529,7 @@ var App = {
       // ── CPU チップ（小） ──
       function cpuChip(idx, inline) {
         return '<div class="jt-cpu-chip'+(inline?'':' vert')+'">' +
-          '<span class="wind">'+Battle.WIND_NAMES[idx]+'</span>' +
+          '<span class="wind">'+Battle.WIND_NAMES[Battle.seatWindNum(idx) - 1]+'</span>' +
           '<span>'+esc(Battle.PLAYER_NAMES[idx])+'</span>' +
           '<span style="font-size:0.62rem">'+s.scores[idx].toLocaleString()+'</span>' +
           (isSanma && nukiCount(idx) > 0 ? '<span class="nuki">北x'+nukiCount(idx)+'</span>' : '') +
@@ -3561,7 +3561,7 @@ var App = {
         seats: battleSeats,
         edgeOf: seatEdgeCls,
         selfIdx: 0,
-        windOf: function(i) { return Battle.WIND_NAMES[i]; },
+        windOf: function(i) { return Battle.WIND_NAMES[Battle.seatWindNum(i) - 1]; },
         ptsOf: function(i) { return s.scores[i].toLocaleString(); },
         isRiichi: function(i) { return !!s.riichi[i]; },
         nukiCountOf: nukiCount,
@@ -4203,7 +4203,7 @@ var App = {
         '<div class="battle-end-title">流局'+(matchOver?' ／ 対局終了':'')+'</div>' +
         '<div class="battle-end-detail">'+Battle.getRoundLabel()+'<br>山がなくなりました。引き分けです。</div>' +
         '<div class="battle-final-scores">'+
-        Battle.PLAYER_NAMES.map(function(name,i){var s=Battle.getState();return '<div class="battle-final-score-row"><div class="name">'+Battle.WIND_NAMES[i]+' '+Battle.WIND_READINGS[i]+' '+name+'</div><div class="pts">'+s.scores[i].toLocaleString()+'点</div></div>';}).join('')+
+        Battle.PLAYER_NAMES.map(function(name,i){var s=Battle.getState();var wn=Battle.seatWindNum(i)-1;return '<div class="battle-final-score-row"><div class="name">'+Battle.WIND_NAMES[wn]+' '+Battle.WIND_READINGS[wn]+' '+name+'</div><div class="pts">'+s.scores[i].toLocaleString()+'点</div></div>';}).join('')+
         '</div>' +
         '<div class="btn-row">'+(matchOver?'<button class="btn btn-primary" id="btnPA2">再戦</button>':'<button class="btn btn-primary" id="btnNR2">次の局へ</button>')+'<button class="btn btn-secondary" id="btnBH2">ホームへ</button></div></div></div>';
       var btnNR2 = document.getElementById('btnNR2');
