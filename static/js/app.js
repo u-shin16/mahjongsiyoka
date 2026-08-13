@@ -3641,7 +3641,7 @@ var App = {
         actionHtml = '<div class="jt-battle-actions">' +
           (showRiichiBtn0 ? '<button class="btn-battle btn-riichi'+(riichiArmed ? ' active' : '')+'" id="btnRiichi">'+(riichiArmed ? '🎯 リーチ中断' : '🎯 リーチ')+'</button>' : '') +
           '<span style="color:#8ab89c;font-size:0.85rem">' +
-            (riichiArmed ? '🔴印の牌をタップで切る' :
+            (riichiArmed ? '🔴印の牌をタップで待ち確認、ダブルタップ/上スワイプで切る' :
              canRiichi   ? 'リーチできます！ボタンを押してください' :
              isRiichi    ? 'ツモ切り：引いた牌をダブルタップ' :
                            '牌をダブルタップ or 上スワイプで切る') +
@@ -3855,9 +3855,20 @@ var App = {
             return;
           }
 
-          // リーチ武装中：候補牌ならタップ/ドラッグ即リーチ宣言。候補外は無視
+          // リーチ武装中：候補外の牌は無視。候補牌は通常と同じ
+          // 「ドラッグ上/ダブルタップで確定、シングルタップは選択（待ち牌プレビュー）」
           if (riichiArmed) {
-            doRiichiDiscardByDI(di);
+            if (riichiActualIdxs.indexOf(getActualIdx(di)) < 0) return;
+            if (dy < -DRAG_THRESHOLD) { doRiichiDiscardByDI(di); return; }
+            var nowR = Date.now();
+            if (lastTap.idx === di && (nowR - lastTap.time) < DOUBLE_TAP_MS) {
+              lastTap = { idx: -1, time: 0 };
+              doRiichiDiscardByDI(di);
+              return;
+            }
+            lastTap = { idx: di, time: nowR };
+            selectedIdx = (selectedIdx === di) ? -1 : di;
+            renderGame();
             return;
           }
 
