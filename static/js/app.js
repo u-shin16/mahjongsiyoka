@@ -3279,10 +3279,12 @@ var App = {
     Battle.init({ difficulty: opts.difficulty || 'easy', gameType: opts.gameType || 'tonpu', playerCount: initialPlayerCount });
 
     var selectedIdx = -1;
+    var riichiArmed = false;
     var eventLog = [];
     var log = function(msg, cls) { eventLog.unshift('<p class="'+(cls||'ev-discard')+'">'+esc(msg)+'</p>'); if(eventLog.length>12) eventLog.pop(); };
     var resetLocalRound = function() {
       selectedIdx = -1;
+      riichiArmed = false;
       eventLog = [];
       battleAdvice = null;
       battleAdviceLoading = false;
@@ -3449,6 +3451,7 @@ var App = {
       var canRiichi = Battle.canRiichi();
       var canNuki = Battle.canNuki();
       var isFuriten = Battle.isFuriten(0);
+      if (isRiichi || !canRiichi || (s.phase !== 'player_turn' && s.phase !== 'naki_discard')) riichiArmed = false;
 
       // ── テンパイ時の待ち牌。表示形式を2種類に分ける:
       //   1. 牌を選択中 → その牌を切った場合の待ちを、手牌のすぐ下にインライン表示
@@ -3500,9 +3503,6 @@ var App = {
         var ai = getActualIdx(si);
         return riichiActualIdxs.indexOf(ai) >= 0;
       };
-      // 選択中の牌がリーチ候補かどうか
-      var selectedIsRiichiCand = selectedIdx >= 0 && selectedIdx < sortedLen && isRiichiCandDisplay(selectedIdx);
-
       // ── 待ち牌HTML（リーチ後） ──
       var waitsHtml = '';
       if (isRiichi && s.riichiWaits && s.riichiWaits.length > 0) {
@@ -3607,6 +3607,9 @@ var App = {
           '</div>';
       } else if (s.phase === 'player_turn' || s.phase === 'naki_discard') {
         var floatBtns = '';
+        if (s.phase === 'player_turn' && canTsumo) {
+          floatBtns += '<button class="btn-battle btn-tsumo" id="btnTsumo">ツモ！</button>';
+        }
         var selectedIsNuki0 = isSanma && selectedIdx >= 0 && displayOrder[selectedIdx] && Battle.isNukiTile && Battle.isNukiTile(displayOrder[selectedIdx]);
         if (isSanma && canNuki) {
           floatBtns += '<button class="btn-battle btn-nuki" id="btnNuki">'+(selectedIsNuki0 ? '北を抜く' : '北抜き')+'</button>';
@@ -3620,6 +3623,11 @@ var App = {
         if (floatBtns) {
           callFloatHtml = '<div class="hand-action-float">'+floatBtns+'</div>';
         }
+      } else if (s.phase === 'pending_ron') {
+        callFloatHtml = '<div class="hand-action-float">' +
+          '<button class="btn-battle btn-ron" id="btnRon">ロン！</button>' +
+          '<button class="btn-battle btn-skip" id="btnSkip">スルー</button>' +
+        '</div>';
       }
 
       // ─────────────────────────────────────────────────────────
@@ -3644,14 +3652,14 @@ var App = {
       // ─────────────────────────────────────────────────────────
       var actionHtml = '';
       if (s.phase==='player_turn' || s.phase==='naki_discard') {
-        var showRiichiBtn0 = canRiichi && !isRiichi && selectedIsRiichiCand;
+        var showRiichiBtn0 = canRiichi && !isRiichi;
         actionHtml = '<div class="jt-battle-actions">' +
-          (s.phase==='player_turn' && canTsumo ? '<button class="btn-battle btn-tsumo" id="btnTsumo">ツモ！</button>' : '') +
-          (showRiichiBtn0 ? '<button class="btn-battle btn-riichi" id="btnRiichi">🎯 リーチ</button>' : '') +
+          (showRiichiBtn0 ? '<button class="btn-battle btn-riichi'+(riichiArmed ? ' active' : '')+'" id="btnRiichi">'+(riichiArmed ? '🎯 リーチ中断' : '🎯 リーチ')+'</button>' : '') +
           '<span style="color:#8ab89c;font-size:0.85rem">' +
-            (canRiichi ? '🔴印の牌をダブルタップで切る' :
-             isRiichi  ? 'ツモ切り：引いた牌をダブルタップ' :
-                         '牌をダブルタップ or 上スワイプで切る') +
+            (riichiArmed ? '🔴印の牌をタップで切る' :
+             canRiichi   ? 'リーチできます！ボタンを押してください' :
+             isRiichi    ? 'ツモ切り：引いた牌をダブルタップ' :
+                           '牌をダブルタップ or 上スワイプで切る') +
           '</span>' +
           '<button class="btn-battle btn-ai-intable" id="btnAiGame" '+(battleAdviceLoading ? 'disabled' : '')+'>' +
             (battleAdviceLoading ? 'AI考え中' : 'AIに聞く') +
@@ -3661,13 +3669,12 @@ var App = {
         // 鳴き選択中はヒントのみ（ボタンは callFloatHtml に移動済み）
         actionHtml = '<div class="jt-battle-actions"><span style="color:#f0c060;font-size:0.82rem">鳴けます！右上で選択してください</span></div>';
       } else if (s.phase==='pending_ron') {
+        // ロン／スルーボタンは callFloatHtml に移動済み。ここはバナーのみ。
         var pr0 = s.pendingRon;
         actionHtml =
-          '<div class="mj-ron-banner">'+esc(Battle.PLAYER_NAMES[pr0.from])+
-          ' が <strong>'+esc(Tiles.label(pr0.tile))+'</strong> を捨てた！ロンできます</div>' +
-          '<div class="jt-battle-actions">'+
-            '<button class="btn-battle btn-ron" id="btnRon">ロン！</button>'+
-            '<button class="btn-battle btn-skip" id="btnSkip">スルー</button>'+
+          '<div class="jt-battle-actions">' +
+            '<div class="mj-ron-banner">'+esc(Battle.PLAYER_NAMES[pr0.from])+
+            ' が <strong>'+esc(Tiles.label(pr0.tile))+'</strong> を捨てた！ロンできます</div>' +
           '</div>';
       }
 
@@ -3675,13 +3682,16 @@ var App = {
       var sortedHtml = sortedHand.map(function(t,si){
         var sel  = selectedIdx===si ? ' selected' : '';
         var cand = (!isRiichi && isRiichiCandDisplay(si)) ? ' riichi-cand' : '';
+        var dim  = (riichiArmed && !isRiichiCandDisplay(si)) ? ' riichi-dim' : '';
         var nuki = (!isRiichi && isSanma && Battle.isNukiTile && Battle.isNukiTile(t)) ? ' nuki-cand' : '';
         var aiRec = battleAdviceTileId && tileToAdviceId(t) === battleAdviceTileId ? ' ai-recommended' : '';
-        return Tiles.renderTile(t, {extraClass: sel+lockCls+cand+nuki+aiRec});
+        return Tiles.renderTile(t, {extraClass: sel+lockCls+cand+dim+nuki+aiRec});
       }).join('');
+      var drewCand = (!isRiichi && isRiichiCandDisplay(sortedLen)) ? ' riichi-cand' : '';
+      var drewDim = (riichiArmed && !isRiichiCandDisplay(sortedLen)) ? ' riichi-dim' : '';
       var drewHtml = drewTile
         ? '<div class="mj-drew-area" id="mjDrew">'+
-            Tiles.renderTile(drewTile, {extraClass: (selectedIdx===sortedLen ? 'selected' : '') + (!isRiichi && isSanma && Battle.isNukiTile && Battle.isNukiTile(drewTile) ? ' nuki-cand' : '') + (battleAdviceTileId && tileToAdviceId(drewTile) === battleAdviceTileId ? ' ai-recommended' : '')})+
+            Tiles.renderTile(drewTile, {extraClass: (selectedIdx===sortedLen ? 'selected' : '') + drewCand + drewDim + (!isRiichi && isSanma && Battle.isNukiTile && Battle.isNukiTile(drewTile) ? ' nuki-cand' : '') + (battleAdviceTileId && tileToAdviceId(drewTile) === battleAdviceTileId ? ' ai-recommended' : '')})+
           '</div>'
         : '';
 
@@ -3810,6 +3820,18 @@ var App = {
         afterDiscard();
       };
 
+      // リーチ武装中に候補牌をタップ/ドラッグしたときの捨て＋リーチ宣言
+      var doRiichiDiscardByDI = function(di) {
+        var ai = getActualIdx(di);
+        if (ai < 0 || riichiActualIdxs.indexOf(ai) < 0) return;
+        var tile = s.hands[0][ai];
+        log('あなた: '+Tiles.label(tile)+'を切ってリーチ！', 'ev-riichi');
+        clearBattleAdvice();
+        riichiArmed = false;
+        Battle.playerRiichi(ai);
+        afterDiscard();
+      };
+
       // ── 手牌タイル汎用ポインタイベントバインド ──
       // allowDiscard: 捨て可能かどうかの関数（リーチ中かどうかで分岐）
       var bindTilePointer = function(el, di, allowDiscard) {
@@ -3850,6 +3872,12 @@ var App = {
             return;
           }
 
+          // リーチ武装中：候補牌ならタップ/ドラッグ即リーチ宣言。候補外は無視
+          if (riichiArmed) {
+            doRiichiDiscardByDI(di);
+            return;
+          }
+
           // ① ドラッグ上捨て（閾値以上に上移動）
           if (dy < -DRAG_THRESHOLD) {
             doDiscardByDI(di);
@@ -3882,6 +3910,7 @@ var App = {
         el.addEventListener('dblclick', function(e) {
           if (!allowDiscard()) return;
           e.preventDefault();
+          if (riichiArmed) { doRiichiDiscardByDI(di); return; }
           doDiscardByDI(di);
         });
       };
@@ -3999,18 +4028,11 @@ var App = {
 
       var btnRiichi = document.getElementById('btnRiichi');
       if (btnRiichi) btnRiichi.addEventListener('click', function() {
-        var di = selectedIdx;
-        if (di < 0) return;
-        var ai = getActualIdx(di);
-        if (ai < 0) return;
-        log('リーチ宣言！', 'ev-riichi');
-        clearBattleAdvice();
-        Battle.playerRiichi(ai);
+        // ボタンはリーチ武装モードのON/OFFのみ担当。実際の宣言は
+        // 武装中に候補牌（🔴印）をタップした時点で doRiichiDiscardByDI が行う
+        riichiArmed = !riichiArmed;
         selectedIdx = -1;
-        var ns = Battle.getState();
-        if (ns.phase === 'end') renderEnd();
-        else if (ns.phase === 'pending_ron') renderGame();
-        else renderGame();
+        renderGame();
       });
 
       var btnRon = document.getElementById('btnRon');
