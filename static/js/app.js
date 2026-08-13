@@ -4034,7 +4034,11 @@ var App = {
         return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
       }).join('') + '</div>' : '';
 
-      // 裏ドラ・カンドラ表示牌（リーチ時の裏ドラは和了時のみめくって見せる）
+      // ドラ・裏ドラ・カンドラ表示牌（リーチ時の裏ドラは和了時のみめくって見せる）
+      var doraInd = s.doraIndicator;
+      var doraRowHtml = doraInd
+        ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">ドラ表示牌</span>' + Tiles.renderTile(doraInd, { noHover: true, extraClass: 'xxs' }) + '</div>'
+        : '';
       var uraInd = s.uraDoraIndicator;
       var uraRowHtml = (uraInd && s.riichi && s.riichi[winner])
         ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">裏ドラ表示牌</span>' + Tiles.renderTile(uraInd, { noHover: true, extraClass: 'xxs' }) + '</div>'
@@ -4070,6 +4074,7 @@ var App = {
             nukiResultHtml +
             yakuHtml +
             '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + hanText + ' ' + ptsText + '</div>' +
+            doraRowHtml +
             uraRowHtml +
             kanDoraRowHtml +
             deltaHtml +

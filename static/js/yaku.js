@@ -197,7 +197,8 @@ var Yaku = (function() {
       if (g.kind !== 'triplet') return;
       var t = g.tiles[0];
       if (t.suit === 'dragon') {
-        yaku.push({ name: '役牌（三元牌）', han: 1 });
+        // 三元牌は「役牌」でまとめず、白／發／中をそれぞれ独立した役名で表示する
+        yaku.push({ name: Tiles.label(t), han: 1 });
       } else if (t.suit === 'wind') {
         var isSeat = t.num === seatW;
         var isRound = t.num === roundW;
