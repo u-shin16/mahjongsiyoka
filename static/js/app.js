@@ -3828,19 +3828,22 @@ var App = {
           if (!allowDiscard()) return;
           e.preventDefault();
           dragInfo = { active: true, idx: di, startY: e.clientY, el: el };
+          // ドラッグ中はCSSのtransition/選択中・ホバーのライトアップに
+          // 引っ張られず、指/カーソルの動きにリアルタイムで追従させる
+          el.style.setProperty('transition', 'none', 'important');
           try { el.setPointerCapture(e.pointerId); } catch(ex) {}
         });
 
-        // pointermove: ドラッグ視覚フィードバック（上方向のみ）
+        // pointermove: ドラッグ視覚フィードバック（上方向のみ、リアルタイム追従）
         el.addEventListener('pointermove', function(e) {
           if (!dragInfo.active || dragInfo.idx !== di) return;
           var dy = e.clientY - dragInfo.startY;
           if (dy < -8) {
             var lifted = Math.max(dy, -80);
-            el.style.transform = 'translateY('+lifted+'px)';
+            el.style.setProperty('transform', 'translateY('+lifted+'px)', 'important');
             el.style.opacity   = dy < -(DRAG_THRESHOLD * 0.6) ? '0.65' : '0.85';
           } else {
-            el.style.transform = '';
+            el.style.removeProperty('transform');
             el.style.opacity   = '';
           }
         });
@@ -3851,7 +3854,8 @@ var App = {
           var dy = e.clientY - dragInfo.startY;
 
           // 視覚状態をリセット
-          el.style.transform = '';
+          el.style.removeProperty('transform');
+          el.style.removeProperty('transition');
           el.style.opacity   = '';
           dragInfo.active = false;
 
@@ -3912,7 +3916,8 @@ var App = {
         // pointercancel: 視覚状態リセット
         el.addEventListener('pointercancel', function(e) {
           if (!dragInfo.active || dragInfo.idx !== di) return;
-          el.style.transform = '';
+          el.style.removeProperty('transform');
+          el.style.removeProperty('transition');
           el.style.opacity   = '';
           dragInfo.active = false;
         });
