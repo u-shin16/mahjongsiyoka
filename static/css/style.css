@@ -3861,10 +3861,8 @@ body.is-battle-page .app-main.battle-main {
   cursor: default !important;
   pointer-events: none !important;
 }
-.jt-hand-in-table .mj-sorted-tiles .tile:hover:not(.t-lock),
-.jt-hand-in-table .mj-drew-area .tile:hover {
-  transform: translateY(-6px) !important;
-}
+/* ホバーで浮き上がる効果は「選択中」のライトアップと紛らわしいため廃止。
+   浮き上がり・グローは選択状態(.selected)だけが担う */
 .jt-hand-in-table .mj-hand-sep {
   width: 10px;
   height: 66px;
