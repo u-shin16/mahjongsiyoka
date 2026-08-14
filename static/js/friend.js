@@ -1087,6 +1087,14 @@ var FriendGame = (function() {
     });
   }
 
+  // 鳴かれた牌を、鳴かれた側の河から取り除く（鳴きは常に直前の捨て牌に対して行われる）
+  function removeCalledDiscard(state, seat, tile) {
+    var arr = state.discards[seat];
+    if (!arr || !arr.length || !tile) return;
+    var last = arr.length - 1;
+    if (arr[last] && arr[last].id === tile.id) arr.splice(last, 1);
+  }
+
   function _executeCall(state, seat, optionIdx, callType) {
     if (!state.call || state.call.candidates.indexOf(seat) < 0) return false;
     var opts = getCallOptions(state, seat, state.call.tile, state.call.from);
@@ -1104,6 +1112,7 @@ var FriendGame = (function() {
       calledTile: state.call.tile,
       fromPlayer: state.call.from,
     });
+    removeCalledDiscard(state, state.call.from, state.call.tile);
 
     state.turn = seat;
     state.drawnId = null;

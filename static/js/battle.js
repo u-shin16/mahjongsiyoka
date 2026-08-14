@@ -652,6 +652,14 @@ var Battle = (function() {
     return true;
   }
 
+  // 鳴かれた牌を、鳴かれた側の河から取り除く（鳴きは常に直前の捨て牌に対して行われる）
+  function removeCalledDiscard(seat, tile) {
+    var arr = state.discards[seat];
+    if (!arr || !arr.length || !tile) return;
+    var last = arr.length - 1;
+    if (arr[last] && arr[last].id === tile.id) arr.splice(last, 1);
+  }
+
   // ポン実行
   function playerPon(calledTile, fromPlayerIdx) {
     if (!state) return false;
@@ -665,6 +673,7 @@ var Battle = (function() {
     });
     state.melds[0].push({ type: 'pon', tiles: [use[0], use[1], calledTile],
                            calledTile: calledTile, fromPlayer: fromPlayerIdx });
+    removeCalledDiscard(fromPlayerIdx, calledTile);
     state.callPending    = null;
     state.nakiResumeFrom = fromPlayerIdx + 1 < state.playerCount ? fromPlayerIdx + 1 : null;
     state.ippatsuActive  = makePlayerArray(state.playerCount, false);
@@ -684,6 +693,7 @@ var Battle = (function() {
     var all3 = [tilesFromHand[0], tilesFromHand[1], calledTile]
                  .sort(function(a, b) { return a.num - b.num; });
     state.melds[0].push({ type: 'chi', tiles: all3, calledTile: calledTile, fromPlayer: fromPlayerIdx });
+    removeCalledDiscard(fromPlayerIdx, calledTile);
     state.callPending    = null;
     state.nakiResumeFrom = fromPlayerIdx + 1 < state.playerCount ? fromPlayerIdx + 1 : null;
     state.ippatsuActive  = makePlayerArray(state.playerCount, false);
@@ -704,6 +714,7 @@ var Battle = (function() {
     });
     state.melds[0].push({ type: 'kan', tiles: [use[0], use[1], use[2], calledTile],
                            calledTile: calledTile, fromPlayer: fromPlayerIdx });
+    removeCalledDiscard(fromPlayerIdx, calledTile);
     addKanDora();
     state.callPending    = null;
     state.ippatsuActive  = makePlayerArray(state.playerCount, false);
@@ -827,6 +838,7 @@ var Battle = (function() {
       });
       state.melds[pidx].push({ type:'kan', tiles:[same[0],same[1],same[2],tile],
                                 calledTile:tile, fromPlayer:fromPlayerIdx });
+      removeCalledDiscard(fromPlayerIdx, tile);
       addKanDora();
     } else if (callType === 'pon' && same.length >= 2) {
       var use = same.slice(0,2);
@@ -836,6 +848,7 @@ var Battle = (function() {
       });
       state.melds[pidx].push({ type:'pon', tiles:[use[0],use[1],tile],
                                 calledTile:tile, fromPlayer:fromPlayerIdx });
+      removeCalledDiscard(fromPlayerIdx, tile);
     } else if (callType === 'chi' && !state.isSanma) {
       // チーに使う2枚を探す
       var suit = tile.suit, num = tile.num;
@@ -856,6 +869,7 @@ var Battle = (function() {
           usedIdxs.sort(function(a,b){return b-a;}).forEach(function(i){ hand.splice(i,1); });
           var all3 = [useTiles[0], useTiles[1], tile].sort(function(a,b){ return a.num-b.num; });
           state.melds[pidx].push({ type:'chi', tiles:all3, calledTile:tile, fromPlayer:fromPlayerIdx });
+          removeCalledDiscard(fromPlayerIdx, tile);
           break;
         }
       }
