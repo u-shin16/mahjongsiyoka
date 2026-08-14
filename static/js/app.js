@@ -3909,10 +3909,8 @@ var App = {
           if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
             dragInfo.moved = true;
             el.style.setProperty('transform', 'translate('+dx+'px,'+dy+'px) scale('+z+')', 'important');
-            el.style.opacity   = dy < -(DRAG_THRESHOLD * 0.6) ? '0.65' : '0.85';
           } else {
             el.style.setProperty('transform', 'scale('+z+')', 'important');
-            el.style.opacity   = '';
           }
         });
 
