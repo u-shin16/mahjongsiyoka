@@ -3869,6 +3869,14 @@ var App = {
           e.preventDefault();
           var rect = el.getBoundingClientRect();
           dragInfo = { active: true, moved: false, idx: di, startX: e.clientX, startY: e.clientY, el: el };
+          // 元あった場所に牌サイズの「穴」を残す（position:fixedで抜けた分、
+          // 他の牌が詰めてこないように同じ幅のプレースホルダーを差し込む）
+          var hole = document.createElement('div');
+          hole.className = 'tile-drag-hole';
+          hole.style.width = rect.width + 'px';
+          hole.style.height = rect.height + 'px';
+          if (el.parentNode) el.parentNode.insertBefore(hole, el);
+          dragInfo.hole = hole;
           // ドラッグ中はCSSのtransition/選択中・ホバーのライトアップに
           // 引っ張られず、指/カーソルの動きにリアルタイムで追従させる。
           // position:fixedで元のレイアウト（overflow:autoの手牌列やz-index
@@ -3913,6 +3921,10 @@ var App = {
           var handRowEl = document.querySelector('.jt-hand-tiles-row');
           var handRowTop = handRowEl ? handRowEl.getBoundingClientRect().top : null;
           var draggedThenReturned = dragInfo.moved && (handRowTop == null || e.clientY >= handRowTop);
+
+          // 穴プレースホルダーを削除（切る場合は再描画で消える分含め、
+          // ここで確実に片付けておく）
+          if (dragInfo.hole && dragInfo.hole.parentNode) dragInfo.hole.parentNode.removeChild(dragInfo.hole);
 
           // 視覚状態をリセット（position:fixedもここで解除して元のレイアウトに戻す）
           el.style.removeProperty('zoom');
@@ -3988,6 +4000,7 @@ var App = {
         // pointercancel: 視覚状態リセット
         el.addEventListener('pointercancel', function(e) {
           if (!dragInfo.active || dragInfo.idx !== di) return;
+          if (dragInfo.hole && dragInfo.hole.parentNode) dragInfo.hole.parentNode.removeChild(dragInfo.hole);
           el.style.removeProperty('zoom');
           el.style.removeProperty('position');
           el.style.removeProperty('left');
