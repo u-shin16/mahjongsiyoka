@@ -2256,12 +2256,10 @@ var App = {
     var ankanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkAnkan(my) : [];
     var kakanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkKakan(my) : [];
     var canNuki = g.isSanma && myTurn && g.phase === 'turn' && myHand.some(function(t) { return FriendGame.isNukiTile(t); });
-    // CPU戦と同じく、鳴き選択・北抜き・暗カン/加カンは手牌右上の
-    // フロートパネル(frCallFloatHtml)に、ツモ・リーチ・ロンは
-    // 手牌下のアクション行(actionBtns)に分けて表示する
     var actionBtns = '';
     var frCallFloatHtml = '';
-    if (myTurn && g.phase === 'turn' && Agari.isWinningHand(myHand)) actionBtns += '<button class="btn-battle btn-tsumo" id="btnFrTsumo">ツモ！</button>';
+    // CPU戦と同じく、ツモ・ロン・スルーもポン/チー/カンと同じ右下の
+    // フロートパネルに置く（下部アクション行に残すのはリーチのみ）
     var canRiichi = false;
     if (myTurn && g.phase === 'turn' && isClosed && !g.riichi[my] && g.scores[my] >= 1000 && myHand.length % 3 === 2) {
       // どれか1枚を切ればテンパイになる手かどうかを確認してからボタンを出す
@@ -2273,10 +2271,6 @@ var App = {
       }
     }
     if (canRiichi) actionBtns += '<button class="btn-battle btn-riichi" id="btnFrRiichi">リーチ</button>';
-    if (g.phase === 'ron_wait' && g.ron && g.ron.candidates.indexOf(my) >= 0 && !this._frResponseSent) {
-      actionBtns += '<button class="btn-battle btn-ron" id="btnFrRon">ロン！</button>' +
-              '<button class="btn-battle btn-skip" id="btnFrPass">スルー</button>';
-    }
 
     if (g.phase === 'call_wait' && g.call && g.call.candidates.indexOf(my) >= 0 && !this._frResponseSent) {
       var callOpts = (g.call.optionsBySeat && g.call.optionsBySeat[my]) || [];
@@ -2294,8 +2288,15 @@ var App = {
           callBtnsHtml +
           '<button class="btn-battle btn-skip-call" id="btnFrPass">スキップ</button>' +
         '</div>';
+    } else if (g.phase === 'ron_wait' && g.ron && g.ron.candidates.indexOf(my) >= 0 && !this._frResponseSent) {
+      frCallFloatHtml =
+        '<div class="hand-action-float">' +
+          '<button class="btn-battle btn-ron" id="btnFrRon">ロン！</button>' +
+          '<button class="btn-battle btn-skip" id="btnFrPass">スルー</button>' +
+        '</div>';
     } else {
       var floatBtnsFr = '';
+      if (myTurn && g.phase === 'turn' && Agari.isWinningHand(myHand)) floatBtnsFr += '<button class="btn-battle btn-tsumo" id="btnFrTsumo">ツモ！</button>';
       if (canNuki) floatBtnsFr += '<button class="btn-battle btn-nuki" id="btnFrNuki">北抜き</button>';
       ankanCands.forEach(function(c, ci) {
         floatBtnsFr += '<button class="btn-battle btn-ankan" data-ankan-idx="' + ci + '">暗カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
@@ -2346,16 +2347,18 @@ var App = {
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
       } else if (r) {
-        // 手牌（副露を除いた部分）を面子・雀頭ごとに理牌して表示する。
-        // 分解できない場合は今まで通りの一括ソートにフォールバックする。
-        var resultHandTiles = (r.hand || []).slice();
-        var resultDecomp = Agari.decomposeWinningHand(resultHandTiles);
-        var resultGroups = resultDecomp
-          ? (resultDecomp.type === 'chiitoitsu' ? resultDecomp.groups.slice() : resultDecomp.melds.concat([resultDecomp.pair]))
-          : [Tiles.sortTiles(resultHandTiles)];
-        var resultHandHtml = resultGroups.map(function(grp) {
-          return '<span class="agr-tile-group">' + grp.map(function(t) { return Tiles.renderTile(t, { noHover: true, small: true }); }).join('') + '</span>';
-        }).join('');
+        // 手牌は自分の生手牌と同じ「フラットに理牌」した表示にする（面子ごとのグループ化はしない）
+        var resultHandHtml = '<span class="agr-tile-group">' + Tiles.sortTiles((r.hand || []).slice()).map(function(t) {
+          return Tiles.renderTile(t, { noHover: true, small: true });
+        }).join('') + '</span>';
+        // ドラ・裏ドラ表示牌（カンドラはドラ表示牌の行にまとめて表示する）
+        var resultKanDoraInds = r.kanDoraInds || [];
+        var resultDoraRowHtml = g.doraInd
+          ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">ドラ表示牌</span>' +
+              Tiles.renderTile(g.doraInd, { noHover: true, extraClass: 'xxs' }) +
+              resultKanDoraInds.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') +
+            '</div>'
+          : '';
         endHtml = '<div class="fr-result-float fr-result-float-win"><div class="fr-panel" style="border-color:var(--gold)">' +
           '<div style="font-size:1.1rem;font-weight:900;color:var(--gold);margin-bottom:6px">' +
             esc(names[r.winner]) + ' の' + (r.type === 'tsumo' ? 'ツモ' : 'ロン') + '！</div>' +
@@ -2364,8 +2367,8 @@ var App = {
           (r.nuki && r.nuki.length ? '<div class="fr-nuki-row"><span>抜き北</span>' + r.nuki.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</div>' : '') +
           r.yaku.map(function(y) { return '<div class="fr-row"><span>' + esc(y.name) + '</span><span class="fr-score">' + y.han + '翻</span></div>'; }).join('') +
           '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + r.han + '翻 ' + r.pts.toLocaleString() + '点</div>' +
+          resultDoraRowHtml +
           (r.uraInd ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">裏ドラ表示牌</span>' + Tiles.renderTile(r.uraInd, { noHover: true, extraClass: 'xxs' }) + '</div>' : '') +
-          ((r.kanDoraInds || []).length ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">カンドラ表示牌</span>' + r.kanDoraInds.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</div>' : '') +
           r.deltas.map(function(d, i) { return d !== 0 ? '<div class="fr-row"><span>' + esc(names[i]) + '</span><span style="color:' + (d > 0 ? 'var(--gold)' : '#ff9a8a') + '">' + (d > 0 ? '+' : '') + d.toLocaleString() + '</span></div>' : ''; }).join('') +
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
@@ -2418,6 +2421,9 @@ var App = {
         return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
       }).join('') : '') +
     '</div>';
+    // 鳴き選択中：どの捨て牌が対象かひと目でわかるよう、河のその牌をライトアップする
+    var callTargetSeat = (g.phase === 'call_wait' && g.call) ? g.call.from : -1;
+    var callTargetTileId = (g.phase === 'call_wait' && g.call && g.call.tile) ? g.call.tile.id : null;
     var riichiBlockedIdx = {};
     if (this._frRiichiSel) {
       myHand.forEach(function(t, i) {
@@ -2466,18 +2472,17 @@ var App = {
           '<div class="jt-hidden-hand jt-hidden-top">' + hiddenTiles('fr-top-wall-', (g.hands[topSeat] || []).length, 13) + '</div>' +
           (leftSeat >= 0 ? '<div class="jt-hidden-hand jt-hidden-left">' + hiddenTiles('fr-left-wall-', (g.hands[leftSeat] || []).length, 13) + '</div>' : '') +
           '<div class="jt-hidden-hand jt-hidden-right">' + hiddenTiles('fr-right-wall-', (g.hands[rightSeat] || []).length, 13) + '</div>' +
-          renderDiscardRiver(g.discards[topSeat], 'opposite') +
+          renderDiscardRiver(g.discards[topSeat], 'opposite', null, topSeat === callTargetSeat ? callTargetTileId : null) +
           '<div class="jt-table-mid">' +
-            (leftSeat >= 0 ? renderDiscardRiver(g.discards[leftSeat], 'left') : '') +
+            (leftSeat >= 0 ? renderDiscardRiver(g.discards[leftSeat], 'left', null, leftSeat === callTargetSeat ? callTargetTileId : null) : '') +
             centerHtml +
-            renderDiscardRiver(g.discards[rightSeat], 'right') +
+            renderDiscardRiver(g.discards[rightSeat], 'right', null, rightSeat === callTargetSeat ? callTargetTileId : null) +
           '</div>' +
-          renderDiscardRiver(g.discards[my], 'self') +
+          renderDiscardRiver(g.discards[my], 'self', null, my === callTargetSeat ? callTargetTileId : null) +
           '<div class="jt-hand-in-table">' +
             '<div class="jt-hand-infobar">' +
               '<span><span class="wind">' + seatWind(my) + '</span> あなた</span>' +
               '<span class="score">' + g.scores[my].toLocaleString() + '点</span>' +
-              (isSanma ? '<span class="mj-nuki-count">抜き北 ' + nukiCount(my) + '</span>' : '') +
               (g.riichi[my] ? '<span class="mj-riichi-badge">リーチ中</span>' : '') +
               (FriendGame.isFuriten(my) ? '<span class="mj-furiten-badge">フリテン</span>' : '') +
               (isDisconnected(my) ? '<span class="fr-disconnect-mark">⚡ 切断扱い</span>' : '') +
@@ -2525,33 +2530,155 @@ var App = {
         sendFrAction('discard', { idx: idx });
       }
     };
+    // ── マウス：カーソルを合わせた時点で待ちをプレビュー表示（CPU戦と同じ仕組み） ──
+    var computeWaitsForEntry = function(entry) {
+      if (g.riichi[my]) return [];
+      if (self._frRiichiSel && riichiBlockedIdx[entry.idx]) return [];
+      var testHand = displayEntries.filter(function(e) { return e !== entry; }).map(function(e) { return e.tile; });
+      if (testHand.length % 3 !== 1) return [];
+      var w = Agari.getTenpaiWaits(testHand);
+      if (g.isSanma) w = w.filter(function(x) { return x.suit !== 'man' || x.num === 1 || x.num === 9; });
+      return w;
+    };
+    var hoverWaitsAreaFr = null;
+    var showHoverWaitsFr = function(entry) {
+      var waits = computeWaitsForEntry(entry);
+      if (waits.length === 0) { hideHoverWaitsFr(); return; }
+      var container = document.querySelector('.jt-hand-in-table');
+      if (!container) return;
+      if (!hoverWaitsAreaFr || !hoverWaitsAreaFr.isConnected) {
+        hoverWaitsAreaFr = document.createElement('div');
+        hoverWaitsAreaFr.className = 'mj-waits-area mj-hover-waits';
+        var row = container.querySelector('.jt-hand-tiles-row');
+        if (row && row.parentNode) row.parentNode.insertBefore(hoverWaitsAreaFr, row);
+      }
+      hoverWaitsAreaFr.innerHTML = frRenderWaitTiles(waits);
+    };
+    var hideHoverWaitsFr = function() {
+      if (hoverWaitsAreaFr && hoverWaitsAreaFr.isConnected) hoverWaitsAreaFr.remove();
+    };
+
     if (myTurn) {
+      var frDragInfo = { active: false, idx: -1 };
+      var frLastTap = { idx: -1, time: 0 };
+      var FR_DOUBLE_TAP_MS = 300;
+      var FR_DRAG_THRESHOLD = 50;
       document.querySelectorAll('#frHand .fr-tile-wrap').forEach(function(el) {
-        var drag = null;
+        var idx = parseInt(el.dataset.idx, 10);
+        var entry = displayEntries.filter(function(e) { return e.idx === idx; })[0];
+        var isDrawnTile = !!(drawnEntry && idx === drawnEntry.idx);
+        // CPU戦のallowDiscard()と同じ：リーチ中はツモ牌以外は操作不可、
+        // リーチ武装中はテンパイを保てない牌（候補外）は操作不可
+        var allowDiscard = function() {
+          if (g.riichi[my] && !isDrawnTile) return false;
+          if (self._frRiichiSel && riichiBlockedIdx[idx]) return false;
+          return true;
+        };
+
+        el.addEventListener('pointerenter', function(e) {
+          if (e.pointerType !== 'mouse' || !allowDiscard() || !entry) return;
+          showHoverWaitsFr(entry);
+        });
+        el.addEventListener('pointerleave', function(e) {
+          if (e.pointerType !== 'mouse') return;
+          hideHoverWaitsFr();
+        });
+
         el.addEventListener('pointerdown', function(e) {
-          drag = { x: e.clientX, y: e.clientY };
+          if (!allowDiscard()) return;
+          e.preventDefault();
+          var rect = el.getBoundingClientRect();
+          var currentZoom = parseFloat(getComputedStyle(el).zoom) || 1;
+          frDragInfo = { active: true, moved: false, idx: idx, startX: e.clientX, startY: e.clientY, el: el, zoom: currentZoom };
+          // 元あった場所に牌サイズの「穴」を残す
+          var hole = document.createElement('div');
+          hole.className = 'tile-drag-hole';
+          hole.style.width = rect.width + 'px';
+          hole.style.height = rect.height + 'px';
+          if (el.parentNode) el.parentNode.insertBefore(hole, el);
+          frDragInfo.hole = hole;
+          el.style.setProperty('zoom', '1', 'important');
+          el.style.setProperty('position', 'fixed', 'important');
+          el.style.setProperty('left', rect.left + 'px', 'important');
+          el.style.setProperty('top', rect.top + 'px', 'important');
+          el.style.setProperty('transform-origin', '0 0', 'important');
+          el.style.setProperty('transform', 'scale(' + currentZoom + ')', 'important');
+          el.style.setProperty('margin', '0', 'important');
+          el.style.setProperty('transition', 'none', 'important');
+          el.style.setProperty('z-index', '99999', 'important');
           try { el.setPointerCapture(e.pointerId); } catch (ex) {}
         });
+
         el.addEventListener('pointermove', function(e) {
-          if (!drag) return;
-          var dy = Math.min(0, e.clientY - drag.y);
-          if (dy < -8) el.style.transform = 'translateY(' + Math.max(dy, -48) + 'px)';
-        });
-        el.addEventListener('pointerup', function(e) {
-          var idx = parseInt(el.dataset.idx, 10);
-          var slideDiscard = drag && (drag.y - e.clientY) > 46;
-          el.style.transform = '';
-          drag = null;
-          if (slideDiscard || self._frSelectedIdx === idx) {
-            discardIdx(idx);
+          if (!frDragInfo.active || frDragInfo.idx !== idx) return;
+          var dx = e.clientX - frDragInfo.startX;
+          var dy = e.clientY - frDragInfo.startY;
+          var z = frDragInfo.zoom;
+          if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+            frDragInfo.moved = true;
+            el.style.setProperty('transform', 'translate(' + dx + 'px,' + dy + 'px) scale(' + z + ')', 'important');
           } else {
-            self._frSelectedIdx = idx;
-            self._render('friend', {});
+            el.style.setProperty('transform', 'scale(' + z + ')', 'important');
           }
         });
+
+        var resetDragVisual = function() {
+          if (frDragInfo.hole && frDragInfo.hole.parentNode) frDragInfo.hole.parentNode.removeChild(frDragInfo.hole);
+          el.style.removeProperty('zoom');
+          el.style.removeProperty('position');
+          el.style.removeProperty('left');
+          el.style.removeProperty('top');
+          el.style.removeProperty('transform-origin');
+          el.style.removeProperty('margin');
+          el.style.removeProperty('transform');
+          el.style.removeProperty('transition');
+          el.style.removeProperty('z-index');
+        };
+
+        el.addEventListener('pointerup', function(e) {
+          if (!frDragInfo.active || frDragInfo.idx !== idx) return;
+          var dy = e.clientY - frDragInfo.startY;
+          // ドラッグして手牌の並びの中／それより手前（下）で離した場合は
+          // 「やっぱりやめた」とみなして切らない
+          var handRowEl = document.querySelector('.jt-hand-tiles-row');
+          var handRowTop = handRowEl ? handRowEl.getBoundingClientRect().top : null;
+          var draggedThenReturned = frDragInfo.moved && (handRowTop == null || e.clientY >= handRowTop);
+
+          resetDragVisual();
+          frDragInfo.active = false;
+
+          if (!allowDiscard()) return;
+
+          // マウス操作：カーソルを合わせた時点で選択中扱いのため、クリック1回で確定する
+          if (e.pointerType === 'mouse') {
+            if (draggedThenReturned) return;
+            discardIdx(idx);
+            return;
+          }
+
+          // タッチ操作：上スワイプ／ダブルタップで確定、シングルタップは選択（待ちプレビュー）
+          if (dy < -FR_DRAG_THRESHOLD) { discardIdx(idx); return; }
+          var now = Date.now();
+          if (frLastTap.idx === idx && (now - frLastTap.time) < FR_DOUBLE_TAP_MS) {
+            frLastTap = { idx: -1, time: 0 };
+            discardIdx(idx);
+            return;
+          }
+          frLastTap = { idx: idx, time: now };
+          self._frSelectedIdx = (self._frSelectedIdx === idx) ? -1 : idx;
+          self._render('friend', {});
+        });
+
         el.addEventListener('pointercancel', function() {
-          el.style.transform = '';
-          drag = null;
+          if (!frDragInfo.active || frDragInfo.idx !== idx) return;
+          resetDragVisual();
+          frDragInfo.active = false;
+        });
+
+        el.addEventListener('dblclick', function(e) {
+          if (!allowDiscard()) return;
+          e.preventDefault();
+          discardIdx(idx);
         });
       });
     }
