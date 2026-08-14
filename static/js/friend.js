@@ -1395,16 +1395,18 @@ var FriendGame = (function() {
         _finishHand(state, seat, 'tsumo', null);
         return true;
       }
-      if (state.phase === 'turn' && state.isSanma && isCpuSeat(seat)) {
+      var autoDiscard = isCpuSeat(seat) || seatDisconnected(state, seat) || !!flags.tsumogiri || (!!state.riichi[seat] && !canWin);
+      var dueAuto = autoDiscard && now >= timer.canAutoAt;
+      var dueTimeout = now >= timer.deadlineAt;
+      // 自動打牌（リーチ中のツモ切り含む）が発火するタイミングでは、
+      // ツモった牌が北なら勝手に切らず先に北抜きを行う（人間・CPU共通）
+      if (state.phase === 'turn' && state.isSanma && (dueAuto || dueTimeout)) {
         var nukiIdx = findNukiIdx(state, seat, null);
-        if (nukiIdx >= 0 && now >= timer.canAutoAt) {
+        if (nukiIdx >= 0) {
           _executeNuki(state, seat, (state.hands[seat] || [])[nukiIdx].id);
           return true;
         }
       }
-      var autoDiscard = isCpuSeat(seat) || seatDisconnected(state, seat) || !!flags.tsumogiri || (!!state.riichi[seat] && !canWin);
-      var dueAuto = autoDiscard && now >= timer.canAutoAt;
-      var dueTimeout = now >= timer.deadlineAt;
       if (dueAuto || dueTimeout) {
         var idx = isCpuSeat(seat) && !dueTimeout ? _cpuChooseDiscard(state, seat) : _findDrawnIdx(state, seat);
         _discard(state, seat, idx, false);
