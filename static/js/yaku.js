@@ -307,10 +307,26 @@ var Yaku = (function() {
   function calcPoints(yakuList) {
     var han = yakuList.reduce(function(a, y) { return a + y.han; }, 0);
     var yakumanUnits = yakuList.reduce(function(a, y) { return a + (y.yakuman ? Math.round(y.han / YAKUMAN_HAN) : 0); }, 0);
-    var pts = yakumanUnits > 0
-      ? yakumanUnits * YAKUMAN_PTS
-      : BASE_SCORES[Math.min(Math.max(han, 1) - 1, BASE_SCORES.length - 1)];
-    var label = yakumanUnits > 0 ? '役満' : (han >= 5 ? '満貫' : han + '翻');
+    var pts, label;
+    if (yakumanUnits > 0) {
+      pts = yakumanUnits * YAKUMAN_PTS;
+      label = yakumanUnits > 1 ? (yakumanUnits + '倍役満') : '役満';
+    } else if (han >= 13) {
+      // 役満そのものではなく翻数の積み上げで13翻以上になった場合（数え役満）
+      pts = YAKUMAN_PTS;
+      label = '役満';
+    } else if (han >= 11) {
+      pts = 24000; label = '三倍満';
+    } else if (han >= 8) {
+      pts = 16000; label = '倍満';
+    } else if (han >= 6) {
+      pts = 12000; label = '跳満';
+    } else if (han >= 5) {
+      pts = 8000; label = '満貫';
+    } else {
+      pts = BASE_SCORES[Math.min(Math.max(han, 1) - 1, 3)];
+      label = han + '翻';
+    }
     return { han: han, pts: pts, label: label, yakumanUnits: yakumanUnits };
   }
 

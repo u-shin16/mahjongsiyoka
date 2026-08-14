@@ -949,6 +949,7 @@ var FriendGame = (function() {
       yaku: yaku,
       han: han,
       pts: pts,
+      label: points.label,
       deltas: deltas,
       hand: Tiles.sortTiles(hand.slice()),
       melds: (state.melds && state.melds[winner]) || [],

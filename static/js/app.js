@@ -2299,10 +2299,10 @@ var App = {
       if (myTurn && g.phase === 'turn' && Agari.isWinningHand(myHand)) floatBtnsFr += '<button class="btn-battle btn-tsumo" id="btnFrTsumo">ツモ！</button>';
       if (canNuki) floatBtnsFr += '<button class="btn-battle btn-nuki" id="btnFrNuki">北抜き</button>';
       ankanCands.forEach(function(c, ci) {
-        floatBtnsFr += '<button class="btn-battle btn-ankan" data-ankan-idx="' + ci + '">暗カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
+        floatBtnsFr += '<button class="btn-battle btn-ankan" data-ankan-idx="' + ci + '">カン</button>';
       });
       kakanCands.forEach(function(c, ci) {
-        floatBtnsFr += '<button class="btn-battle btn-ankan" data-kakan-idx="' + ci + '">加カン ' + esc(Tiles.label(c.tiles[0])) + '</button>';
+        floatBtnsFr += '<button class="btn-battle btn-ankan" data-kakan-idx="' + ci + '">カン</button>';
       });
       if (floatBtnsFr) frCallFloatHtml = '<div class="hand-action-float">' + floatBtnsFr + '</div>';
     }
@@ -2366,7 +2366,7 @@ var App = {
           (r.melds && r.melds.length ? '<div class="fr-melds">' + meldSetHtml(r.melds) + '</div>' : '') +
           (r.nuki && r.nuki.length ? '<div class="fr-nuki-row"><span>抜き北</span>' + r.nuki.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</div>' : '') +
           r.yaku.map(function(y) { return '<div class="fr-row"><span>' + esc(y.name) + '</span><span class="fr-score">' + y.han + '翻</span></div>'; }).join('') +
-          '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + r.han + '翻 ' + r.pts.toLocaleString() + '点</div>' +
+          '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + r.han + '翻 ' + (r.han >= 5 && r.label ? r.label + ' ' : '') + r.pts.toLocaleString() + '点</div>' +
           resultDoraRowHtml +
           (r.uraInd ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">裏ドラ表示牌</span>' + Tiles.renderTile(r.uraInd, { noHover: true, extraClass: 'xxs' }) + '</div>' : '') +
           r.deltas.map(function(d, i) { return d !== 0 ? '<div class="fr-row"><span>' + esc(names[i]) + '</span><span style="color:' + (d > 0 ? 'var(--gold)' : '#ff9a8a') + '">' + (d > 0 ? '+' : '') + d.toLocaleString() + '</span></div>' : ''; }).join('') +
@@ -2437,7 +2437,7 @@ var App = {
       var isRiichiBlocked = !!riichiBlockedIdx[entry.idx];
       return (isDrawn ? '<span class="fr-drawn-gap"></span>' : '') +
         '<span data-idx="' + entry.idx + '" class="fr-tile-wrap' + (isRiichiBlocked ? ' fr-tile-riichi-blocked' : '') + '">' +
-          Tiles.renderTile(entry.tile, { noHover: !myTurn, selected: isSelected }) +
+          Tiles.renderTile(entry.tile, { selected: isSelected }) +
         '</span>';
     }).join('');
     var actionHtml = '<div class="jt-battle-actions fr-table-actions">' +
@@ -2556,7 +2556,7 @@ var App = {
       if (hoverWaitsAreaFr && hoverWaitsAreaFr.isConnected) hoverWaitsAreaFr.remove();
     };
 
-    if (myTurn) {
+    {
       var frDragInfo = { active: false, idx: -1 };
       var frLastTap = { idx: -1, time: 0 };
       var FR_DOUBLE_TAP_MS = 300;
@@ -2565,16 +2565,20 @@ var App = {
         var idx = parseInt(el.dataset.idx, 10);
         var entry = displayEntries.filter(function(e) { return e.idx === idx; })[0];
         var isDrawnTile = !!(drawnEntry && idx === drawnEntry.idx);
+        // 自分の手番でなくても牌の選択・ドラッグ・待ちプレビューはできる
+        // （待ちの確認は誰の手番でもしたいため）。ただし実際に切る操作は
+        // 自分の手番の時だけ有効にする
         // CPU戦のallowDiscard()と同じ：リーチ中はツモ牌以外は操作不可、
         // リーチ武装中はテンパイを保てない牌（候補外）は操作不可
-        var allowDiscard = function() {
+        var allowInteract = function() {
           if (g.riichi[my] && !isDrawnTile) return false;
           if (self._frRiichiSel && riichiBlockedIdx[idx]) return false;
           return true;
         };
+        var allowCommit = function() { return myTurn && allowInteract(); };
 
         el.addEventListener('pointerenter', function(e) {
-          if (e.pointerType !== 'mouse' || !allowDiscard() || !entry) return;
+          if (e.pointerType !== 'mouse' || !allowInteract() || !entry) return;
           showHoverWaitsFr(entry);
         });
         el.addEventListener('pointerleave', function(e) {
@@ -2583,7 +2587,7 @@ var App = {
         });
 
         el.addEventListener('pointerdown', function(e) {
-          if (!allowDiscard()) return;
+          if (!allowInteract()) return;
           e.preventDefault();
           var rect = el.getBoundingClientRect();
           var currentZoom = parseFloat(getComputedStyle(el).zoom) || 1;
@@ -2647,19 +2651,21 @@ var App = {
           frDragInfo.active = false;
           self._frDragActive = false;
 
-          if (!allowDiscard()) return;
+          if (!allowInteract()) return;
+          var canCommit = allowCommit();
 
           // マウス操作：カーソルを合わせた時点で選択中扱いのため、クリック1回で確定する
+          // （自分の手番でない時はプレビューのみで、実際には切らない）
           if (e.pointerType === 'mouse') {
-            if (draggedThenReturned) return;
+            if (draggedThenReturned || !canCommit) return;
             discardIdx(idx);
             return;
           }
 
           // タッチ操作：上スワイプ／ダブルタップで確定、シングルタップは選択（待ちプレビュー）
-          if (dy < -FR_DRAG_THRESHOLD) { discardIdx(idx); return; }
+          if (canCommit && dy < -FR_DRAG_THRESHOLD) { discardIdx(idx); return; }
           var now = Date.now();
-          if (frLastTap.idx === idx && (now - frLastTap.time) < FR_DOUBLE_TAP_MS) {
+          if (canCommit && frLastTap.idx === idx && (now - frLastTap.time) < FR_DOUBLE_TAP_MS) {
             frLastTap = { idx: -1, time: 0 };
             discardIdx(idx);
             return;
@@ -2677,7 +2683,7 @@ var App = {
         });
 
         el.addEventListener('dblclick', function(e) {
-          if (!allowDiscard()) return;
+          if (!allowCommit()) return;
           e.preventDefault();
           discardIdx(idx);
         });
@@ -4406,9 +4412,10 @@ var App = {
         return '<div class="fr-row"><span>'+esc(y.name)+'</span><span class="fr-score">'+y.han+'翻</span></div>';
       }).join('');
 
-      // 点数ラベル
+      // 点数ラベル（満貫以上は役満/三倍満/倍満/跳満/満貫の名前も表示する）
       var ptsText = sc ? sc.pts.toLocaleString() + '点' : '—';
       var hanText = sc ? sc.han + '翻' : '—';
+      var tierText = (sc && sc.han >= 5) ? sc.label + ' ' : '';
 
       // 点数移動
       var deltaHtml = (sc && sc.deltas) ? Battle.PLAYER_NAMES.map(function(nm, i) {
@@ -4426,7 +4433,7 @@ var App = {
             meldsHtml +
             nukiResultHtml +
             yakuHtml +
-            '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + hanText + ' ' + ptsText + '</div>' +
+            '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + hanText + ' ' + tierText + ptsText + '</div>' +
             doraRowHtml +
             uraRowHtml +
             deltaHtml +
