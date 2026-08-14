@@ -891,6 +891,58 @@ window.addEventListener('resize', positionMeldAreas);
 var RIVER_COLS = 6;
 var RIVER_ROWS = 4;
 
+// 祖先を辿ってzoomを掛け合わせた実効倍率を求める（zoomは子要素の
+// getComputedStyle().zoomには反映されず、要素ごとのローカル値しか
+// 返さないため、祖先分は自分で掛け合わせる必要がある）
+function getEffectiveZoom(el) {
+  var z = 1;
+  var node = el;
+  while (node && node.nodeType === 1) {
+    var nodeZoom = parseFloat(getComputedStyle(node).zoom);
+    if (!isNaN(nodeZoom)) z *= nodeZoom;
+    node = node.parentElement;
+  }
+  return z || 1;
+}
+
+// ── 対局画面まるごとの拡縮 ──
+// PCでウィンドウを小さくしたりスマホで見た時にレイアウトが崩れない
+// よう、対局画面は常にデザイン基準サイズ(BATTLE_DESIGN_W×H)で描画した
+// ものとして扱い、実際の表示領域に収まるようzoomで丸ごと拡大縮小する
+// （内部のCSS/位置調整は一切変更しない＝PCの見た目・操作性は不変）
+var BATTLE_DESIGN_W = 1400;
+var BATTLE_DESIGN_H = 1000;
+function applyBattleScale() {
+  var main = document.getElementById('appMain');
+  if (!main) return;
+  if (!main.classList.contains('battle-main')) {
+    // 対局画面から離れた時は、ここで付けたインラインスタイルを必ず消す
+    // （消さないとホーム等ほかの画面が固定サイズ×zoomのまま壊れて表示される）
+    main.style.removeProperty('width');
+    main.style.removeProperty('height');
+    main.style.removeProperty('max-width');
+    main.style.removeProperty('margin');
+    main.style.removeProperty('padding');
+    main.style.removeProperty('zoom');
+    return;
+  }
+  var header = document.getElementById('appHeader');
+  var headerH = (header && getComputedStyle(header).display !== 'none') ? header.getBoundingClientRect().height : 0;
+  var availW = window.innerWidth;
+  var availH = window.innerHeight - headerH;
+  var scale = Math.max(0.1, Math.min(availW / BATTLE_DESIGN_W, availH / BATTLE_DESIGN_H));
+  main.style.setProperty('width', BATTLE_DESIGN_W + 'px', 'important');
+  main.style.setProperty('height', BATTLE_DESIGN_H + 'px', 'important');
+  main.style.setProperty('max-width', 'none', 'important');
+  main.style.setProperty('margin', '0 auto', 'important');
+  main.style.setProperty('padding', '0', 'important');
+  main.style.setProperty('zoom', scale, 'important');
+}
+if (!window.__battleScaleHooked) {
+  window.__battleScaleHooked = true;
+  window.addEventListener('resize', function() { applyBattleScale(); });
+}
+
 function renderHiddenHand(prefix, count, max) {
   var total = Math.min(count || 0, max || 13);
   var html = '';
@@ -1072,6 +1124,10 @@ var App = {
     else if (page === 'login')         this._renderLogin(main);
     else if (page === 'friend')        this._renderFriend(main);
     else main.innerHTML = '<p style="color:#8ab89c;text-align:center;padding:40px">準備中...</p>';
+    // 対局画面（CPU戦/友人戦）はデザイン基準サイズのままレイアウトし、
+    // 実際の表示領域に合わせて画面ごと拡大縮小する（友人戦はbattle-main
+    // クラスが_renderFriend内で付与されるため、ディスパッチ後に呼ぶ）
+    applyBattleScale();
     window.scrollTo(0, 0);
   },
 
@@ -2590,8 +2646,16 @@ var App = {
           if (!allowInteract()) return;
           e.preventDefault();
           var rect = el.getBoundingClientRect();
-          var currentZoom = parseFloat(getComputedStyle(el).zoom) || 1;
-          frDragInfo = { active: true, moved: false, idx: idx, startX: e.clientX, startY: e.clientY, el: el, zoom: currentZoom };
+          // zoomは要素自身のローカル値。祖先側（画面まるごと拡縮のzoom含む）は
+          // 自分でzoom:1にキャンセルしても自動では外れず、box自体はそのまま
+          // 祖先のzoomがかかった状態で描画される。そのため
+          // ・transform:scale()には自分自身のzoomだけを使う（祖先分は
+          //   ブラウザが自動でさらに掛けてくれる）
+          // ・left/top/translateのpx値は祖先zoomで割ってから指定する
+          //   （祖先zoomが指定値にも掛かってしまうため、先に補正しておく）
+          var ownZoom = parseFloat(getComputedStyle(el).zoom) || 1;
+          var ancestorZoom = getEffectiveZoom(el.parentElement);
+          frDragInfo = { active: true, moved: false, idx: idx, startX: e.clientX, startY: e.clientY, el: el, ownZoom: ownZoom, ancestorZoom: ancestorZoom };
           self._frDragActive = true;
           // 元あった場所に牌サイズの「穴」を残す
           var hole = document.createElement('div');
@@ -2602,10 +2666,10 @@ var App = {
           frDragInfo.hole = hole;
           el.style.setProperty('zoom', '1', 'important');
           el.style.setProperty('position', 'fixed', 'important');
-          el.style.setProperty('left', rect.left + 'px', 'important');
-          el.style.setProperty('top', rect.top + 'px', 'important');
+          el.style.setProperty('left', (rect.left / ancestorZoom) + 'px', 'important');
+          el.style.setProperty('top', (rect.top / ancestorZoom) + 'px', 'important');
           el.style.setProperty('transform-origin', '0 0', 'important');
-          el.style.setProperty('transform', 'scale(' + currentZoom + ')', 'important');
+          el.style.setProperty('transform', 'scale(' + ownZoom + ')', 'important');
           el.style.setProperty('margin', '0', 'important');
           el.style.setProperty('transition', 'none', 'important');
           el.style.setProperty('z-index', '99999', 'important');
@@ -2614,9 +2678,9 @@ var App = {
 
         el.addEventListener('pointermove', function(e) {
           if (!frDragInfo.active || frDragInfo.idx !== idx) return;
-          var dx = e.clientX - frDragInfo.startX;
-          var dy = e.clientY - frDragInfo.startY;
-          var z = frDragInfo.zoom;
+          var dx = (e.clientX - frDragInfo.startX) / frDragInfo.ancestorZoom;
+          var dy = (e.clientY - frDragInfo.startY) / frDragInfo.ancestorZoom;
+          var z = frDragInfo.ownZoom;
           if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
             frDragInfo.moved = true;
             el.style.setProperty('transform', 'translate(' + dx + 'px,' + dy + 'px) scale(' + z + ')', 'important');
@@ -4035,9 +4099,14 @@ var App = {
           // 強制すると背景スプライトの位置合わせ（width/height基準で
           // 焼き込み済み）とズレて左上だけしか映らなくなる。zoomは
           // キャンセルしつつ、同じ倍率をtransform:scale()で肩代わりして
-          // 見た目のサイズ・切り取り位置を変えないようにする
-          var currentZoom = parseFloat(getComputedStyle(el).zoom) || 1;
-          dragInfo = { active: true, moved: false, idx: di, startX: e.clientX, startY: e.clientY, el: el, zoom: currentZoom };
+          // 見た目のサイズ・切り取り位置を変えないようにする。
+          // なお祖先側のzoom（画面まるごと拡縮のBATTLE_DESIGN分）は自分で
+          // zoom:1にしても外れず描画に掛かり続けるため、transform:scale()には
+          // 自分自身のzoomだけを使い、left/top/translateのpx値は祖先zoomで
+          // 割ってから指定する（祖先zoomがそれらにも掛かってしまうため）
+          var ownZoom = parseFloat(getComputedStyle(el).zoom) || 1;
+          var ancestorZoom = getEffectiveZoom(el.parentElement);
+          dragInfo = { active: true, moved: false, idx: di, startX: e.clientX, startY: e.clientY, el: el, ownZoom: ownZoom, ancestorZoom: ancestorZoom };
           // 元あった場所に牌サイズの「穴」を残す（position:fixedで抜けた分、
           // 他の牌が詰めてこないように同じ幅のプレースホルダーを差し込む）
           var hole = document.createElement('div');
@@ -4053,10 +4122,10 @@ var App = {
           // 見える/見切れる問題を避ける
           el.style.setProperty('zoom', '1', 'important');
           el.style.setProperty('position', 'fixed', 'important');
-          el.style.setProperty('left', rect.left + 'px', 'important');
-          el.style.setProperty('top', rect.top + 'px', 'important');
+          el.style.setProperty('left', (rect.left / ancestorZoom) + 'px', 'important');
+          el.style.setProperty('top', (rect.top / ancestorZoom) + 'px', 'important');
           el.style.setProperty('transform-origin', '0 0', 'important');
-          el.style.setProperty('transform', 'scale(' + currentZoom + ')', 'important');
+          el.style.setProperty('transform', 'scale(' + ownZoom + ')', 'important');
           el.style.setProperty('margin', '0', 'important');
           el.style.setProperty('transition', 'none', 'important');
           el.style.setProperty('z-index', '99999', 'important');
@@ -4066,9 +4135,9 @@ var App = {
         // pointermove: ドラッグ視覚フィードバック（上下左右どちらにも自由に追従）
         el.addEventListener('pointermove', function(e) {
           if (!dragInfo.active || dragInfo.idx !== di) return;
-          var dx = e.clientX - dragInfo.startX;
-          var dy = e.clientY - dragInfo.startY;
-          var z = dragInfo.zoom;
+          var dx = (e.clientX - dragInfo.startX) / dragInfo.ancestorZoom;
+          var dy = (e.clientY - dragInfo.startY) / dragInfo.ancestorZoom;
+          var z = dragInfo.ownZoom;
           if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
             dragInfo.moved = true;
             el.style.setProperty('transform', 'translate('+dx+'px,'+dy+'px) scale('+z+')', 'important');
