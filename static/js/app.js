@@ -2481,8 +2481,6 @@ var App = {
           renderDiscardRiver(g.discards[my], 'self', null, my === callTargetSeat ? callTargetTileId : null) +
           '<div class="jt-hand-in-table">' +
             '<div class="jt-hand-infobar">' +
-              '<span><span class="wind">' + seatWind(my) + '</span> あなた</span>' +
-              '<span class="score">' + g.scores[my].toLocaleString() + '点</span>' +
               (g.riichi[my] ? '<span class="mj-riichi-badge">リーチ中</span>' : '') +
               (FriendGame.isFuriten(my) ? '<span class="mj-furiten-badge">フリテン</span>' : '') +
               (isDisconnected(my) ? '<span class="fr-disconnect-mark">⚡ 切断扱い</span>' : '') +
