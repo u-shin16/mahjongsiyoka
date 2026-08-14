@@ -2590,6 +2590,7 @@ var App = {
           var rect = el.getBoundingClientRect();
           var currentZoom = parseFloat(getComputedStyle(el).zoom) || 1;
           frDragInfo = { active: true, moved: false, idx: idx, startX: e.clientX, startY: e.clientY, el: el, zoom: currentZoom };
+          self._frDragActive = true;
           // 元あった場所に牌サイズの「穴」を残す
           var hole = document.createElement('div');
           hole.className = 'tile-drag-hole';
@@ -2646,6 +2647,7 @@ var App = {
 
           resetDragVisual();
           frDragInfo.active = false;
+          self._frDragActive = false;
 
           if (!allowDiscard()) return;
 
@@ -2673,6 +2675,7 @@ var App = {
           if (!frDragInfo.active || frDragInfo.idx !== idx) return;
           resetDragVisual();
           frDragInfo.active = false;
+          self._frDragActive = false;
         });
 
         el.addEventListener('dblclick', function(e) {
@@ -2685,12 +2688,18 @@ var App = {
     var waitsBtn = document.getElementById('btnFrShowWaits');
     if (waitsBtn) {
       var waitsWrap = waitsBtn.closest('.fr-waits-fab-wrap');
-      var showWaits = function(e) { e.preventDefault(); waitsWrap.classList.add('open'); };
-      var hideWaits = function() { waitsWrap.classList.remove('open'); };
+      // 押している最中に他家の打牌などで盤面が再描画されると、この牌ボタンの
+      // DOMごと作り直されopenクラスが消えてしまう（押しっぱなしなのに閉じる）。
+      // 押下状態をself側に保持しておき、再描画直後に復元する
+      if (self._frWaitsHeld) waitsWrap.classList.add('open');
+      var showWaits = function(e) { e.preventDefault(); self._frWaitsHeld = true; waitsWrap.classList.add('open'); };
+      var hideWaits = function() { self._frWaitsHeld = false; waitsWrap.classList.remove('open'); };
       waitsBtn.addEventListener('pointerdown', showWaits);
       waitsBtn.addEventListener('pointerup', hideWaits);
       waitsBtn.addEventListener('pointerleave', hideWaits);
       waitsBtn.addEventListener('pointercancel', hideWaits);
+    } else {
+      self._frWaitsHeld = false;
     }
     var tsumoBtn = document.getElementById('btnFrTsumo');
     if (tsumoBtn) tsumoBtn.addEventListener('click', function() { sendFrAction('tsumo'); });
@@ -2753,10 +2762,34 @@ var App = {
         FriendGame.leaveRoom().then(function() { self._render('friend', {}); });
       }
     });
+    var tickFrClock = function() {
+      if (self.current !== 'friend') return;
+      // ドラッグ中に盤面全体を再描画すると牌の選択・ドラッグが強制的に
+      // 解除されてしまうため、ドラッグ中はこのtickをスキップして
+      // 次の1秒を待つ（ドラッグが終わった時点の再描画で追いつく）
+      if (self._frDragActive) {
+        self._frClockTimer = setTimeout(tickFrClock, 1000);
+        return;
+      }
+      var timerEl = g.turnTimer ? document.querySelector('.fr-turn-timer') : null;
+      var stillTicking = g.turnTimer && Date.now() < g.turnTimer.deadlineAt;
+      if (timerEl && stillTicking) {
+        // 盤面全体は再描画せず、秒数表示だけを直接書き換える
+        var left = Math.max(0, g.turnTimer.deadlineAt - Date.now());
+        var total = Math.max(1, g.turnTimer.baseMs + g.turnTimer.reserveMs);
+        var pct = Math.max(0, Math.min(100, Math.round(left / total * 100)));
+        timerEl.classList.toggle('warn', left <= 5000);
+        var span = timerEl.querySelector('span');
+        var bar = timerEl.querySelector('i');
+        if (span) span.textContent = Math.ceil(left / 1000) + 's';
+        if (bar) bar.style.width = pct + '%';
+        self._frClockTimer = setTimeout(tickFrClock, 1000);
+      } else {
+        self._render('friend', {});
+      }
+    };
     if (g.turnTimer || (self._frShowDiffUntil && Date.now() < self._frShowDiffUntil)) {
-      this._frClockTimer = setTimeout(function() {
-        if (self.current === 'friend') self._render('friend', {});
-      }, 1000);
+      this._frClockTimer = setTimeout(tickFrClock, 1000);
     }
   },
 
