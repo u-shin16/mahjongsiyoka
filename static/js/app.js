@@ -3868,7 +3868,13 @@ var App = {
           if (!allowDiscard()) return;
           e.preventDefault();
           var rect = el.getBoundingClientRect();
-          dragInfo = { active: true, moved: false, idx: di, startX: e.clientX, startY: e.clientY, el: el };
+          // 牌はzoomで縮小表示されており、zoomを外に見える幅/高さで
+          // 強制すると背景スプライトの位置合わせ（width/height基準で
+          // 焼き込み済み）とズレて左上だけしか映らなくなる。zoomは
+          // キャンセルしつつ、同じ倍率をtransform:scale()で肩代わりして
+          // 見た目のサイズ・切り取り位置を変えないようにする
+          var currentZoom = parseFloat(getComputedStyle(el).zoom) || 1;
+          dragInfo = { active: true, moved: false, idx: di, startX: e.clientX, startY: e.clientY, el: el, zoom: currentZoom };
           // 元あった場所に牌サイズの「穴」を残す（position:fixedで抜けた分、
           // 他の牌が詰めてこないように同じ幅のプレースホルダーを差し込む）
           var hole = document.createElement('div');
@@ -3881,15 +3887,13 @@ var App = {
           // 引っ張られず、指/カーソルの動きにリアルタイムで追従させる。
           // position:fixedで元のレイアウト（overflow:autoの手牌列やz-index
           // の積み重なり）から完全に切り離し、奥の要素に隠れて透けて
-          // 見える/見切れる問題を避ける。手牌はzoomで縮小表示している
-          // ため、zoomをキャンセルしないとleft/top/transformのpx指定が
-          // ズレる（zoomが自分自身の座標系まで拡縮してしまうため）
+          // 見える/見切れる問題を避ける
           el.style.setProperty('zoom', '1', 'important');
           el.style.setProperty('position', 'fixed', 'important');
           el.style.setProperty('left', rect.left + 'px', 'important');
           el.style.setProperty('top', rect.top + 'px', 'important');
-          el.style.setProperty('width', rect.width + 'px', 'important');
-          el.style.setProperty('height', rect.height + 'px', 'important');
+          el.style.setProperty('transform-origin', '0 0', 'important');
+          el.style.setProperty('transform', 'scale(' + currentZoom + ')', 'important');
           el.style.setProperty('margin', '0', 'important');
           el.style.setProperty('transition', 'none', 'important');
           el.style.setProperty('z-index', '99999', 'important');
@@ -3901,12 +3905,13 @@ var App = {
           if (!dragInfo.active || dragInfo.idx !== di) return;
           var dx = e.clientX - dragInfo.startX;
           var dy = e.clientY - dragInfo.startY;
+          var z = dragInfo.zoom;
           if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
             dragInfo.moved = true;
-            el.style.setProperty('transform', 'translate('+dx+'px,'+dy+'px)', 'important');
+            el.style.setProperty('transform', 'translate('+dx+'px,'+dy+'px) scale('+z+')', 'important');
             el.style.opacity   = dy < -(DRAG_THRESHOLD * 0.6) ? '0.65' : '0.85';
           } else {
-            el.style.removeProperty('transform');
+            el.style.setProperty('transform', 'scale('+z+')', 'important');
             el.style.opacity   = '';
           }
         });
@@ -3931,8 +3936,7 @@ var App = {
           el.style.removeProperty('position');
           el.style.removeProperty('left');
           el.style.removeProperty('top');
-          el.style.removeProperty('width');
-          el.style.removeProperty('height');
+          el.style.removeProperty('transform-origin');
           el.style.removeProperty('margin');
           el.style.removeProperty('transform');
           el.style.removeProperty('transition');
@@ -4005,8 +4009,7 @@ var App = {
           el.style.removeProperty('position');
           el.style.removeProperty('left');
           el.style.removeProperty('top');
-          el.style.removeProperty('width');
-          el.style.removeProperty('height');
+          el.style.removeProperty('transform-origin');
           el.style.removeProperty('margin');
           el.style.removeProperty('transform');
           el.style.removeProperty('transition');
