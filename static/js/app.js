@@ -2764,17 +2764,11 @@ var App = {
     });
     var tickFrClock = function() {
       if (self.current !== 'friend') return;
-      // ドラッグ中に盤面全体を再描画すると牌の選択・ドラッグが強制的に
-      // 解除されてしまうため、ドラッグ中はこのtickをスキップして
-      // 次の1秒を待つ（ドラッグが終わった時点の再描画で追いつく）
-      if (self._frDragActive) {
-        self._frClockTimer = setTimeout(tickFrClock, 1000);
-        return;
-      }
       var timerEl = g.turnTimer ? document.querySelector('.fr-turn-timer') : null;
       var stillTicking = g.turnTimer && Date.now() < g.turnTimer.deadlineAt;
       if (timerEl && stillTicking) {
-        // 盤面全体は再描画せず、秒数表示だけを直接書き換える
+        // 盤面全体は再描画せず、秒数表示だけを直接書き換える（牌のDOMには
+        // 触れないため、ドラッグ中でも毎秒リアルタイムに更新して問題ない）
         var left = Math.max(0, g.turnTimer.deadlineAt - Date.now());
         var total = Math.max(1, g.turnTimer.baseMs + g.turnTimer.reserveMs);
         var pct = Math.max(0, Math.min(100, Math.round(left / total * 100)));
@@ -2783,6 +2777,11 @@ var App = {
         var bar = timerEl.querySelector('i');
         if (span) span.textContent = Math.ceil(left / 1000) + 's';
         if (bar) bar.style.width = pct + '%';
+        self._frClockTimer = setTimeout(tickFrClock, 1000);
+      } else if (self._frDragActive) {
+        // タイマー切れ等でここから先は盤面全体の再描画が必要になるが、
+        // ドラッグ中に再描画すると牌の選択が解除されてしまうため、
+        // ドラッグが終わるまで再描画だけ先送りする
         self._frClockTimer = setTimeout(tickFrClock, 1000);
       } else {
         self._render('friend', {});
