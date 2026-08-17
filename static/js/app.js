@@ -681,14 +681,25 @@ function positionDiscardRivers() {
   var borderT   = parseFloat(ts.borderTopWidth)  || 0;
   var borderL   = parseFloat(ts.borderLeftWidth) || 0;
 
-  // 点数板の四辺をテーブル content-edge 基準の座標に変換
-  var pTop    = cp.top    - table.top    - borderT;
-  var pBottom = cp.bottom - table.top    - borderT;
-  var pLeft   = cp.left   - table.left   - borderL;
-  var pRight  = cp.right  - table.left   - borderL;
+  // .jt-table に transform:scale() が掛かっている（スマホ縦画面のレターボックス表示等）
+  // 場合、position:absolute の left/top は「.jt-table のローカル座標系
+  // （transformされる前のpx）」で解釈され、代入後に transform で画面へ
+  // 変換される。cp/table は getBoundingClientRect() の実測値＝画面上のpx
+  // なので、その差分（pTop等）も画面上のpxになってしまっている。
+  // ここで scale で割ってローカル座標系の差分に変換しておけば、
+  // 以降はRIVER_GAP等の設計値とそのまま足し引きでき、代入時の変換も不要になる。
+  // 通常時（transformなし）は scale=1 になるため、既存の見た目には影響しない。
+  var tableScale = tableEl.offsetWidth ? (table.width / tableEl.offsetWidth) : 1;
+  if (!tableScale) tableScale = 1;
+
+  // 点数板の四辺をテーブル content-edge 基準の座標に変換（ローカル座標系）
+  var pTop    = (cp.top    - table.top)  / tableScale - borderT;
+  var pBottom = (cp.bottom - table.top)  / tableScale - borderT;
+  var pLeft   = (cp.left   - table.left) / tableScale - borderL;
+  var pRight  = (cp.right  - table.left) / tableScale - borderL;
   var pCenterY = (pTop + pBottom) / 2;
 
-  // 共通スタイルセッター
+  // 共通スタイルセッター（pTop等は既にローカル座標系に変換済みなのでそのまま代入）
   var set = function(el, obj) {
     for (var k in obj) el.style.setProperty(k, obj[k], 'important');
   };
@@ -769,8 +780,34 @@ function positionMeldAreas() {
   var pCenterY = (cp.top + cp.bottom) / 2;
   var MELD_GAP = 4; // ダイヤモンドの角からの隙間(px)
 
-  // .player-meld-area は position:fixed なのでビューポート基準の座標をそのまま使う
-  // top/left/right/bottom を毎回全指定し直す（CSS側の古い値を必ず打ち消す）
+  // .jt-table に実際に transform が掛かっている場合のみ、position:fixed の
+  // .player-meld-area/.player-nuki-area にとって「変形されるコンテナ」になる
+  // （transformされる前のpx、原点は.jt-table自身の左上が基準）。
+  // transformが無い通常時（PC等）は position:fixed の基準は素直に
+  // ビューポートのままなので、変換は一切行わない（変換すると逆にズレる）。
+  var tableEl = document.querySelector('.jt-table');
+  var tcs = tableEl ? window.getComputedStyle(tableEl) : null;
+  var tableHasTransform = !!(tcs && tcs.transform && tcs.transform !== 'none');
+  var tableRect = tableHasTransform ? tableEl.getBoundingClientRect() : null;
+  var tableScale = (tableRect && tableEl.offsetWidth) ? (tableRect.width / tableEl.offsetWidth) : 1;
+  if (!tableScale) tableScale = 1;
+  // position:fixedの子のローカル座標系はボーダーの内側（padding box）が
+  // 基準になる（.jt-table自身はborderを持つ）ため、border分を差し引く
+  // （positionDiscardRivers()の borderT/borderL と同じ考え方）
+  var tBorderT = tableHasTransform ? (parseFloat(tcs.borderTopWidth)    || 0) : 0;
+  var tBorderL = tableHasTransform ? (parseFloat(tcs.borderLeftWidth)   || 0) : 0;
+  var tBorderR = tableHasTransform ? (parseFloat(tcs.borderRightWidth)  || 0) : 0;
+  var tBorderB = tableHasTransform ? (parseFloat(tcs.borderBottomWidth) || 0) : 0;
+  var toLocalX = function(screenX) { return tableRect ? (screenX - tableRect.left) / tableScale - tBorderL : screenX; };
+  var toLocalY = function(screenY) { return tableRect ? (screenY - tableRect.top)  / tableScale - tBorderT : screenY; };
+  var localBoundsL = 0;
+  var localBoundsT = 0;
+  var localBoundsR = tableEl ? (tableEl.offsetWidth  - tBorderL - tBorderR) : window.innerWidth;
+  var localBoundsB = tableEl ? (tableEl.offsetHeight - tBorderT - tBorderB) : window.innerHeight;
+
+  // .player-meld-area は position:fixed。top/leftは上で説明した
+  // .jt-table のローカル座標系の値をそのまま代入する
+  // （right/bottomは毎回全指定し直してCSS側の古い値を必ず打ち消す）
   var set = function(el, top, left, right, bottom, transform) {
     el.style.setProperty('top',       top,       'important');
     el.style.setProperty('left',      left,      'important');
@@ -801,8 +838,10 @@ function positionMeldAreas() {
     if (!area || !handEl) return;
     if (gap == null) gap = GAP;
     var hr = handEl.getBoundingClientRect();
-    var cx = (hr.left + hr.right) / 2;
-    var cy = (hr.top + hr.bottom) / 2;
+    // .jt-table のローカル座標系に変換してから計算する（handHalf/gap/lift は
+    // 元々ローカル座標系の設計値のため、ここで揃える）
+    var cx = toLocalX((hr.left + hr.right) / 2);
+    var cy = toLocalY((hr.top  + hr.bottom) / 2);
     var ox = handHalf + gap; // 自分から見て「右へ」
     var oy = -lift;          // 自分から見て「上へ」
     var rad = angleDeg * Math.PI / 180;
@@ -819,6 +858,18 @@ function positionMeldAreas() {
     if (angleDeg === 90)  { tx = -50;  ty = 0;   }
     if (angleDeg === -90) { tx = -50;  ty = -100; }
 
+    // 雀卓（.jt-table）のローカル座標の範囲からはみ出さないようクランプする。
+    // 通常のPC幅では発生しない範囲なので、既存の表示位置には影響しない。
+    var EDGE_MARGIN = 4;
+    var areaW = area.offsetWidth || 0;
+    if (angleDeg === 0) {
+      var maxAx = localBoundsR - EDGE_MARGIN - areaW;
+      if (ax > maxAx) ax = maxAx;
+    } else if (angleDeg === 180) {
+      var minAx = localBoundsL + EDGE_MARGIN + areaW;
+      if (ax < minAx) ax = minAx;
+    }
+
     set(area, ay + 'px', ax + 'px', 'auto', 'auto', 'translate(' + tx + '%, ' + ty + '%)');
   };
 
@@ -831,8 +882,12 @@ function positionMeldAreas() {
     if (!area || !handEl) return;
     if (gap == null) gap = GAP;
     var hr = handEl.getBoundingClientRect();
-    var hcx = (hr.left + hr.right) / 2;
-    var hcy = (hr.top + hr.bottom) / 2;
+    // .jt-table のローカル座標系に変換してから計算する
+    var hcx = toLocalX((hr.left + hr.right) / 2);
+    var hcy = toLocalY((hr.top  + hr.bottom) / 2);
+    // offsetWidth/Height は area 自身の回転(rotate)にも .jt-table の
+    // transform:scale() にも影響されない「ローカルの素の寸法」なので、
+    // handHalf/gap/lift 等の設計値とそのまま足し合わせられる。
     var areaW = area.offsetWidth;
     var areaH = area.offsetHeight;
     var ox = handHalf + gap + areaW / 2; // 自分の「右へ」に相当
@@ -848,10 +903,27 @@ function positionMeldAreas() {
     // ±90°回転では見た目の高さ＝回転前の幅(areaW)になる（縦横が入れ替わる）
     // ため、centerYの調整もareaWを基準に行う必要がある（他の位置関係・
     // 伸びる向きはそのまま）。
-    var topSafe = 64;
+    // 「退出/設定」ボタン（.jt-game-topbar）は .jt-table の外側にあり
+    // transform の影響を受けないため、画面上の絶対Y=64px 相当の位置を
+    // ローカル座標系に変換してから比較する。
+    var topSafe = toLocalY(64);
     var renderedHalfHeight = areaW / 2;
     if (centerY - renderedHalfHeight < topSafe) {
       centerY = topSafe + renderedHalfHeight;
+    }
+    // 雀卓（.jt-table）のローカル座標の範囲からはみ出さないようクランプする。
+    // 通常のPC幅では発生しない範囲なので、既存の表示位置には影響しない。
+    var EDGE_MARGIN_Y = 4;
+    if (centerY + renderedHalfHeight > localBoundsB - EDGE_MARGIN_Y) {
+      centerY = localBoundsB - EDGE_MARGIN_Y - renderedHalfHeight;
+    }
+    var EDGE_MARGIN = 4;
+    var renderedHalfWidth = areaH / 2;
+    if (centerX - renderedHalfWidth < localBoundsL + EDGE_MARGIN) {
+      centerX = localBoundsL + EDGE_MARGIN + renderedHalfWidth;
+    }
+    if (centerX + renderedHalfWidth > localBoundsR - EDGE_MARGIN) {
+      centerX = localBoundsR - EDGE_MARGIN - renderedHalfWidth;
     }
     set(area,
       (centerY - areaH / 2) + 'px',
@@ -2591,19 +2663,44 @@ var App = {
           e.preventDefault();
           var rect = el.getBoundingClientRect();
           var currentZoom = parseFloat(getComputedStyle(el).zoom) || 1;
-          frDragInfo = { active: true, moved: false, idx: idx, startX: e.clientX, startY: e.clientY, el: el, zoom: currentZoom };
+          // 手牌は .jt-table の中にあるため、.jt-table に transform:scale()
+          // が掛かっている（スマホ縦画面のレターボックス表示等）場合、
+          // position:fixed の left/top やtranslate()はローカル座標系
+          // （transformされる前のpx）で解釈され、代入後にもう一度その
+          // transformで画面へ変換される。画面px基準の実測値/移動量を
+          // そのまま使うと二重変換でズレる（実際のカーソルより下にずれる
+          // 等）ため、tableScaleで割ってローカル座標系に変換する。
+          // .jt-table に transform が無い通常時（PC等）は position:fixed の
+          // 基準は素直にビューポートのままなので、変換は一切行わず
+          // 既存の実測値をそのまま使う（変換すると逆にズレてしまう）。
+          var tableEl2 = document.querySelector('.jt-table');
+          var tcs2 = tableEl2 ? window.getComputedStyle(tableEl2) : null;
+          var tableHasTransform2 = !!(tcs2 && tcs2.transform && tcs2.transform !== 'none');
+          var tableRect2 = tableHasTransform2 ? tableEl2.getBoundingClientRect() : null;
+          var tableScale2 = (tableRect2 && tableEl2.offsetWidth) ? (tableRect2.width / tableEl2.offsetWidth) : 1;
+          if (!tableScale2) tableScale2 = 1;
+          // position:fixedの子のローカル座標系はボーダーの内側（padding box）
+          // が基準になる（.jt-tableはborderを持つ）ため差し引く
+          var tBorderT2 = tableHasTransform2 ? (parseFloat(tcs2.borderTopWidth)  || 0) : 0;
+          var tBorderL2 = tableHasTransform2 ? (parseFloat(tcs2.borderLeftWidth) || 0) : 0;
+          frDragInfo = { active: true, moved: false, idx: idx, startX: e.clientX, startY: e.clientY, el: el, zoom: currentZoom, tableScale: tableScale2 };
           self._frDragActive = true;
-          // 元あった場所に牌サイズの「穴」を残す
+          // 元あった場所に牌サイズの「穴」を残す。穴のサイズは通常フロー内の
+          // 兄弟牌と同じローカル座標系の寸法で決める必要がある。rect（画面px、
+          // .jt-tableのtransformを含んだ実測値）をそのまま使うと、穴がtransform
+          // でもう一度縮小され隣の牌がわずかに内側へ詰まって見えるため
+          // tableScale2 で割る（offsetWidth/Heightは牌自身のzoomも無視してしまう
+          // ため使えない）
           var hole = document.createElement('div');
           hole.className = 'tile-drag-hole';
-          hole.style.width = rect.width + 'px';
-          hole.style.height = rect.height + 'px';
+          hole.style.width = (rect.width / tableScale2) + 'px';
+          hole.style.height = (rect.height / tableScale2) + 'px';
           if (el.parentNode) el.parentNode.insertBefore(hole, el);
           frDragInfo.hole = hole;
           el.style.setProperty('zoom', '1', 'important');
           el.style.setProperty('position', 'fixed', 'important');
-          el.style.setProperty('left', rect.left + 'px', 'important');
-          el.style.setProperty('top', rect.top + 'px', 'important');
+          el.style.setProperty('left', (tableRect2 ? (rect.left - tableRect2.left) / tableScale2 - tBorderL2 : rect.left) + 'px', 'important');
+          el.style.setProperty('top', (tableRect2 ? (rect.top - tableRect2.top) / tableScale2 - tBorderT2 : rect.top) + 'px', 'important');
           el.style.setProperty('transform-origin', '0 0', 'important');
           el.style.setProperty('transform', 'scale(' + currentZoom + ')', 'important');
           el.style.setProperty('margin', '0', 'important');
@@ -2617,9 +2714,10 @@ var App = {
           var dx = e.clientX - frDragInfo.startX;
           var dy = e.clientY - frDragInfo.startY;
           var z = frDragInfo.zoom;
+          var ts = frDragInfo.tableScale || 1;
           if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
             frDragInfo.moved = true;
-            el.style.setProperty('transform', 'translate(' + dx + 'px,' + dy + 'px) scale(' + z + ')', 'important');
+            el.style.setProperty('transform', 'translate(' + (dx/ts) + 'px,' + (dy/ts) + 'px) scale(' + z + ')', 'important');
           } else {
             el.style.setProperty('transform', 'scale(' + z + ')', 'important');
           }
@@ -4037,13 +4135,40 @@ var App = {
           // キャンセルしつつ、同じ倍率をtransform:scale()で肩代わりして
           // 見た目のサイズ・切り取り位置を変えないようにする
           var currentZoom = parseFloat(getComputedStyle(el).zoom) || 1;
-          dragInfo = { active: true, moved: false, idx: di, startX: e.clientX, startY: e.clientY, el: el, zoom: currentZoom };
+          // 手牌は .jt-table の中にあるため、.jt-table に transform:scale()
+          // が掛かっている（スマホ縦画面のレターボックス表示等）場合、
+          // position:fixed の left/top や transform の translate() は
+          // .jt-table のローカル座標系（transformされる前のpx）で解釈され、
+          // 代入後にもう一度そのtransformで画面へ変換される。
+          // rect（実測・画面px）や指/カーソルの移動量（画面px）をそのまま
+          // 使うと、この二重変換で見た目の位置・移動量がズレる
+          // （例：縮小されている分だけ実際のカーソルより下にずれる）ため、
+          // tableScale で割ってローカル座標系に変換してから使う。
+          // .jt-table に transform が無い通常時（PC等）は position:fixed の
+          // 基準は素直にビューポートのままなので、変換は一切行わず
+          // 既存の実測値をそのまま使う（変換すると逆にズレてしまう）。
+          var tableEl2 = document.querySelector('.jt-table');
+          var tcs2 = tableEl2 ? window.getComputedStyle(tableEl2) : null;
+          var tableHasTransform2 = !!(tcs2 && tcs2.transform && tcs2.transform !== 'none');
+          var tableRect2 = tableHasTransform2 ? tableEl2.getBoundingClientRect() : null;
+          var tableScale2 = (tableRect2 && tableEl2.offsetWidth) ? (tableRect2.width / tableEl2.offsetWidth) : 1;
+          if (!tableScale2) tableScale2 = 1;
+          // position:fixedの子のローカル座標系はボーダーの内側（padding box）
+          // が基準になる（.jt-tableはborderを持つ）ため差し引く
+          var tBorderT2 = tableHasTransform2 ? (parseFloat(tcs2.borderTopWidth)  || 0) : 0;
+          var tBorderL2 = tableHasTransform2 ? (parseFloat(tcs2.borderLeftWidth) || 0) : 0;
+          dragInfo = { active: true, moved: false, idx: di, startX: e.clientX, startY: e.clientY, el: el, zoom: currentZoom, tableScale: tableScale2 };
           // 元あった場所に牌サイズの「穴」を残す（position:fixedで抜けた分、
           // 他の牌が詰めてこないように同じ幅のプレースホルダーを差し込む）
+          // 穴のサイズは通常フロー内の兄弟牌と同じ「ローカル座標系」の
+          // 寸法で決める必要がある。rect（画面px、.jt-tableのtransformを
+          // 含んだ実測値）をそのまま使うと、穴がtransformでもう一度縮小され
+          // 隣の牌がわずかに内側へ詰まって見えるため tableScale2 で割る
+          // （offsetWidth/Heightは牌自身のzoomも無視してしまうため使えない）
           var hole = document.createElement('div');
           hole.className = 'tile-drag-hole';
-          hole.style.width = rect.width + 'px';
-          hole.style.height = rect.height + 'px';
+          hole.style.width = (rect.width / tableScale2) + 'px';
+          hole.style.height = (rect.height / tableScale2) + 'px';
           if (el.parentNode) el.parentNode.insertBefore(hole, el);
           dragInfo.hole = hole;
           // ドラッグ中はCSSのtransition/選択中・ホバーのライトアップに
@@ -4053,8 +4178,8 @@ var App = {
           // 見える/見切れる問題を避ける
           el.style.setProperty('zoom', '1', 'important');
           el.style.setProperty('position', 'fixed', 'important');
-          el.style.setProperty('left', rect.left + 'px', 'important');
-          el.style.setProperty('top', rect.top + 'px', 'important');
+          el.style.setProperty('left', (tableRect2 ? (rect.left - tableRect2.left) / tableScale2 - tBorderL2 : rect.left) + 'px', 'important');
+          el.style.setProperty('top', (tableRect2 ? (rect.top - tableRect2.top) / tableScale2 - tBorderT2 : rect.top) + 'px', 'important');
           el.style.setProperty('transform-origin', '0 0', 'important');
           el.style.setProperty('transform', 'scale(' + currentZoom + ')', 'important');
           el.style.setProperty('margin', '0', 'important');
@@ -4069,9 +4194,12 @@ var App = {
           var dx = e.clientX - dragInfo.startX;
           var dy = e.clientY - dragInfo.startY;
           var z = dragInfo.zoom;
+          var ts = dragInfo.tableScale || 1;
           if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
             dragInfo.moved = true;
-            el.style.setProperty('transform', 'translate('+dx+'px,'+dy+'px) scale('+z+')', 'important');
+            // translate()もローカル座標系の値として解釈されるため、
+            // 実際のカーソル移動量(画面px)通りに見せるにはtsで割る
+            el.style.setProperty('transform', 'translate('+(dx/ts)+'px,'+(dy/ts)+'px) scale('+z+')', 'important');
           } else {
             el.style.setProperty('transform', 'scale('+z+')', 'important');
           }

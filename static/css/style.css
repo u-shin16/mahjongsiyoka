@@ -6103,32 +6103,81 @@ body.is-battle-page {
 
 /* ============================================================
    雀卓（対局画面）は横向き専用レイアウトのため、スマホの縦画面では
-   崩れて表示されてしまう。縦画面の間はゲーム本体を隠し、
-   「横画面にしてください」の案内だけを出して操作できないようにする。
+   そのままでは崩れて表示されてしまう。縦画面の間は雀魂と同じ方式で、
+   雀卓を横長比率のまま設計サイズ(760x600)で組んでから画面に収まる
+   倍率で縮小表示し、余った上下の余白は黒帯（レターボックス）にする。
+   .jt-table 内の座席・河・副露・北抜きは getBoundingClientRect() で
+   実測した座標をもとに配置されるため、transform:scale() を通しても
+   ズレない（landscapeの極端に低い高さ用に既に使っている手法と同じ）。
    ============================================================ */
 .rotate-lock-overlay {
   display: none;
 }
 
 @media (orientation: portrait) and (max-width: 900px) {
-  body.is-battle-page .app-header,
-  body.is-battle-page .app-main,
-  body.is-battle-page .app-footer {
-    display: none !important;
+  body.is-battle-page .battle-main .jt-outer {
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  body.is-battle-page .battle-main .jt-row {
+    flex: none !important;
+    align-self: center !important;
+    width: 760px !important;
+    min-width: 760px !important;
+    height: 600px !important;
+    min-height: 600px !important;
+  }
+  body.is-battle-page .battle-main .jt-table {
+    transform: scale(min(calc(100vw / 760px), calc(100vh / 600px)));
+    transform-origin: center center;
   }
 
-  body.is-battle-page .rotate-lock-overlay {
-    display: flex;
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    background: #071320;
-    color: #f5efe0;
-    text-align: center;
-    padding: 24px;
+  /* 雀卓は上のtransform:scale()だけで一括縮小する設計のため、
+     既存の「画面幅に応じて個別に縮小する」レスポンシブ指定
+     （@media max-width:860px / 520px 等）が重ねて効くと、
+     二重に縮小されてアイコンの大きさ・位置がおかしくなる。
+     縦画面レターボックスの間はPCと同じ設計サイズに固定し、
+     transform:scale()だけに縮小を任せる。 */
+  body.is-battle-page .battle-main .jt-seat-avatar {
+    width: 54px !important;
+    height: 54px !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-self .jt-seat-avatar {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-caption {
+    display: block !important;
+    min-width: 76px !important;
+    padding: 2px 7px 4px !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-top {
+    top: 18px !important;
+    right: 30% !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-right {
+    right: 6.4% !important;
+    top: 25% !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-left {
+    left: 3.2% !important;
+    top: 16% !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-self {
+    left: 12% !important;
+    bottom: 7% !important;
+  }
+  body.is-battle-page .battle-main .jt-hidden-hand .tile.xxs {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  body.is-battle-page .battle-main .jt-center-panel.jt-center-panel-diamond {
+    width: 148px !important;
+    height: 148px !important;
+  }
+  body.is-battle-page .battle-main .jt-center-diamond {
+    width: 104px !important;
+    height: 104px !important;
   }
 }
 
