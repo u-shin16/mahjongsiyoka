@@ -5539,12 +5539,28 @@ body.is-battle-page .app-main.battle-main {
 /* body: 全画面・スクロールなし */
 body.is-battle-page {
   overflow: hidden !important;
+  overscroll-behavior: none !important;
   width: 100vw  !important;
   height: 100vh !important;
   height: 100dvh !important;
   background: #071320 !important;
   margin: 0  !important;
   padding: 0 !important;
+}
+/* iOSのバウンス（ゴムのような伸び縮み）スクロールはbody単体の
+   overflow:hiddenだけでは防ぎきれないことがあるため、htmlルート
+   要素側にも同じ制約をかける */
+html:has(body.is-battle-page) {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+}
+/* 雀卓の下にヘッダー・フッター（お問い合わせ等のリンク）が
+   スクロールで見えてしまうのを防ぐため、対局中は完全に非表示にする */
+body.is-battle-page .app-header,
+body.is-battle-page .app-footer {
+  display: none !important;
 }
 
 /* ============================================================
