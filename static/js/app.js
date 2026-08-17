@@ -2664,6 +2664,16 @@ var App = {
         el.addEventListener('pointerdown', function(e) {
           if (!allowInteract()) return;
           e.preventDefault();
+          // 別の牌を選択中に、それとは違う牌のドラッグ/タップを始めたら、
+          // 前の牌のライトアップ（.selected）が残ったまま新しい牌にも
+          // ライトアップが付いて二重に光って見えるのを防ぐため、
+          // フルレンダーせずにその場でクラスだけ外す（進行中のドラッグの
+          // DOM参照を壊さないため）
+          if (self._frSelectedIdx !== -1 && self._frSelectedIdx !== idx) {
+            var oldSelEl = document.querySelector('.mj-sorted-tiles .tile.selected');
+            if (oldSelEl) oldSelEl.classList.remove('selected');
+            self._frSelectedIdx = -1;
+          }
           var rect = el.getBoundingClientRect();
           var currentZoom = parseFloat(getComputedStyle(el).zoom) || 1;
           // 手牌は .jt-table の中にあるため、.jt-table に transform:scale()
@@ -2773,7 +2783,8 @@ var App = {
             return;
           }
 
-          // タッチ操作：上スワイプ／ダブルタップで確定、シングルタップは選択（待ちプレビュー）
+          // タッチ操作：上スワイプ／ダブルタップ／選択中の牌の再タップで確定、
+          // 未選択の牌へのシングルタップは選択（待ちプレビュー）
           if (canCommit && dy < -FR_DRAG_THRESHOLD) { discardIdx(idx); return; }
           var now = Date.now();
           if (canCommit && frLastTap.idx === idx && (now - frLastTap.time) < FR_DOUBLE_TAP_MS) {
@@ -2781,8 +2792,15 @@ var App = {
             discardIdx(idx);
             return;
           }
+          // 既に選択中の牌をもう一度タップした場合は、ダブルタップの間隔に
+          // 関わらずそのまま確定して切る（タイミングがシビアなダブルタップ
+          // だけに頼ると「切れない」ことがあるため）
+          if (canCommit && self._frSelectedIdx === idx) {
+            discardIdx(idx);
+            return;
+          }
           frLastTap = { idx: idx, time: now };
-          self._frSelectedIdx = (self._frSelectedIdx === idx) ? -1 : idx;
+          self._frSelectedIdx = idx;
           self._render('friend', {});
         });
 
@@ -4141,6 +4159,18 @@ var App = {
         el.addEventListener('pointerdown', function(e) {
           if (!allowDiscard()) return;
           e.preventDefault();
+          // 別の牌を選択中に、それとは違う牌のドラッグ/タップを始めたら、
+          // 前の牌のライトアップ（.selected）が残ったまま新しい牌にも
+          // ライトアップが付いて二重に光って見えるのを防ぐため、
+          // フルレンダーせずにその場でクラスだけ外す（進行中のドラッグの
+          // DOM参照を壊さないため）
+          if (selectedIdx !== -1 && selectedIdx !== di) {
+            var oldSelEl = document.querySelector(
+              '.mj-sorted-tiles .tile.selected, #mjSorted .tile.selected, .mj-drew-area .tile.selected'
+            );
+            if (oldSelEl) oldSelEl.classList.remove('selected');
+            selectedIdx = -1;
+          }
           var rect = el.getBoundingClientRect();
           // 牌はzoomで縮小表示されており、zoomを外に見える幅/高さで
           // 強制すると背景スプライトの位置合わせ（width/height基準で
@@ -4267,7 +4297,8 @@ var App = {
           }
 
           // リーチ武装中（タッチ操作）：候補外の牌は無視。候補牌は
-          // 「ドラッグ上/ダブルタップで確定、シングルタップは選択（待ち牌プレビュー）」
+          // 「ドラッグ上/ダブルタップ/選択中の牌の再タップで確定、
+          // 未選択の牌へのシングルタップは選択（待ち牌プレビュー）」
           if (riichiArmed) {
             if (riichiActualIdxs.indexOf(getActualIdx(di)) < 0) return;
             if (dy < -DRAG_THRESHOLD) { doRiichiDiscardByDI(di); return; }
@@ -4277,8 +4308,15 @@ var App = {
               doRiichiDiscardByDI(di);
               return;
             }
+            // 既に選択中の牌をもう一度タップした場合は、ダブルタップの
+            // 間隔に関わらずそのまま確定して切る（タイミングがシビアな
+            // ダブルタップだけに頼ると「切れない」ことがあるため）
+            if (selectedIdx === di) {
+              doRiichiDiscardByDI(di);
+              return;
+            }
             lastTap = { idx: di, time: nowR };
-            selectedIdx = (selectedIdx === di) ? -1 : di;
+            selectedIdx = di;
             renderGame();
             return;
           }
@@ -4297,9 +4335,17 @@ var App = {
             return;
           }
 
-          // ③ シングルタップ: 選択表示のみ更新
+          // ③ 既に選択中の牌をもう一度タップしたら確定して切る
+          // （タイミングがシビアなダブルタップだけに頼ると「切れない」
+          // ことがあるため、選択済みの牌への再タップは確実に切れるようにする）
+          if (selectedIdx === di) {
+            doDiscardByDI(di);
+            return;
+          }
+
+          // ④ シングルタップ（未選択の牌）: 選択表示のみ更新
           lastTap = { idx: di, time: now };
-          selectedIdx = (selectedIdx === di) ? -1 : di;
+          selectedIdx = di;
           renderGame();
         });
 
