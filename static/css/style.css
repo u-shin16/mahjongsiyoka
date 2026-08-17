@@ -5497,6 +5497,10 @@ body.is-battle-page .battle-main .jt-outer,
   margin: 0      !important;
   padding: 0     !important;
   height: 100vh  !important;
+  /* スマホのアドレスバーの出し引きで100vhが実際の表示領域と
+     ズレて雀卓が見切れることがあるため、対応ブラウザでは
+     実際に見えている高さに追従する100dvhで上書きする */
+  height: 100dvh !important;
   box-sizing: border-box !important;
 }
 
@@ -5529,6 +5533,7 @@ body.is-battle-page .app-main.battle-main {
   display: flex  !important;
   flex-direction: column !important;
   height: 100vh  !important;
+  height: 100dvh !important;
 }
 
 /* body: 全画面・スクロールなし */
@@ -5536,6 +5541,7 @@ body.is-battle-page {
   overflow: hidden !important;
   width: 100vw  !important;
   height: 100vh !important;
+  height: 100dvh !important;
   background: #071320 !important;
   margin: 0  !important;
   padding: 0 !important;
@@ -6156,6 +6162,10 @@ body.is-battle-page {
   }
   body.is-battle-page .battle-main .jt-table {
     transform: scale(min(calc(100vw / 760px), calc(100vh / 600px)));
+    /* スマホのアドレスバーの出し引きで100vhが実際の表示領域と
+       ズレて雀卓が見切れることがあるため、対応ブラウザでは
+       実際に見えている高さに追従する100dvhで上書きする */
+    transform: scale(min(calc(100vw / 760px), calc(100dvh / 600px)));
     transform-origin: center center;
   }
 
@@ -6311,6 +6321,10 @@ body.is-battle-page {
   }
   body.is-battle-page .battle-main .jt-table {
     transform: scale(min(calc(100vw / 980px), calc(100vh / 700px)));
+    /* スマホのアドレスバーの出し引きで100vhが実際の表示領域と
+       ズレて雀卓が見切れることがあるため、対応ブラウザでは
+       実際に見えている高さに追従する100dvhで上書きする */
+    transform: scale(min(calc(100vw / 980px), calc(100dvh / 700px)));
     transform-origin: center center;
   }
 
