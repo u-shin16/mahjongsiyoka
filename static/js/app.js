@@ -2636,6 +2636,7 @@ var App = {
       var frLastTap = { idx: -1, time: 0 };
       var FR_DOUBLE_TAP_MS = 300;
       var FR_DRAG_THRESHOLD = 50;
+      var FR_PRESS_LIFT_PX = 8; // タッチ直後に少し持ち上げて即座に反応して見せる
       document.querySelectorAll('#frHand .fr-tile-wrap').forEach(function(el) {
         var idx = parseInt(el.dataset.idx, 10);
         var entry = displayEntries.filter(function(e) { return e.idx === idx; })[0];
@@ -2714,7 +2715,9 @@ var App = {
           el.style.setProperty('zoom', '1', 'important');
           el.style.setProperty('position', 'fixed', 'important');
           el.style.setProperty('left', (tableRect2 ? (rect.left - tableRect2.left) / tableScale2 - tBorderL2 : rect.left) + 'px', 'important');
-          el.style.setProperty('top', (tableRect2 ? (rect.top - tableRect2.top) / tableScale2 - tBorderT2 : rect.top) + 'px', 'important');
+          // タッチした瞬間に少し持ち上げて、指を離すまで見た目の変化が
+          // 無い（＝タップしてから浮くまで遅れて見える）のを防ぐ
+          el.style.setProperty('top', (tableRect2 ? (rect.top - tableRect2.top) / tableScale2 - tBorderT2 : rect.top) - FR_PRESS_LIFT_PX + 'px', 'important');
           el.style.setProperty('transform-origin', '0 0', 'important');
           el.style.setProperty('transform', 'scale(' + currentZoom + ')', 'important');
           el.style.setProperty('margin', '0', 'important');
@@ -3607,6 +3610,7 @@ var App = {
     // ── ダブルタップ / ドラッグ捨て 操作状態 ──
     var DOUBLE_TAP_MS   = 300;   // ダブルタップ判定時間 (ms)
     var DRAG_THRESHOLD  = 50;    // 上ドラッグ捨て閾値 (px)
+    var PRESS_LIFT_PX   = 8;     // タッチ直後に少し持ち上げて即座に反応して見せる
     var lastTap  = { idx: -1, time: 0 };
     var dragInfo = { active: false, idx: -1, startY: 0, el: null };
     var battleAdvice = null;
@@ -4251,7 +4255,10 @@ var App = {
           el.style.setProperty('zoom', '1', 'important');
           el.style.setProperty('position', 'fixed', 'important');
           el.style.setProperty('left', (tableRect2 ? (rect.left - tableRect2.left) / tableScale2 - tBorderL2 : rect.left) + 'px', 'important');
-          el.style.setProperty('top', (tableRect2 ? (rect.top - tableRect2.top) / tableScale2 - tBorderT2 : rect.top) + 'px', 'important');
+          // タッチした瞬間に少し持ち上げて、指を離すまで見た目の変化が
+          // 無い（＝タップしてから浮くまで遅れて見える）のを防ぐ。実際に
+          // 選択/捨てが確定するかはpointerup側の判定のまま変えない
+          el.style.setProperty('top', (tableRect2 ? (rect.top - tableRect2.top) / tableScale2 - tBorderT2 : rect.top) - PRESS_LIFT_PX + 'px', 'important');
           el.style.setProperty('transform-origin', '0 0', 'important');
           el.style.setProperty('transform', 'scale(' + currentZoom + ')', 'important');
           el.style.setProperty('margin', '0', 'important');
