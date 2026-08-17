@@ -6103,18 +6103,45 @@ body.is-battle-page {
 
 /* ============================================================
    雀卓（対局画面）は横向き専用レイアウトのため、スマホの縦画面では
-   そのままでは崩れて表示されてしまう。縦画面の間は雀魂と同じ方式で、
-   雀卓を横長比率のまま設計サイズ(760x600)で組んでから画面に収まる
-   倍率で縮小表示し、余った上下の余白は黒帯（レターボックス）にする。
-   .jt-table 内の座席・河・副露・北抜きは getBoundingClientRect() で
-   実測した座標をもとに配置されるため、transform:scale() を通しても
-   ズレない（landscapeの極端に低い高さ用に既に使っている手法と同じ）。
+   そのままでは崩れて表示されてしまう。
+   - スマホ実機（タッチ専用・hoverなし）の縦持ちは、副露が多い時の
+     折り返し等まだ崩れが残るため、横向きを強制する（対局画面を隠して
+     「横画面にしてください」の案内だけを出す）。
+   - PCでウィンドウを縦長・小さく縮小した場合（マウス操作＝hoverあり）
+     は、雀魂と同じ方式で雀卓を横長比率のまま設計サイズ(760x600)で
+     組んでから画面に収まる倍率で縮小表示し、黒帯（レターボックス）
+     にする。.jt-table 内の座席・河・副露・北抜きは
+     getBoundingClientRect() で実測した座標をもとに配置されるため、
+     transform:scale() を通してもズレない。
    ============================================================ */
 .rotate-lock-overlay {
   display: none;
 }
 
-@media (orientation: portrait) and (max-width: 900px) {
+@media (hover: none) and (pointer: coarse) and (orientation: portrait) {
+  body.is-battle-page .app-header,
+  body.is-battle-page .app-main,
+  body.is-battle-page .app-main.battle-main,
+  body.is-battle-page .app-footer {
+    display: none !important;
+  }
+
+  body.is-battle-page .rotate-lock-overlay {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: #071320;
+    color: #f5efe0;
+    text-align: center;
+    padding: 24px;
+  }
+}
+
+@media (hover: hover) and (orientation: portrait) and (max-width: 900px) {
   body.is-battle-page .battle-main .jt-outer {
     align-items: center !important;
     justify-content: center !important;
