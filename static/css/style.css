@@ -6164,7 +6164,9 @@ body.is-battle-page {
     top: 16% !important;
   }
   body.is-battle-page .battle-main .jt-seat-self {
-    left: 12% !important;
+    /* leftはPC基準の12%のままだと、幅の狭いレターボックス設計サイズ
+       では中央寄せの手牌と重なってしまうため2%に詰める */
+    left: 2% !important;
     bottom: 7% !important;
   }
   body.is-battle-page .battle-main .jt-hidden-hand .tile.xxs {
@@ -6292,7 +6294,9 @@ body.is-battle-page {
     top: 16% !important;
   }
   body.is-battle-page .battle-main .jt-seat-self {
-    left: 12% !important;
+    /* leftはPC基準の12%のままだと、幅の狭いレターボックス設計サイズ
+       では中央寄せの手牌と重なってしまうため2%に詰める */
+    left: 2% !important;
     bottom: 7% !important;
   }
   body.is-battle-page .battle-main .jt-hidden-hand .tile.xxs {
