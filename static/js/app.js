@@ -2673,6 +2673,7 @@ var App = {
             var oldSelEl = document.querySelector('.mj-sorted-tiles .tile.selected');
             if (oldSelEl) oldSelEl.classList.remove('selected');
             self._frSelectedIdx = -1;
+            hideHoverWaitsFr();
           }
           var rect = el.getBoundingClientRect();
           var currentZoom = parseFloat(getComputedStyle(el).zoom) || 1;
@@ -2814,7 +2815,12 @@ var App = {
           }
           frLastTap = { idx: idx, time: now };
           self._frSelectedIdx = idx;
-          self._render('friend', {});
+          // 選択表示の切り替えだけなら雀卓全体を再描画する必要はない
+          // （フルレンダーだと特にスマホで手牌・河などが一瞬ちらつく
+          // ため、対象牌のクラス切り替えと待ちプレビュー更新だけで済ませる）
+          var selTileEl = el.querySelector('.tile');
+          if (selTileEl) selTileEl.classList.add('selected');
+          if (entry) showHoverWaitsFr(entry);
         });
 
         el.addEventListener('pointercancel', function() {
@@ -4192,6 +4198,7 @@ var App = {
             );
             if (oldSelEl) oldSelEl.classList.remove('selected');
             selectedIdx = -1;
+            hideHoverWaits();
           }
           var rect = el.getBoundingClientRect();
           // 牌はzoomで縮小表示されており、zoomを外に見える幅/高さで
@@ -4352,7 +4359,11 @@ var App = {
             }
             lastTap = { idx: di, time: nowR };
             selectedIdx = di;
-            renderGame();
+            // 選択表示の切り替えだけなら雀卓全体を再描画する必要はない
+            // （フルレンダーだと特にスマホで手牌・河などが一瞬ちらつく
+            // ため、対象牌のクラス切り替えと待ちプレビュー更新だけで済ませる）
+            el.classList.add('selected');
+            showHoverWaits(di);
             return;
           }
 
@@ -4379,9 +4390,14 @@ var App = {
           }
 
           // ④ シングルタップ（未選択の牌）: 選択表示のみ更新
+          // 状態が変わるのはselectedIdxと待ちプレビューだけなので、雀卓
+          // 全体を再描画せず対象牌のクラス切り替えと待ちプレビュー更新
+          // だけで済ませる（フルレンダーだと特にスマホで手牌・河などが
+          // 一瞬ちらつくため）
           lastTap = { idx: di, time: now };
           selectedIdx = di;
-          renderGame();
+          el.classList.add('selected');
+          showHoverWaits(di);
         });
 
         // pointercancel: 視覚状態リセット
