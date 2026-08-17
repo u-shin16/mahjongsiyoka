@@ -638,7 +638,7 @@ var FriendGame = (function() {
       baseMs: baseMs,
       reserveMs: reserveMs,
       deadlineAt: now + baseMs + reserveMs,
-      canAutoAt: now + (isCpuSeat(seat) ? 700 : 450),
+      canAutoAt: now + (isCpuSeat(seat) ? 50 : 450),
     };
   }
 
