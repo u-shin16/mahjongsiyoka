@@ -6335,17 +6335,17 @@ body.is-battle-page .app-footer {
   body.is-battle-page .battle-main .jt-row {
     flex: none !important;
     align-self: center !important;
-    width: 980px !important;
-    min-width: 980px !important;
+    width: 1400px !important;
+    min-width: 1400px !important;
     height: 700px !important;
     min-height: 700px !important;
   }
   body.is-battle-page .battle-main .jt-table {
-    transform: scale(min(calc(100vw / 980px), calc(100vh / 700px)));
+    transform: scale(min(calc(100vw / 1400px), calc(100vh / 700px)));
     /* スマホのアドレスバーの出し引きで100vhが実際の表示領域と
        ズレて雀卓が見切れることがあるため、対応ブラウザでは
        実際に見えている高さに追従する100dvhで上書きする */
-    transform: scale(min(calc(100vw / 980px), calc(100dvh / 700px)));
+    transform: scale(min(calc(100vw / 1400px), calc(100dvh / 700px)));
     transform-origin: center center;
   }
 
