@@ -6509,9 +6509,13 @@ body.is-battle-page {
 /* 自分の副露エリアはposition:fixed + left指定のみ(right:auto)だと、
    実際の幅が画面右端までの残り幅で頭打ちになり、鳴きが増えて
    残り幅を超えると2行に折り返されてしまう。width:max-contentで
-   画面幅に関係なく必ず1行のまま伸びるようにする。 */
+   画面幅に関係なく必ず1行のまま伸びるようにする。
+   （鳴きがさらに増えて幅が広くなると、width:max-contentだけでは
+   折り返しを防ぎきれず複数行に積み上がることがあったため、
+   対面・上家・下家と同じくflex-wrap:nowrapも明示する） */
 .player-meld-area.seat-self {
   width: max-content !important;
+  flex-wrap: nowrap !important;
 }
 
 /* ============================================================
