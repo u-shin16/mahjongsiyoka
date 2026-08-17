@@ -5540,6 +5540,7 @@ body.is-battle-page .app-main.battle-main {
 body.is-battle-page {
   overflow: hidden !important;
   overscroll-behavior: none !important;
+  touch-action: none !important;
   width: 100vw  !important;
   height: 100vh !important;
   height: 100dvh !important;
@@ -5549,10 +5550,14 @@ body.is-battle-page {
 }
 /* iOSのバウンス（ゴムのような伸び縮み）スクロールはbody単体の
    overflow:hiddenだけでは防ぎきれないことがあるため、htmlルート
-   要素側にも同じ制約をかける */
+   要素側にも同じ制約をかける。:has()が使えないブラウザ向けに、
+   JS側でhtmlにも直接is-battle-pageクラスを付けている（app.jsの
+   document.documentElement.classList参照） */
+html.is-battle-page,
 html:has(body.is-battle-page) {
   overflow: hidden !important;
   overscroll-behavior: none !important;
+  touch-action: none !important;
   height: 100vh !important;
   height: 100dvh !important;
 }

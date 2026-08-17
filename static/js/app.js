@@ -1128,6 +1128,9 @@ var App = {
     var main = document.getElementById('appMain');
     main.className = 'app-main' + (page === 'battle' ? ' battle-main' : '');
     document.body.classList.toggle('is-battle-page', page === 'battle');
+    // :has()未対応の実機ブラウザでもhtml側のスクロール制御CSSが効くよう、
+    // bodyと同時にhtmlにも同じクラスを付ける
+    document.documentElement.classList.toggle('is-battle-page', page === 'battle');
     document.getElementById('btnBack').classList.toggle('hidden', page === 'home');
     if      (page === 'home')          this._renderHome(main);
     else if (page === 'chapters')      this._renderChapters(main);
@@ -2206,6 +2209,7 @@ var App = {
     }
     main.classList.add('battle-main');
     document.body.classList.add('is-battle-page');
+    document.documentElement.classList.add('is-battle-page');
 
     var WINDS = ['東', '南', '西', '北'];
     var dealerSeat = (g.round - 1) % n;
