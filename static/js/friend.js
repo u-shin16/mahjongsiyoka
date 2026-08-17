@@ -462,7 +462,7 @@ var FriendGame = (function() {
         var seat = players.length;
         players.push({
           uid: CPU_UID_PREFIX + _code + ':' + seat + ':' + Date.now(),
-          name: 'CPU' + ['東', '南', '西', '北'][seat],
+          name: 'CPU' + (seat + 1),
           isCpu: true,
         });
         tx.update(roomRef(_code), {
