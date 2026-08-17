@@ -2352,11 +2352,10 @@ var App = {
         var callClass = opt.type === 'pon' ? 'btn-pon' : opt.type === 'chi' ? 'btn-chi' : 'btn-kan';
         callBtnsHtml += '<button class="btn-battle btn-call ' + callClass + '" data-call-idx="' + oi + '" data-call-type="' + esc(opt.type) + '">' + label + '</button>';
       });
-      var callFromName = names[g.call.from] || ('P' + (g.call.from + 1));
-      var callTileLabel = Tiles.label(g.call.tile);
+      // CPU戦と同じく、フロートにはボタンのみ表示する（誰が何を捨てたかの
+      // バナーは表示しない）
       frCallFloatHtml =
         '<div class="hand-action-float">' +
-          '<div class="naki-banner-float">' + esc(callFromName) + ' が <strong>' + esc(callTileLabel) + '</strong> を捨てました</div>' +
           callBtnsHtml +
           '<button class="btn-battle btn-skip-call" id="btnFrPass">スキップ</button>' +
         '</div>';
