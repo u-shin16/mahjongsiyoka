@@ -6152,8 +6152,10 @@ body.is-battle-page {
     padding: 2px 7px 4px !important;
   }
   body.is-battle-page .battle-main .jt-seat-top {
-    top: 18px !important;
-    right: 30% !important;
+    /* PC基準のtop:18px/right:30%だと、幅の狭いレターボックス設計
+       サイズでは対面の伏せ手牌・河と重なってしまうため調整 */
+    top: 50px !important;
+    right: 20% !important;
   }
   body.is-battle-page .battle-main .jt-seat-right {
     right: 6.4% !important;
@@ -6282,8 +6284,10 @@ body.is-battle-page {
     padding: 2px 7px 4px !important;
   }
   body.is-battle-page .battle-main .jt-seat-top {
-    top: 18px !important;
-    right: 30% !important;
+    /* PC基準のtop:18px/right:30%だと、幅の狭いレターボックス設計
+       サイズでは対面の伏せ手牌・河と重なってしまうため調整 */
+    top: 50px !important;
+    right: 20% !important;
   }
   body.is-battle-page .battle-main .jt-seat-right {
     right: 6.4% !important;
