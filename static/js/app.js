@@ -2706,6 +2706,14 @@ var App = {
           el.style.setProperty('margin', '0', 'important');
           el.style.setProperty('transition', 'none', 'important');
           el.style.setProperty('z-index', '99999', 'important');
+          // 牌を持ち上げた時の光る枠（ライトアップ）は本来 .tile:hover の
+          // CSSで表現されるが、ポインタイベントは牌本体ではなくラッパー
+          // (.fr-tile-wrap = el) に紐付けているため、ドラッグ中にカーソルが
+          // 牌本体の当たり判定と厳密に一致しない場合に:hoverが安定して
+          // 効かないことがある。:hover任せにせず、牌本体に直接
+          // .selectedクラスを付けて確実に光らせる
+          var liftTileEl = el.querySelector('.tile');
+          if (liftTileEl) liftTileEl.classList.add('selected');
           try { el.setPointerCapture(e.pointerId); } catch (ex) {}
         });
 
@@ -2734,6 +2742,8 @@ var App = {
           el.style.removeProperty('transform');
           el.style.removeProperty('transition');
           el.style.removeProperty('z-index');
+          var liftTileEl = el.querySelector('.tile');
+          if (liftTileEl) liftTileEl.classList.remove('selected');
         };
 
         el.addEventListener('pointerup', function(e) {
