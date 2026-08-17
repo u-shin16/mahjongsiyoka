@@ -1126,6 +1126,14 @@ var App = {
   _render: function(page, params) {
     this._updateHeaderAccount();   // 画面が変わるたびに右上のアカウント表示も更新
     var main = document.getElementById('appMain');
+    // 対局画面に入る瞬間、スクロールを完全ロックする前に少しだけ
+    // スクロールさせておく。実機Safariはタブバー等のUIをスクロール
+    // 操作をきっかけに畳むため、ロック後だとスクロールする隙が無く
+    // タブバーが開いたまま居座り、退出/設定ボタンの上に重なって
+    // 押せなくなることがある（対局中は完全スクロール禁止の仕様のため）
+    if (page === 'battle' && !document.body.classList.contains('is-battle-page')) {
+      window.scrollTo(0, 1);
+    }
     main.className = 'app-main' + (page === 'battle' ? ' battle-main' : '');
     document.body.classList.toggle('is-battle-page', page === 'battle');
     // :has()未対応の実機ブラウザでもhtml側のスクロール制御CSSが効くよう、
@@ -2208,6 +2216,14 @@ var App = {
       this._frSelectedIdx = -1;
     }
     main.classList.add('battle-main');
+    // 対局画面に入る瞬間、スクロールを完全ロックする前に少しだけ
+    // スクロールさせておく。実機Safariはタブバー等のUIをスクロール
+    // 操作をきっかけに畳むため、ロック後だとスクロールする隙が無く
+    // タブバーが開いたまま居座り、退出/設定ボタンの上に重なって
+    // 押せなくなることがある（対局中は完全スクロール禁止の仕様のため）
+    if (!document.body.classList.contains('is-battle-page')) {
+      window.scrollTo(0, 1);
+    }
     document.body.classList.add('is-battle-page');
     document.documentElement.classList.add('is-battle-page');
 
