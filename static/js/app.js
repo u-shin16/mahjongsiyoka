@@ -1124,16 +1124,26 @@ var App = {
   },
 
   _render: function(page, params) {
+    // 対局画面(CPU戦/友人戦)に入る瞬間、スクロールを完全ロックする前に
+    // 少しだけスクロールさせておく。実機Safariはタブバー等のUIを
+    // スクロール操作をきっかけに畳むため、ロック後だとスクロールする隙が
+    // 無くタブバーが開いたまま居座り、退出/設定ボタンの上に重なって
+    // 押せなくなることがある（対局中は完全スクロール禁止の仕様のため）。
+    // scrollTo直後に同期でロックすると、ブラウザがスクロール済みの1
+    // フレームを描画する前にoverflow:hiddenで0へ巻き戻されてしまうため、
+    // rAFで1フレーム分だけ実際のロック処理を遅らせる
+    var self = this;
+    if ((page === 'battle' || page === 'friend') && !document.body.classList.contains('is-battle-page')) {
+      window.scrollTo(0, 1);
+      requestAnimationFrame(function() { self._renderNow(page, params); });
+      return;
+    }
+    this._renderNow(page, params);
+  },
+
+  _renderNow: function(page, params) {
     this._updateHeaderAccount();   // 画面が変わるたびに右上のアカウント表示も更新
     var main = document.getElementById('appMain');
-    // 対局画面に入る瞬間、スクロールを完全ロックする前に少しだけ
-    // スクロールさせておく。実機Safariはタブバー等のUIをスクロール
-    // 操作をきっかけに畳むため、ロック後だとスクロールする隙が無く
-    // タブバーが開いたまま居座り、退出/設定ボタンの上に重なって
-    // 押せなくなることがある（対局中は完全スクロール禁止の仕様のため）
-    if (page === 'battle' && !document.body.classList.contains('is-battle-page')) {
-      window.scrollTo(0, 1);
-    }
     main.className = 'app-main' + (page === 'battle' ? ' battle-main' : '');
     document.body.classList.toggle('is-battle-page', page === 'battle');
     // :has()未対応の実機ブラウザでもhtml側のスクロール制御CSSが効くよう、
@@ -1155,7 +1165,9 @@ var App = {
     else if (page === 'login')         this._renderLogin(main);
     else if (page === 'friend')        this._renderFriend(main);
     else main.innerHTML = '<p style="color:#8ab89c;text-align:center;padding:40px">準備中...</p>';
-    window.scrollTo(0, 0);
+    // 対局画面(CPU戦/友人戦)に入る際のscrollTo(0,1)ナッジをここで(0,0)に
+    // 戻すと台無しになるため、対局画面に入った直後だけは戻さない
+    if (page !== 'battle' && page !== 'friend') window.scrollTo(0, 0);
   },
 
   // ===== Home =====
@@ -3612,6 +3624,10 @@ var App = {
     var selectedIdx = -1;
     var riichiArmed = false;
     var eventLog = [];
+    // 対局画面に入った直後の1回だけは、_render()側で入れたscrollTo(0,1)
+    // ナッジ（実機Safariのタブバー折りたたみ用）を後続のscrollTo(0,0)で
+    // 打ち消さないようにする
+    var isFirstBattleRender = true;
     var log = function(msg, cls) { eventLog.unshift('<p class="'+(cls||'ev-discard')+'">'+esc(msg)+'</p>'); if(eventLog.length>12) eventLog.pop(); };
     var resetLocalRound = function() {
       selectedIdx = -1;
@@ -4115,7 +4131,8 @@ var App = {
       // innerHTML 更新直後に同期配置（初回描画でも正しい位置に表示）
       positionDiscardRivers();
       positionMeldAreas();
-      if (window.scrollY) window.scrollTo(0, 0);
+      if (window.scrollY && !isFirstBattleRender) window.scrollTo(0, 0);
+      isFirstBattleRender = false;
       var battleBack = document.getElementById('jtBattleBack');
       if (battleBack) battleBack.addEventListener('click', function() { self.goBack(); });
       var battleProgress = document.getElementById('jtBattleProgress');
