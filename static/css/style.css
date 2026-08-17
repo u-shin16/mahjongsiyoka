@@ -6183,6 +6183,28 @@ body.is-battle-page {
     width: 104px !important;
     height: 104px !important;
   }
+  /* 鳴き選択ボタン(.hand-action-float)はbottom:165px（PC基準、手牌の
+     上に表示）のままだと、設計サイズが低いレターボックスでは中央
+     ダイヤモンド・河と重なってしまう。縦並びだと縦に場所を取りすぎる
+     ため横並び＋折り返しに変え、ボタンも小さくして手牌との間の
+     狭い隙間に収まるようにする */
+  body.is-battle-page .battle-main .hand-action-float {
+    bottom: 115px !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+    max-width: 320px !important;
+    gap: 3px !important;
+  }
+  body.is-battle-page .battle-main .hand-action-float .btn-battle,
+  body.is-battle-page .battle-main .hand-action-float .btn-call,
+  body.is-battle-page .battle-main .hand-action-float .btn-nuki,
+  body.is-battle-page .battle-main .hand-action-float .btn-ankan,
+  body.is-battle-page .battle-main .hand-action-float .btn-skip-call {
+    width: auto !important;
+    padding: 4px 8px !important;
+    font-size: 0.64rem !important;
+  }
 }
 
 .rotate-lock-inner {
@@ -6314,6 +6336,28 @@ body.is-battle-page {
   body.is-battle-page .battle-main .jt-center-diamond {
     width: 104px !important;
     height: 104px !important;
+  }
+  /* 鳴き選択ボタン(.hand-action-float)はbottom:165px（PC基準、手牌の
+     上に表示）のままだと、設計サイズが低いレターボックスでは中央
+     ダイヤモンド・河と重なってしまう。縦並びだと縦に場所を取りすぎる
+     ため横並び＋折り返しに変え、ボタンも小さくして手牌との間の
+     狭い隙間に収まるようにする */
+  body.is-battle-page .battle-main .hand-action-float {
+    bottom: 115px !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+    max-width: 320px !important;
+    gap: 3px !important;
+  }
+  body.is-battle-page .battle-main .hand-action-float .btn-battle,
+  body.is-battle-page .battle-main .hand-action-float .btn-call,
+  body.is-battle-page .battle-main .hand-action-float .btn-nuki,
+  body.is-battle-page .battle-main .hand-action-float .btn-ankan,
+  body.is-battle-page .battle-main .hand-action-float .btn-skip-call {
+    width: auto !important;
+    padding: 4px 8px !important;
+    font-size: 0.64rem !important;
   }
 }
 
