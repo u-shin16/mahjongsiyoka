@@ -6237,21 +6237,75 @@ body.is-battle-page {
    重なって崩れる。縦幅が足りない横画面では、雀卓全体をPC版と同じ
    余白バランスの「設計サイズ」で組んでから縮小表示することで、
    崩れずにPC版と同じ見た目のまま画面に収める。
+   幅は100vw固定・高さ基準のみで縮小率を決めていたため、画面が
+   横に広い時は縮小率が小さくなりすぎて左右に大きな黒帯ができて
+   いた。設計サイズを幅・高さとも固定にし、縦画面レターボックスと
+   同じ「幅・高さ両方の比率のうち小さい方」で縮小することで、
+   余りは（横長画面では）上下に来るようにする。
    ============================================================ */
 @media (orientation: landscape) and (max-height: 460px) {
   body.is-battle-page .battle-main .jt-outer {
     align-items: center !important;
-    justify-content: flex-start !important;
+    justify-content: center !important;
   }
   body.is-battle-page .battle-main .jt-row {
     flex: none !important;
+    align-self: center !important;
+    width: 980px !important;
+    min-width: 980px !important;
     height: 700px !important;
     min-height: 700px !important;
-    width: 100vw !important;
   }
   body.is-battle-page .battle-main .jt-table {
-    transform: scale(calc(100vh / 700px));
-    transform-origin: top center;
+    transform: scale(min(calc(100vw / 980px), calc(100vh / 700px)));
+    transform-origin: center center;
+  }
+
+  /* 雀卓は上のtransform:scale()だけで一括縮小する設計のため、既存の
+     「画面幅に応じて個別に縮小する」レスポンシブ指定（@media
+     max-width:860px / 520px 等）が重ねて効くと二重に縮小されてしまう
+     （縦画面レターボックスと同じ理由。詳細はそちらのコメント参照）。
+     この横画面レターボックスの間もPCと同じ設計サイズに固定する。 */
+  body.is-battle-page .battle-main .jt-seat-avatar {
+    width: 54px !important;
+    height: 54px !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-self .jt-seat-avatar {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-caption {
+    display: block !important;
+    min-width: 76px !important;
+    padding: 2px 7px 4px !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-top {
+    top: 18px !important;
+    right: 30% !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-right {
+    right: 6.4% !important;
+    top: 25% !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-left {
+    left: 3.2% !important;
+    top: 16% !important;
+  }
+  body.is-battle-page .battle-main .jt-seat-self {
+    left: 12% !important;
+    bottom: 7% !important;
+  }
+  body.is-battle-page .battle-main .jt-hidden-hand .tile.xxs {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  body.is-battle-page .battle-main .jt-center-panel.jt-center-panel-diamond {
+    width: 148px !important;
+    height: 148px !important;
+  }
+  body.is-battle-page .battle-main .jt-center-diamond {
+    width: 104px !important;
+    height: 104px !important;
   }
 }
 
