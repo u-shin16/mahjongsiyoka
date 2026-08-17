@@ -2730,8 +2730,16 @@ var App = {
           try { el.setPointerCapture(e.pointerId); } catch (ex) {}
         });
 
-        el.addEventListener('pointermove', function(e) {
-          if (!frDragInfo.active || frDragInfo.idx !== idx) return;
+        // タッチのpointermoveは画面のリフレッシュレートより高頻度で発火する
+        // ことがあり、来るたびに同期的にスタイル更新すると（特にスマホで）
+        // カクついて見えることがあるため、requestAnimationFrameで
+        // 1フレームにつき最新の1回だけ反映するよう間引く
+        var frPendingMoveEvent = null;
+        var frMoveRafId = null;
+        var frFlushMove = function() {
+          frMoveRafId = null;
+          var e = frPendingMoveEvent;
+          if (!e || !frDragInfo.active || frDragInfo.idx !== idx) return;
           var dx = e.clientX - frDragInfo.startX;
           var dy = e.clientY - frDragInfo.startY;
           var z = frDragInfo.zoom;
@@ -2742,6 +2750,11 @@ var App = {
           } else {
             el.style.setProperty('transform', 'scale(' + z + ')', 'important');
           }
+        };
+        el.addEventListener('pointermove', function(e) {
+          if (!frDragInfo.active || frDragInfo.idx !== idx) return;
+          frPendingMoveEvent = e;
+          if (frMoveRafId == null) frMoveRafId = requestAnimationFrame(frFlushMove);
         });
 
         var resetDragVisual = function() {
@@ -4232,8 +4245,16 @@ var App = {
         });
 
         // pointermove: ドラッグ視覚フィードバック（上下左右どちらにも自由に追従）
-        el.addEventListener('pointermove', function(e) {
-          if (!dragInfo.active || dragInfo.idx !== di) return;
+        // タッチのpointermoveは画面のリフレッシュレートより高頻度で発火する
+        // ことがあり、来るたびに同期的にスタイル更新すると（特にスマホで）
+        // カクついて見えることがあるため、requestAnimationFrameで
+        // 1フレームにつき最新の1回だけ反映するよう間引く
+        var pendingMoveEvent = null;
+        var moveRafId = null;
+        var flushMove = function() {
+          moveRafId = null;
+          var e = pendingMoveEvent;
+          if (!e || !dragInfo.active || dragInfo.idx !== di) return;
           var dx = e.clientX - dragInfo.startX;
           var dy = e.clientY - dragInfo.startY;
           var z = dragInfo.zoom;
@@ -4246,6 +4267,11 @@ var App = {
           } else {
             el.style.setProperty('transform', 'scale('+z+')', 'important');
           }
+        };
+        el.addEventListener('pointermove', function(e) {
+          if (!dragInfo.active || dragInfo.idx !== di) return;
+          pendingMoveEvent = e;
+          if (moveRafId == null) moveRafId = requestAnimationFrame(flushMove);
         });
 
         // pointerup: ドラッグ捨て or ダブルタップ捨て or 選択
