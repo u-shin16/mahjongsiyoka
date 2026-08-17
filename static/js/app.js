@@ -3882,8 +3882,10 @@ var App = {
       // callFloatHtml: 手牌右上に固定表示する鳴き選択 / 北抜き / 暗カン
       // ─────────────────────────────────────────────────────────
       var callFloatHtml = '';
-      if (s.phase === 'pending_call') {
-        var cp = s.callPending;
+      // ポン/チー/カンのボタンHTMLを組み立てる（ロンと同時に選べる場合も
+      // あるため、pending_call・pending_ronのどちらからも使えるよう
+      // 関数として切り出す）
+      var buildCallBtns = function(cp) {
         var callBtns = '';
         (cp ? cp.options : []).forEach(function(opt, idx) {
           if (opt.type === 'pon') {
@@ -3895,9 +3897,12 @@ var App = {
             callBtns += '<button class="btn-battle btn-call btn-chi" data-call-idx="'+idx+'">チー ('+setLabel+')</button>';
           }
         });
+        return callBtns;
+      };
+      if (s.phase === 'pending_call') {
         callFloatHtml =
           '<div class="hand-action-float">' +
-            callBtns +
+            buildCallBtns(s.callPending) +
             '<button class="btn-battle btn-skip-call" id="btnSkipCall">スルー</button>' +
           '</div>';
       } else if (s.phase === 'player_turn' || s.phase === 'naki_discard') {
@@ -3919,8 +3924,12 @@ var App = {
           callFloatHtml = '<div class="hand-action-float">'+floatBtns+'</div>';
         }
       } else if (s.phase === 'pending_ron') {
+        // 同じ牌でポン/チー/カンも選べる場合は、ロンのボタンと並べて
+        // 両方とも選択できるようにする（スルーはロンを見送る扱いで、
+        // それでも鳴きが残っていればそのまま鳴きの選択に進む）
         callFloatHtml = '<div class="hand-action-float">' +
           '<button class="btn-battle btn-ron" id="btnRon">ロン！</button>' +
+          buildCallBtns(s.callPending) +
           '<button class="btn-battle btn-skip" id="btnSkip">スルー</button>' +
         '</div>';
       }

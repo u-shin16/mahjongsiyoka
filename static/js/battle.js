@@ -478,6 +478,8 @@ var Battle = (function() {
     state.winTile = state.pendingRon.tile;
     state.phase = 'end';
     state.pendingRon = null;
+    // 同じ牌で鳴きも選べていた場合、局が終わるので選択肢は破棄する
+    state.callPending = null;
   }
 
   function playerRonSkip() {
@@ -486,6 +488,12 @@ var Battle = (function() {
     if (state.pendingRon) markMissedRon(0);
     var nextCpu = state.pendingRon ? state.pendingRon.from + 1 : state.playerCount;
     state.pendingRon = null;
+    // 同じ牌でポン/チー/カンも選べる場合、ロンを見送ってもそのまま
+    // 鳴きの選択肢に進む（打ち切って次のプレイヤーへ進めない）
+    if (state.callPending) {
+      state.phase = 'pending_call';
+      return;
+    }
     if (nextCpu >= state.playerCount) drawForPlayer();
     else runCPUTurns(nextCpu);
   }
@@ -531,20 +539,25 @@ var Battle = (function() {
       // プレイヤー ロンチェック（フリテン・役なしならロンできないので聞かずスルー扱い）
       var playerTest = state.hands[0].slice();
       playerTest.push(disc);
-      if (!isFuriten(0) && Agari.isWinningHand(playerTest) && hasYaku(0, 'ron', disc)) {
+      var canPlayerRon = !isFuriten(0) && Agari.isWinningHand(playerTest) && hasYaku(0, 'ron', disc);
+
+      // プレイヤー 鳴きチェック（リーチ中は鳴けない）。同じ牌でロンも鳴きも
+      // 両方できることがあるため、ロンが成立してもここで打ち切らず
+      // 両方の選択肢を保持する（ロン見送り後にも鳴きを選べるように）
+      var callOpts = !state.riichi[0] ? getPlayerCallOptions(disc, pidx) : [];
+      if (callOpts.length > 0) {
+        state.callPending = { tile: disc, fromPlayer: pidx, nextCPUIdx: pidx + 1, options: callOpts };
+      }
+
+      if (canPlayerRon) {
         state.pendingRon = { tile: disc, from: pidx };
         state.phase = 'pending_ron';
         return;
       }
 
-      // プレイヤー 鳴きチェック（リーチ中は鳴けない）
-      if (!state.riichi[0]) {
-        var callOpts = getPlayerCallOptions(disc, pidx);
-        if (callOpts.length > 0) {
-          state.callPending = { tile: disc, fromPlayer: pidx, nextCPUIdx: pidx + 1, options: callOpts };
-          state.phase = 'pending_call';
-          return;
-        }
+      if (state.callPending) {
+        state.phase = 'pending_call';
+        return;
       }
 
       // CPU が他CPUに鳴けるかチェック
@@ -674,6 +687,9 @@ var Battle = (function() {
     state.melds[0].push({ type: 'pon', tiles: [use[0], use[1], calledTile],
                            calledTile: calledTile, fromPlayer: fromPlayerIdx });
     removeCalledDiscard(fromPlayerIdx, calledTile);
+    // 同じ牌でロンも選べていた場合、ポンを選んだ時点でロンは見送った
+    // ことになる（フリテンの扱いもロンを見送った時と同じにする）
+    if (state.pendingRon) { markMissedRon(0); state.pendingRon = null; }
     state.callPending    = null;
     state.nakiResumeFrom = fromPlayerIdx + 1 < state.playerCount ? fromPlayerIdx + 1 : null;
     state.ippatsuActive  = makePlayerArray(state.playerCount, false);
@@ -694,6 +710,9 @@ var Battle = (function() {
                  .sort(function(a, b) { return a.num - b.num; });
     state.melds[0].push({ type: 'chi', tiles: all3, calledTile: calledTile, fromPlayer: fromPlayerIdx });
     removeCalledDiscard(fromPlayerIdx, calledTile);
+    // 同じ牌でロンも選べていた場合、チーを選んだ時点でロンは見送った
+    // ことになる（フリテンの扱いもロンを見送った時と同じにする）
+    if (state.pendingRon) { markMissedRon(0); state.pendingRon = null; }
     state.callPending    = null;
     state.nakiResumeFrom = fromPlayerIdx + 1 < state.playerCount ? fromPlayerIdx + 1 : null;
     state.ippatsuActive  = makePlayerArray(state.playerCount, false);
@@ -716,6 +735,9 @@ var Battle = (function() {
                            calledTile: calledTile, fromPlayer: fromPlayerIdx });
     removeCalledDiscard(fromPlayerIdx, calledTile);
     addKanDora();
+    // 同じ牌でロンも選べていた場合、カンを選んだ時点でロンは見送った
+    // ことになる（フリテンの扱いもロンを見送った時と同じにする）
+    if (state.pendingRon) { markMissedRon(0); state.pendingRon = null; }
     state.callPending    = null;
     state.ippatsuActive  = makePlayerArray(state.playerCount, false);
     return drawRinshanForPlayer();
