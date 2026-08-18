@@ -206,6 +206,15 @@ var Battle = (function() {
   // 立直・門前清自摸和・ドラ類・抜き北は calcScore 側で別途加算する。
   function computeShapeYaku(winner, winType, winningTile) {
     var hand = state.hands[winner] || [];
+    // ロンの場合、役の形をチェックする時点ではまだ和了牌が自分の手牌に
+    // 加わっていないことがある（放銃した側の牌のまま判定するため）。
+    // 手牌に含まれていなければここで加えてから渡さないと、常に
+    // 未完成の形として扱われて役なし判定になってしまう（ロンできない
+    // 不具合の原因だった）。既に手牌に入っている場合（和了確定後の
+    // 最終計算等）は二重に加えない
+    if (winType === 'ron' && winningTile && !hand.some(function(t) { return t.id === winningTile.id; })) {
+      hand = hand.concat([winningTile]);
+    }
     var openMelds = state.melds[winner] || [];
     return Yaku.computeShapeYaku(hand, openMelds, isClosed(winner), seatWindNum(winner), roundWindNum(), winType, winningTile);
   }
@@ -469,6 +478,28 @@ var Battle = (function() {
     return candidates;
   }
 
+  // CPUがリーチ可能なら、聴牌を維持できる牌の中から最も待ちが広い牌の
+  // インデックスを返す（不可能なら-1）。単純に「聴牌にできるなら
+  // 必ずリーチする」という積極的な方針にする
+  function cpuChooseRiichiDiscard(pidx) {
+    if (!state || state.riichi[pidx] || state.scores[pidx] < 1000 || !isClosed(pidx)) return -1;
+    var best = -1, bestWaitCount = 0;
+    state.hands[pidx].forEach(function(_, i) {
+      var test = state.hands[pidx].filter(function(_, j) { return j !== i; });
+      var waits = getBattleWaits(test);
+      if (waits.length > bestWaitCount) { bestWaitCount = waits.length; best = i; }
+    });
+    return best;
+  }
+
+  function cpuRiichi(pidx) {
+    state.riichi[pidx] = true;
+    state.scores[pidx] -= 1000;
+    // ダブルリーチ：自分の最初の打牌で、かつそれまで誰も鳴いていなければ成立
+    var noCallsYet = state.melds.every(function(m) { return !m || m.length === 0; });
+    state.riichiDouble[pidx] = noCallsYet && state.discards[pidx].length === 0;
+  }
+
   function playerRonAccept() {
     if (!state.pendingRon) return;
     state.hands[0].push(state.pendingRon.tile);
@@ -530,11 +561,16 @@ var Battle = (function() {
         return;
       }
 
-      var di = cpuChooseDiscard(pidx);
+      var riichiDi = cpuChooseRiichiDiscard(pidx);
+      var isRiichiDiscard = riichiDi >= 0;
+      if (isRiichiDiscard) cpuRiichi(pidx);
+      var di = isRiichiDiscard ? riichiDi : cpuChooseDiscard(pidx);
       var disc = state.hands[pidx].splice(di, 1)[0];
+      if (isRiichiDiscard) disc.riichiDiscard = true; // 河のリーチ牌横向き表示用（自分以外の席も対応）
       state.discards[pidx].push(disc);
       // 自分の打牌で同巡内フリテンは解消（永久フリテンは解消されない）
       state.tempFuriten[pidx] = false;
+      if (isRiichiDiscard) state.ippatsuActive[pidx] = true;
 
       // プレイヤー ロンチェック（フリテン・役なしならロンできないので聞かずスルー扱い）
       var playerTest = state.hands[0].slice();

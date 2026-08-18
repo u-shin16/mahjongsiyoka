@@ -675,6 +675,21 @@ var FriendGame = (function() {
     return hand.length - 1;
   }
 
+  // CPUの「その牌を捨てたい度」スコア（高いほど捨てたい）。
+  // 通常の打牌選択とリーチ判断（聴牌を維持できる牌の中からの選択）の
+  // 両方で使う共通ロジック
+  function _cpuDiscardScore(state, hand, t) {
+    var score = 0;
+    if (t.suit === 'wind' || t.suit === 'dragon') score += 4;
+    if (t.suit !== 'wind' && t.suit !== 'dragon' && (t.num === 1 || t.num === 9)) score += 2;
+    if (state.drawnId && t.id === state.drawnId) score += 0.8;
+    var same = countMatch(hand, t);
+    if (same >= 2) score -= 3;
+    var dora = doraFromInd(state.doraInd);
+    if (sameKind(t, dora)) score -= 5;
+    return score;
+  }
+
   function _cpuChooseDiscard(state, seat) {
     var hand = state.hands[seat] || [];
     var drawn = _findDrawnIdx(state, seat);
@@ -682,15 +697,27 @@ var FriendGame = (function() {
     var best = drawn >= 0 ? drawn : Math.max(0, hand.length - 1);
     var bestScore = -999;
     for (var i = 0; i < hand.length; i++) {
-      var t = hand[i];
-      var score = 0;
-      if (t.suit === 'wind' || t.suit === 'dragon') score += 4;
-      if (t.suit !== 'wind' && t.suit !== 'dragon' && (t.num === 1 || t.num === 9)) score += 2;
-      if (state.drawnId && t.id === state.drawnId) score += 0.8;
-      var same = countMatch(hand, t);
-      if (same >= 2) score -= 3;
-      var dora = doraFromInd(state.doraInd);
-      if (sameKind(t, dora)) score -= 5;
+      var score = _cpuDiscardScore(state, hand, hand[i]);
+      if (score > bestScore) { bestScore = score; best = i; }
+    }
+    return best;
+  }
+
+  // CPUがリーチ可能なら、聴牌を維持できる牌の中から最も捨てたい牌の
+  // インデックスを返す（不可能なら-1）。単純に「聴牌にできるなら
+  // 必ずリーチする」という積極的な方針にする
+  function _cpuRiichiDiscardIdx(state, seat) {
+    if (state.riichi[seat]) return -1;
+    if (!isClosed(state, seat)) return -1;
+    if ((state.scores[seat] || 0) < 1000) return -1;
+    var hand = state.hands[seat] || [];
+    var best = -1;
+    var bestScore = -999;
+    for (var i = 0; i < hand.length; i++) {
+      var rest = hand.filter(function(_, ii) { return ii !== i; });
+      var waits = getValidWaits(state, rest);
+      if (waits.length === 0) continue;
+      var score = _cpuDiscardScore(state, hand, hand[i]);
       if (score > bestScore) { bestScore = score; best = i; }
     }
     return best;
@@ -1456,6 +1483,13 @@ var FriendGame = (function() {
         }
       }
       if (dueAuto || dueTimeout) {
+        if (isCpuSeat(seat) && !dueTimeout) {
+          var riichiIdx = _cpuRiichiDiscardIdx(state, seat);
+          if (riichiIdx >= 0) {
+            _discard(state, seat, riichiIdx, true);
+            return true;
+          }
+        }
         var idx = isCpuSeat(seat) && !dueTimeout ? _cpuChooseDiscard(state, seat) : _findDrawnIdx(state, seat);
         _discard(state, seat, idx, false);
         return true;
