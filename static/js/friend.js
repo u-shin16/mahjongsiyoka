@@ -621,6 +621,16 @@ var FriendGame = (function() {
     return isCpuSeat(seat) || seatDisconnected(state, seat) || !!f.tsumogiri || !!f.noCalls || !!(state.riichi && state.riichi[seat]);
   }
 
+  // ロン応答は立直中でも自分で選べる（立直で制限されるのは鳴きだけ）ため、
+  // shouldSkipReactions()のリーチ条件は使わない。これを使わずに
+  // shouldSkipReactions()をそのままロン判定に流用すると、立直中の
+  // 人間プレイヤーがロン可能な時にボタンを見る前に自動で見送り扱いに
+  // なってしまう
+  function shouldSkipRonReaction(state, seat) {
+    var f = getAutoFlags(state, seat);
+    return isCpuSeat(seat) || seatDisconnected(state, seat) || !!f.tsumogiri || !!f.noCalls;
+  }
+
   function shouldAutoAgari(state, seat) {
     var f = getAutoFlags(state, seat);
     return isCpuSeat(seat) || seatDisconnected(state, seat) || !!f.agari;
@@ -1056,8 +1066,13 @@ var FriendGame = (function() {
     var callMap = buildCallMap(state, seat, tile);
 
     if (ronCandidates.length > 0) {
-      var autoWinner = ronCandidates.find(function(c) { return shouldAutoAgari(state, c); });
-      if (autoWinner != null) {
+      // 同じ捨て牌に対して複数人がロン可能な場合、CPU等の自動アガリ候補が
+      // いても即座に横取りして終局させてはいけない（人間側の候補が
+      // ロン/スルーを選ぶ前に、CPUが勝手にロンしてしまう不具合の原因
+      // だった）。全候補が自動アガリ対象の時だけ即決する
+      var allAutoAgari = ronCandidates.every(function(c) { return shouldAutoAgari(state, c); });
+      if (allAutoAgari) {
+        var autoWinner = ronCandidates[0];
         state.hands[autoWinner] = Tiles.sortTiles(state.hands[autoWinner].concat([tile]));
         _finishHand(state, autoWinner, 'ron', seat, tile);
         return;
@@ -1174,10 +1189,13 @@ var FriendGame = (function() {
       if (Agari.isWinningHand((state.hands[s] || []).concat([addedTile])) && hasYaku(state, s, 'ron', seat, addedTile, true)) ronCandidates.push(s);
     }
     if (ronCandidates.length > 0) {
-      var autoWinner = ronCandidates.find(function(c) { return shouldAutoAgari(state, c); });
-      if (autoWinner != null) {
-        state.hands[autoWinner] = Tiles.sortTiles(state.hands[autoWinner].concat([addedTile]));
-        _finishHand(state, autoWinner, 'ron', seat, addedTile, true);
+      // 同じ牌に複数人がロン可能な場合、CPU等の自動アガリ候補がいても
+      // 人間側の候補より先に横取りしない（全員が自動アガリ対象の時だけ即決）
+      var allAutoAgariK = ronCandidates.every(function(c) { return shouldAutoAgari(state, c); });
+      if (allAutoAgariK) {
+        var autoWinnerK = ronCandidates[0];
+        state.hands[autoWinnerK] = Tiles.sortTiles(state.hands[autoWinnerK].concat([addedTile]));
+        _finishHand(state, autoWinnerK, 'ron', seat, addedTile, true);
         return true;
       }
       _clearTurnTimer(state);
@@ -1216,10 +1234,13 @@ var FriendGame = (function() {
       if (Agari.isWinningHand((state.hands[i] || []).concat([tile])) && hasYaku(state, i, 'ron', seat, tile)) ronCandidates.push(i);
     }
     if (ronCandidates.length > 0) {
-      var autoWinner = ronCandidates.find(function(c) { return shouldAutoAgari(state, c); });
-      if (autoWinner != null) {
-        state.hands[autoWinner] = Tiles.sortTiles(state.hands[autoWinner].concat([tile]));
-        _finishHand(state, autoWinner, 'ron', seat, tile);
+      // 同じ牌に複数人がロン可能な場合、CPU等の自動アガリ候補がいても
+      // 人間側の候補より先に横取りしない（全員が自動アガリ対象の時だけ即決）
+      var allAutoAgariN = ronCandidates.every(function(c) { return shouldAutoAgari(state, c); });
+      if (allAutoAgariN) {
+        var autoWinnerN = ronCandidates[0];
+        state.hands[autoWinnerN] = Tiles.sortTiles(state.hands[autoWinnerN].concat([tile]));
+        _finishHand(state, autoWinnerN, 'ron', seat, tile);
         state.result.yaku = (state.result.yaku || []).filter(function(y) { return y.name !== '槍槓'; });
         return true;
       }
@@ -1342,16 +1363,26 @@ var FriendGame = (function() {
     var now = Date.now();
 
     if (state.phase === 'ron_wait' && state.ron) {
-      for (var r = 0; r < state.ron.candidates.length; r++) {
-        var rc = state.ron.candidates[r];
-        if (shouldAutoAgari(state, rc)) {
-          state.hands[rc] = Tiles.sortTiles(state.hands[rc].concat([state.ron.tile]));
-          _finishHand(state, rc, 'ron', state.ron.from, state.ron.tile, !!state.ron.isChankan);
-          return true;
+      // 自分で応答（ロン/スルー）を選ぶ必要がある候補（人間かつ自動対象外）が
+      // まだ応答していない間は、CPU等の自動アガリ候補がいても先に横取り
+      // させない。でないと同じ牌に複数人がロン可能な時、人間がボタンを
+      // 見る前にCPUが即ロンしてしまう
+      var pendingManual = state.ron.candidates.some(function(c) {
+        return !shouldSkipRonReaction(state, c) && state.ron.responses[c] == null;
+      });
+      if (!pendingManual) {
+        for (var r = 0; r < state.ron.candidates.length; r++) {
+          var rc = state.ron.candidates[r];
+          if (shouldAutoAgari(state, rc)) {
+            state.hands[rc] = Tiles.sortTiles(state.hands[rc].concat([state.ron.tile]));
+            _finishHand(state, rc, 'ron', state.ron.from, state.ron.tile, !!state.ron.isChankan);
+            return true;
+          }
         }
       }
+      if (pendingManual) return changed;
       state.ron.candidates.forEach(function(c) {
-        if (shouldSkipReactions(state, c) && state.ron.responses[c] !== 'pass') {
+        if (shouldSkipRonReaction(state, c) && state.ron.responses[c] !== 'pass') {
           state.ron.responses[c] = 'pass';
           markMissedRon(state, c);
           changed = true;
@@ -1396,8 +1427,15 @@ var FriendGame = (function() {
         _finishHand(state, seat, 'tsumo', null);
         return true;
       }
-      var autoDiscard = isCpuSeat(seat) || seatDisconnected(state, seat) || !!flags.tsumogiri || (!!state.riichi[seat] && !canWin);
-      var dueAuto = autoDiscard && now >= timer.canAutoAt;
+      var forceAutoDiscard = isCpuSeat(seat) || seatDisconnected(state, seat) || !!flags.tsumogiri;
+      var autoDiscard = forceAutoDiscard || (!!state.riichi[seat] && !canWin);
+      // 立直中で北をツモっている時、CPU・切断・ツモ切り設定などの強制
+      // 対象でなければ、北抜きの短い自動猶予(canAutoAt)では即決させず
+      // 通常の持ち時間(deadlineAt)いっぱいまで本人に北抜き/ツモ切りを
+      // 選ばせる（勝手に北抜きされてしまう不具合の対処）
+      var riichiNukiChoice = !forceAutoDiscard && !!state.riichi[seat] && !canWin &&
+        state.isSanma && findNukiIdx(state, seat, null) >= 0;
+      var dueAuto = autoDiscard && now >= timer.canAutoAt && !riichiNukiChoice;
       var dueTimeout = now >= timer.deadlineAt;
       // 自動打牌（リーチ中のツモ切り含む）が発火するタイミングでは、
       // ツモった牌が北なら勝手に切らず先に北抜きを行う（人間・CPU共通）
