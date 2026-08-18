@@ -847,6 +847,15 @@ var FriendGame = (function() {
   // 計算だけをして、Yakuの引数形式に変換する薄いアダプターにする。
   function computeShapeYaku(state, winner, winType, fromSeat, winningTile) {
     var hand = state.hands[winner] || [];
+    // ロンの場合、役の形をチェックする時点ではまだ和了牌が自分の手牌に
+    // 加わっていないことがある（放銃した側の牌のまま判定するため）。
+    // 手牌に含まれていなければここで加えてから渡さないと、常に
+    // 未完成の形として扱われて役なし判定になってしまう（ロンできない
+    // 不具合の原因だった）。既に手牌に入っている場合（和了確定後の
+    // 最終計算等）は二重に加えない
+    if (winType === 'ron' && winningTile && !hand.some(function(t) { return t.id === winningTile.id; })) {
+      hand = hand.concat([winningTile]);
+    }
     var openMelds = state.melds[winner] || [];
     return Yaku.computeShapeYaku(hand, openMelds, isClosed(state, winner), seatWindNum(state, winner), roundWindNum(state), winType, winningTile);
   }
