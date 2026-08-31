@@ -2569,7 +2569,6 @@ var App = {
         return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
       }).join('') : '') +
     '</div>';
-    // 鳴き選択中：どの捨て牌が対象かひと目でわかるよう、河のその牌をライトアップする
     // 鳴き・ロンの選択中は、どの捨て牌が対象かひと目でわかるよう河のその牌をライトアップする
     var callTargetSeat = -1;
     var callTargetTileId = null;
