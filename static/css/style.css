@@ -6621,3 +6621,80 @@ body.is-battle-page .app-footer {
   transform: rotate(180deg);
   transform-origin: center center;
 }
+
+/* ─────────────────────────────────
+   流局の結果表示
+   「流局」とだけ出しても何が起きたのか分からないため、
+   テンパイ／ノーテンと点棒の増減を一目で追えるようにする。
+───────────────────────────────── */
+.ryu-rule {
+  background: rgba(0,0,0,0.25);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  text-align: left;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #d7ecdc;
+}
+.ryu-breakdown {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: #a8d8b0;
+}
+.ryu-breakdown b { color: var(--text-light); }
+
+.ryu-list { display: grid; gap: 6px; margin-bottom: 12px; }
+
+.ryu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: rgba(0,0,0,0.25);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  text-align: left;
+}
+.ryu-who { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ryu-wind { color: var(--gold); font-weight: 900; font-size: 0.9rem; }
+.ryu-name { color: var(--text-light); font-size: 0.9rem; font-weight: 700; }
+
+.ryu-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.ryu-badge.tenpai { background: rgba(255,215,106,0.18); color: #ffe38a; border: 1px solid rgba(255,215,106,0.5); }
+.ryu-badge.noten  { background: rgba(255,255,255,0.07); color: #8ab89c; border: 1px solid rgba(255,255,255,0.15); }
+
+.ryu-move { display: flex; align-items: baseline; gap: 6px; margin-left: auto; }
+.ryu-before { color: #7fa88f; font-size: 0.82rem; }
+.ryu-arrow  { color: #7fa88f; font-size: 0.78rem; }
+.ryu-after  { color: var(--text-light); font-size: 1rem; font-weight: 700; }
+.ryu-delta  { font-size: 0.9rem; font-weight: 900; min-width: 4.2em; text-align: right; }
+.ryu-delta.plus  { color: var(--gold); }
+.ryu-delta.minus { color: #ff9a8a; }
+.ryu-delta.zero  { color: #7fa88f; }
+
+.ryu-kyotaku {
+  background: rgba(255,215,106,0.10);
+  border: 1px solid rgba(255,215,106,0.35);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  text-align: left;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: #d7ecdc;
+}
+.ryu-kyotaku b { color: #ffe38a; }
+
+@media (max-width: 480px) {
+  .ryu-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .ryu-move { margin-left: 0; }
+}
