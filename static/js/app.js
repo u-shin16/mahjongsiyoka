@@ -2543,8 +2543,16 @@ var App = {
       }).join('') : '') +
     '</div>';
     // 鳴き選択中：どの捨て牌が対象かひと目でわかるよう、河のその牌をライトアップする
-    var callTargetSeat = (g.phase === 'call_wait' && g.call) ? g.call.from : -1;
-    var callTargetTileId = (g.phase === 'call_wait' && g.call && g.call.tile) ? g.call.tile.id : null;
+    // 鳴き・ロンの選択中は、どの捨て牌が対象かひと目でわかるよう河のその牌をライトアップする
+    var callTargetSeat = -1;
+    var callTargetTileId = null;
+    if (g.phase === 'call_wait' && g.call) {
+      callTargetSeat = g.call.from;
+      callTargetTileId = g.call.tile ? g.call.tile.id : null;
+    } else if (g.phase === 'ron_wait' && g.ron) {
+      callTargetSeat = g.ron.from;
+      callTargetTileId = g.ron.tile ? g.ron.tile.id : null;
+    }
     var riichiBlockedIdx = {};
     if (this._frRiichiSel) {
       myHand.forEach(function(t, i) {
@@ -3819,9 +3827,16 @@ var App = {
       var isFuriten = Battle.isFuriten(0);
       if (isRiichi || !canRiichi || (s.phase !== 'player_turn' && s.phase !== 'naki_discard')) riichiArmed = false;
 
-      // 鳴き選択中：どの捨て牌が対象かひと目でわかるよう、河のその牌をライトアップする
-      var callTargetSeat = (s.phase === 'pending_call' && s.callPending) ? s.callPending.fromPlayer : -1;
-      var callTargetTileId = (s.phase === 'pending_call' && s.callPending && s.callPending.tile) ? s.callPending.tile.id : null;
+      // 鳴き・ロンの選択中：どの捨て牌が対象かひと目でわかるよう、河のその牌をライトアップする
+      var callTargetSeat = -1;
+      var callTargetTileId = null;
+      if (s.phase === 'pending_call' && s.callPending) {
+        callTargetSeat = s.callPending.fromPlayer;
+        callTargetTileId = s.callPending.tile ? s.callPending.tile.id : null;
+      } else if (s.phase === 'pending_ron' && s.pendingRon) {
+        callTargetSeat = s.pendingRon.from;
+        callTargetTileId = s.pendingRon.tile ? s.pendingRon.tile.id : null;
+      }
 
       // ── テンパイ時の待ち牌（自分のツモ番）：牌を選択中のみ、その牌を切った場合の
       //      待ちを手牌のすぐ下にインライン表示する。CPU戦はターン進行が同期的で
