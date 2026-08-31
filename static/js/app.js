@@ -2487,9 +2487,41 @@ var App = {
             '<b>場に残ります</b>。テンパイでも戻らず、次に和了った人が受け取ります。</div>'
           : '';
 
+        // 全員の手牌を見せる（誰もアガらずに終わった局は、何が起きたのか分からないため）
+        var ryHands = '';
+        for (var hi = 0; hi < pc; hi++) {
+          var hTiles = (g.hands && g.hands[hi]) ? g.hands[hi].slice() : [];
+          if (!hTiles.length) continue;
+          var hIsTenpai = !!(tenpaiFlags.length && tenpaiFlags[hi]);
+          var hHand = '<span class="agr-tile-group">' + Tiles.sortTiles(hTiles).map(function(t) {
+            return Tiles.renderTile(t, { noHover: true, small: true });
+          }).join('') + '</span>';
+          var hMelds = ((g.melds && g.melds[hi]) || []);
+          var hMeldHtml = hMelds.length ? '<div class="fr-melds">' + hMelds.map(function(mm) {
+            var tl = mm.type === 'pon' ? 'ポン' : mm.type === 'chi' ? 'チー' : mm.type === 'kan' ? 'カン' : '暗カン';
+            var mt = (mm.tiles || []).map(function(t, ti) {
+              var hidden = mm.type === 'ankan' && (ti === 0 || ti === 3);
+              if (hidden) return Tiles.renderTile({suit:'back',num:0,id:'frryu_'+ti}, {faceDown:true, noHover:true, extraClass:'xxs'});
+              return Tiles.renderTile(t, {noHover:true, extraClass:'xxs'});
+            }).join('');
+            return '<div class="fr-meld-set meld-set meld-'+mm.type+'"><span class="meld-type-label">'+tl+'</span>'+mt+'</div>';
+          }).join('') + '</div>' : '';
+          ryHands += '<div class="ryu-hand-card' + (hIsTenpai ? ' is-tenpai' : '') + '">' +
+            '<div class="ryu-who"><span class="ryu-name">' + esc(names[hi]) + '</span>' +
+            (tenpaiFlags.length ? '<span class="ryu-badge ' + (hIsTenpai ? 'tenpai' : 'noten') + '">' +
+              (hIsTenpai ? 'テンパイ' : 'ノーテン') + '</span>' : '') + '</div>' +
+            '<div class="ryu-hand-tiles">' + hHand + hMeldHtml + '</div></div>';
+        }
+        var ryHandsHtml = ryHands
+          ? '<div class="ryu-hand-list">' + ryHands + '</div>' +
+            '<div class="ryu-note">本来の麻雀では、流局のときに手牌を開けるのはテンパイの人だけです。' +
+            'ここでは勉強のために全員の手牌を見せています。</div>'
+          : '';
+
         endHtml = '<div class="fr-result-float"><div class="fr-panel">' +
           '<div class="page-title" style="margin-bottom:8px">流局</div>' +
           '<div class="ryu-rule">' + ryRuleText + ryBreakdown + '</div>' +
+          ryHandsHtml +
           '<div class="ryu-list">' + ryRows + '</div>' +
           ryStickHtml +
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
@@ -3689,6 +3721,7 @@ var App = {
       battleAdviceLoading = false;
       battleAdviceError = '';
       battleAdviceTileId = '';
+      ryukyokuStep = 0;   // 0=全員の手牌を見せる, 1=点数の精算を見せる
     };
 
     // ── ダブルタップ / ドラッグ捨て 操作状態 ──
@@ -3701,6 +3734,7 @@ var App = {
     var battleAdviceLoading = false;
     var battleAdviceError = '';
     var battleAdviceTileId = '';
+    var ryukyokuStep = 0;   // 流局画面の段階（0=手牌の公開, 1=点数の精算）
 
     var serializeMeldsForAdvice = function(melds) {
       return (melds || []).map(function(m) {
@@ -4204,7 +4238,7 @@ var App = {
         if (ns.phase === 'end')           { log(Battle.PLAYER_NAMES[ns.winner]+'がロン！', 'ev-win'); renderEnd(); }
         else if (ns.phase === 'pending_ron')  renderGame();
         else if (ns.phase === 'pending_call') renderGame();
-        else if (ns.phase === 'ryukyoku')     renderRyukyoku();
+        else if (ns.phase === 'ryukyoku')     renderRyukyokuScreen();
         else                                  renderGame();
       };
 
@@ -4620,7 +4654,7 @@ var App = {
         selectedIdx = -1;
         if (res) log('北抜き！ 抜き北 '+nukiCount(0)+'枚', 'ev-nuki');
         var ns = Battle.getState();
-        if (ns.phase === 'ryukyoku') renderRyukyoku();
+        if (ns.phase === 'ryukyoku') renderRyukyokuScreen();
         else renderGame();
       });
 
@@ -4644,7 +4678,7 @@ var App = {
         clearBattleAdvice();
         Battle.playerRonSkip();
         var ns = Battle.getState();
-        if (ns.phase === 'ryukyoku') renderRyukyoku(); else renderGame();
+        if (ns.phase === 'ryukyoku') renderRyukyokuScreen(); else renderGame();
       });
 
       var btnAi = document.getElementById('btnAiGame');
@@ -4806,6 +4840,85 @@ var App = {
       document.getElementById('btnBHome').addEventListener('click', function() {
         self.navigate('home');
       });
+    };
+
+    // 流局の画面は2段階。まず全員の手牌を見せ、「点数を見る」で精算へ進む。
+    // 誰もアガらずに終わると何が起きたのか分からないため、
+    // 誰がテンパイで何を待っていたのかを見てから点数へ行く。
+    var renderRyukyokuHands = function() {
+      var st = Battle.getState();
+      var ry = Battle.settleRyukyoku();   // テンパイ判定のため（2回呼んでも二重に精算されない）
+      var n  = st.playerCount;
+
+      var rows = Battle.PLAYER_NAMES.map(function(name, i) {
+        var isTenpai = !!(ry && ry.tenpai && ry.tenpai[i]);
+        var wn = Battle.seatWindNum(i) - 1;
+        var hand = (st.hands[i] || []).slice();
+
+        var handHtml = '<span class="agr-tile-group">' + Tiles.sortTiles(hand).map(function(t) {
+          return Tiles.renderTile(t, { noHover: true, small: true });
+        }).join('') + '</span>';
+
+        // 副露（鳴いた牌）
+        var melds = (st.melds && st.melds[i]) || [];
+        var meldsHtml = melds.length ? '<div class="fr-melds">' + melds.map(function(m) {
+          var typeLabel = m.type === 'pon' ? 'ポン' : m.type === 'chi' ? 'チー' : m.type === 'kan' ? 'カン' : '暗カン';
+          var mTiles = (m.tiles || []).map(function(t, ti) {
+            var isHidden = m.type === 'ankan' && (ti === 0 || ti === 3);
+            if (isHidden) return Tiles.renderTile({suit:'back',num:0,id:'ryuh_'+i+'_'+ti}, {faceDown:true, noHover:true, extraClass:'xxs'});
+            return Tiles.renderTile(t, {noHover:true, extraClass:'xxs'});
+          }).join('');
+          return '<div class="fr-meld-set meld-set meld-'+m.type+'"><span class="meld-type-label">'+typeLabel+'</span>'+mTiles+'</div>';
+        }).join('') + '</div>' : '';
+
+        // 抜き北（三麻）
+        var nuki = (st.nuki && st.nuki[i]) || [];
+        var nukiHtml = nuki.length ? '<div class="fr-nuki-row"><span>抜き北</span>' + nuki.map(function(t) {
+          return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
+        }).join('') + '</div>' : '';
+
+        // テンパイの人は何を待っていたか
+        var waitsHtml = '';
+        if (isTenpai) {
+          var waits = Battle.tenpaiWaitsOf(i) || [];
+          if (waits.length) {
+            waitsHtml = '<div class="ryu-waits"><span class="ryu-waits-label">待ち</span>' +
+              waits.map(function(w) { return Tiles.renderTile(w, { noHover: true, extraClass: 'xxs' }); }).join('') +
+              '</div>';
+          }
+        }
+
+        return '<div class="ryu-hand-card' + (isTenpai ? ' is-tenpai' : '') + '">' +
+          '<div class="ryu-who">' +
+            '<span class="ryu-wind">' + Battle.WIND_NAMES[wn] + '</span>' +
+            '<span class="ryu-name">' + esc(name) + '</span>' +
+            '<span class="ryu-badge ' + (isTenpai ? 'tenpai' : 'noten') + '">' +
+              (isTenpai ? 'テンパイ' : 'ノーテン') + '</span>' +
+          '</div>' +
+          '<div class="ryu-hand-tiles">' + handHtml + meldsHtml + nukiHtml + waitsHtml + '</div>' +
+        '</div>';
+      }).join('');
+
+      main.innerHTML = '<div class="agari-result-wrap"><div class="battle-end-card ryu-hands-card">' +
+        '<div class="battle-end-icon">🌊</div>' +
+        '<div class="battle-end-title">流局</div>' +
+        '<div class="battle-end-detail">' + Battle.getRoundLabel() + '　山がなくなりました<br>誰もアガれずに終わりました。全員の手牌を見てみましょう。</div>' +
+        '<div class="ryu-hand-list">' + rows + '</div>' +
+        '<div class="ryu-note">本来の麻雀では、流局のときに手牌を開けるのはテンパイの人だけです。' +
+        'ここでは勉強のために全員の手牌を見せています。</div>' +
+        '<div class="btn-row"><button class="btn btn-primary" id="btnRyuNext">点数を見る →</button>' +
+        '<button class="btn btn-secondary" id="btnRyuHome">ホームへ</button></div>' +
+        '</div></div>';
+      document.getElementById('btnRyuNext').addEventListener('click', function() {
+        ryukyokuStep = 1;
+        renderRyukyoku();
+      });
+      document.getElementById('btnRyuHome').addEventListener('click', function() { self.navigate('home'); });
+    };
+
+    var renderRyukyokuScreen = function() {
+      if (ryukyokuStep === 0) renderRyukyokuHands();
+      else renderRyukyoku();
     };
 
     var renderRyukyoku = function() {

@@ -6698,3 +6698,27 @@ body.is-battle-page .app-footer {
   .ryu-row { flex-direction: column; align-items: flex-start; gap: 4px; }
   .ryu-move { margin-left: 0; }
 }
+
+/* 流局：全員の手牌を見せる画面 */
+.ryu-hands-card { max-width: 560px; }
+.ryu-hand-list { display: grid; gap: 8px; margin-bottom: 12px; }
+.ryu-hand-card {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  text-align: left;
+}
+.ryu-hand-card.is-tenpai { border-color: rgba(255,215,106,0.45); }
+.ryu-hand-card .ryu-who { margin-bottom: 6px; }
+.ryu-hand-tiles { display: flex; flex-direction: column; gap: 4px; }
+.ryu-waits { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.ryu-waits-label {
+  font-size: 0.74rem; color: #ffe38a; font-weight: 700;
+  background: rgba(255,215,106,0.15); border-radius: 999px; padding: 2px 8px;
+}
+.ryu-note {
+  font-size: 0.76rem; line-height: 1.6; color: #8ab89c;
+  background: rgba(255,255,255,0.04); border-radius: var(--radius-sm);
+  padding: 8px 10px; margin-bottom: 12px; text-align: left;
+}

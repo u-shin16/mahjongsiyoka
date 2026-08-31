@@ -1183,6 +1183,19 @@ var Battle = (function() {
     calcScore: calcScore,
     settleScore: settleScore,
     settleRyukyoku: settleRyukyoku,
+    // 流局時に「その席が何を待っていたか」を見せるために使う。
+    // 14枚持っている席は、どれかを切ればテンパイになる形のうち最初に見つかった待ちを返す。
+    tenpaiWaitsOf: function(seat) {
+      if (!state) return [];
+      var tiles = state.hands[seat] || [];
+      if (tiles.length % 3 === 1) return getBattleWaits(tiles);
+      for (var i = 0; i < tiles.length; i++) {
+        var rest = tiles.filter(function(_, j) { return j !== i; });
+        var w = getBattleWaits(rest);
+        if (w.length > 0) return w;
+      }
+      return [];
+    },
     getRiichiCandidates: getRiichiCandidates,
     isFuriten: function(seat) { return !!state && isFuriten(seat == null ? 0 : seat); },
     hasYaku: function(seat, winType, winningTile) { return !!state && hasYaku(seat == null ? 0 : seat, winType, winningTile); },
