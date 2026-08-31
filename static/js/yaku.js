@@ -57,9 +57,9 @@ var Yaku = (function() {
 
   // 手牌（面子・雀頭）を役判定用のグループ配列に組み立てる。
   // 副露（ポン・チー・カン・暗カン）も含めて全ての面子を統一形式で返す。
-  function buildHandGroups(hand, openMelds) {
+  function buildHandGroups(hand, openMelds, skipChiitoitsu) {
     openMelds = openMelds || [];
-    var decomp = Agari.decomposeWinningHand(hand);
+    var decomp = Agari.decomposeWinningHand(hand, skipChiitoitsu);
     if (!decomp) return null;
 
     if (decomp.type === 'chiitoitsu') {
@@ -93,11 +93,16 @@ var Yaku = (function() {
   // hand: 手牌14枚, openMelds: 副露(state.melds[seat]相当),
   // isClosed: 手牌が門前かどうか, seatWindNum/roundWindNum: 自風/場風(1=東..4=北),
   // winType: 'tsumo'|'ron', winningTile: 和了牌（あれば）
+  // 和了形から成立する役（形に依存するもの）を判定する。
+  //
+  // 二盃口の手は牌の並びが必ず7つの対子にもなるため、そのままだと常に
+  // 七対子として読まれて二盃口が一度も成立しなかった。麻雀には高点法
+  // （複数の読み方ができるときは点数が高くなる読み方を採る）という規則が
+  // あるので、両方の読み方で数えて高いほうを返す。
   function computeShapeYaku(hand, openMelds, isClosed, seatWindNum, roundWindNum, winType, winningTile) {
-    var yaku = [];
-
     // 国士無双：通常の面子分解とは別形なので最初に判定して抜ける
     if (Agari.isKokushiHand && Agari.isKokushiHand(hand)) {
+      var yaku = [];
       var kokushiDecomp = Agari.decomposeWinningHand(hand);
       var isThirteenWait = !!(winningTile && kokushiDecomp && kokushiDecomp.pairKind &&
         kokushiDecomp.pairKind.suit === winningTile.suit && kokushiDecomp.pairKind.num === winningTile.num);
@@ -108,10 +113,35 @@ var Yaku = (function() {
 
     var open = !isClosed;
     var shape = buildHandGroups(hand, openMelds);
+    if (!shape) return [];
+
+    var result = shapeYakuFrom(shape, open, seatWindNum, roundWindNum, winType, winningTile);
+    if (!shape.chiitoitsu) return result;
+
+    // 七対子として読めた手が、通常形（4面子1雀頭）としても読めるか試す
+    var stdShape = buildHandGroups(hand, openMelds, true);
+    if (!stdShape) return result;
+    var stdResult = shapeYakuFrom(stdShape, open, seatWindNum, roundWindNum, winType, winningTile);
+
+    var a = calcPoints(result);
+    var b = calcPoints(stdResult);
+    // 点数が高いほう。同点なら翻数が多いほう。それも同じなら七対子側を残す
+    if (b.pts > a.pts || (b.pts === a.pts && b.han > a.han)) return stdResult;
+    return result;
+  }
+
+  // ひとつの和了形（shape）から、形に依存する役を数え上げる。
+  // どの読み方を採るかの判断は computeShapeYaku 側が持つ。
+  function shapeYakuFrom(shape, open, seatWindNum, roundWindNum, winType, winningTile) {
+    var yaku = [];
     if (!shape) return yaku;
 
     if (shape.chiitoitsu) {
       yaku.push({ name: '七対子', han: 2 });
+      // 断幺九は通常形と同じく七対子にも付く（1翻）。
+      if (shape.groups.every(function(g) { return !isTerminalOrHonor(g.tiles[0]); })) {
+        yaku.push({ name: '断幺九', han: 1 });
+      }
       var suits7 = {};
       var hasHonor7 = false;
       shape.groups.forEach(function(g) {

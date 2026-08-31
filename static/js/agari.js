@@ -117,7 +117,10 @@ const Agari = (() => {
 
   // 和了形（13+1枚）を、雀頭＋4面子（通常形）・7対子・国士無双に分解する。
   // 分解できなければ null（呼び出し側でフラットソートにフォールバックする）。
-  function decomposeWinningHand(tiles) {
+  // skipChiitoitsu: 七対子として読むのをやめ、通常形（4面子1雀頭）だけで分解する。
+  // 二盃口の手はどれも七対子としても読めるため、高点法（点数が高くなる読み方を
+  // 採る規則）の比較用に、通常形の分解も取り出せるようにしている。
+  function decomposeWinningHand(tiles, skipChiitoitsu) {
     if (!tiles || tiles.length < 2) return null;
 
     if (tiles.length === 14) {
@@ -138,7 +141,7 @@ const Agari = (() => {
           }
         }
       }
-      if (pairs.length === 7) return { type: 'chiitoitsu', groups: pairs };
+      if (pairs.length === 7 && !skipChiitoitsu) return { type: 'chiitoitsu', groups: pairs };
     }
 
     const sorted = Tiles.sortTiles(tiles);
