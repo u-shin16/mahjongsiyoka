@@ -759,6 +759,18 @@ var FriendGame = (function() {
     _drawFor(state, state.turn);
   }
 
+  // 手牌がテンパイかどうか。山が尽きた時点で14枚持っている席もあるため、
+  // その場合はどれか1枚を切ればテンパイになるかで見る。
+  function _isTenpaiHand(state, tiles) {
+    if (!tiles || tiles.length === 0) return false;
+    if (tiles.length % 3 === 1) return getValidWaits(state, tiles).length > 0;
+    for (var i = 0; i < tiles.length; i++) {
+      var rest = tiles.filter(function(_, j) { return j !== i; });
+      if (getValidWaits(state, rest).length > 0) return true;
+    }
+    return false;
+  }
+
   function _drawFor(state, seat) {
     state.rinshanPending = false;
     if (state.wall.length === 0) {
@@ -773,6 +785,7 @@ var FriendGame = (function() {
         if (seatDiscardsWereCalled(state, ns)) continue;
         nagashiSeats.push(ns);
       }
+      var tenpaiFlags = [];
       if (nagashiSeats.length > 0) {
         var nagashiPts = Yaku.BASE_SCORES[4]; // 満貫(5翻相当)＝8000点
         nagashiSeats.forEach(function(ns) {
@@ -784,8 +797,25 @@ var FriendGame = (function() {
           }
         });
         for (var m = 0; m < state.playerCount; m++) state.scores[m] += deltas[m];
+      } else {
+        // テンパイ料（ノーテン罰符）：合計3000点をテンパイ者とノーテン者でやりとりする。
+        // 全員テンパイ・全員ノーテンのときは動かない。
+        // 流し満貫が成立した局では罰符を取らない。
+        for (var tf = 0; tf < state.playerCount; tf++) {
+          tenpaiFlags.push(_isTenpaiHand(state, state.hands[tf] || []));
+        }
+        var tenpaiCount = tenpaiFlags.filter(Boolean).length;
+        if (tenpaiCount > 0 && tenpaiCount < state.playerCount) {
+          var recv = Math.ceil(3000 / tenpaiCount / 100) * 100;
+          var payEach = Math.ceil(3000 / (state.playerCount - tenpaiCount) / 100) * 100;
+          for (var tp = 0; tp < state.playerCount; tp++) {
+            deltas[tp] = tenpaiFlags[tp] ? recv : -payEach;
+          }
+          for (var tq = 0; tq < state.playerCount; tq++) state.scores[tq] += deltas[tq];
+        }
       }
-      state.result = { type: 'ryukyoku', deltas: deltas, nagashiMangan: nagashiSeats };
+      // 立直棒は流局では誰も回収せず、次の局へ持ち越す（state.kyotakuはそのまま）
+      state.result = { type: 'ryukyoku', deltas: deltas, nagashiMangan: nagashiSeats, tenpai: tenpaiFlags };
       state.drawnId = null;
       _clearTurnTimer(state);
       return null;
@@ -816,6 +846,7 @@ var FriendGame = (function() {
       round: 1,
       roundLimit: getRoundLimit(rules.gameType, n),
       scores: makeArray(n, rules.startScore),
+      kyotaku: 0,   // 場に出ている立直棒の本数（和了者が全部回収し、流局では持ち越す）
       autoFlags: makeArray(n, function(i) { return defaultAutoFlags(i); }),
       disconnected: makeArray(n, false),
       startedAt: Date.now(),
@@ -970,7 +1001,9 @@ var FriendGame = (function() {
     if (ura > 0) yaku.push({ name: '裏ドラ', han: ura });
     if (nuki > 0) yaku.push({ name: '抜き北', han: nuki });
 
-    var points = Yaku.calcPoints(yaku);
+    var dealerSeatForPay = (state.round - 1) % state.playerCount;
+    var isDealerWin = winner === dealerSeatForPay;
+    var points = Yaku.calcPoints(yaku, isDealerWin);
     var han = points.han;
     var pts = points.pts;
     var deltas = state.scores.map(function() { return 0; });
@@ -978,12 +1011,21 @@ var FriendGame = (function() {
       deltas[winner] += pts;
       deltas[fromSeat] -= pts;
     } else {
-      var each = Math.ceil(pts / (state.playerCount - 1) / 100) * 100;
+      // 親ツモは全員が同額（基本点の1/3）。子ツモは親が1/2、他の子が1/4を払う。
+      var dealerPay = Math.ceil(pts / (isDealerWin ? 3 : 2) / 100) * 100;
+      var childPay  = Math.ceil(pts / (isDealerWin ? 3 : 4) / 100) * 100;
       for (var i = 0; i < state.playerCount; i++) {
         if (i === winner) continue;
-        deltas[i] -= each;
-        deltas[winner] += each;
+        var amount = (i === dealerSeatForPay ? dealerPay : childPay);
+        deltas[i] -= amount;
+        deltas[winner] += amount;
       }
+    }
+    // 立直棒（供託）は和了者がすべて受け取る
+    var sticks = state.kyotaku || 0;
+    if (sticks > 0) {
+      deltas[winner] += sticks * 1000;
+      state.kyotaku = 0;
     }
     for (var j = 0; j < state.playerCount; j++) state.scores[j] += deltas[j];
 
@@ -1313,6 +1355,7 @@ var FriendGame = (function() {
       state.riichi[seat] = true;
       state.riichiWaits[seat] = waits;
       state.scores[seat] -= 1000;
+      state.kyotaku = (state.kyotaku || 0) + 1;
       // ダブルリーチ：自分の最初の打牌で、かつそれまで誰も鳴いていなければ成立
       var noCallsYetForDbl = (state.melds || []).every(function(m) { return !m || m.length === 0; });
       state.riichiDouble[seat] = noCallsYetForDbl && state.discards[seat].length === 0;

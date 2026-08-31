@@ -2445,8 +2445,26 @@ var App = {
             (r.deltas ? r.deltas.map(function(d, i) { return d !== 0 ? '<div class="fr-row"><span>' + esc(names[i]) + '</span><span style="color:' + (d > 0 ? 'var(--gold)' : '#ff9a8a') + '">' + (d > 0 ? '+' : '') + d.toLocaleString() + '</span></div>' : ''; }).join('') : '') +
             '</div>'
           : '';
+        // テンパイ料（流し満貫が無かったときだけ発生する）
+        var tenpaiFlags = r.tenpai || [];
+        var tenpaiHtml = '';
+        if (!nagashiSeats.length && tenpaiFlags.length) {
+          var tenpaiNum = tenpaiFlags.filter(Boolean).length;
+          var noMove = (tenpaiNum === 0 || tenpaiNum === tenpaiFlags.length);
+          tenpaiHtml = '<div style="margin:8px 0">' +
+            '<div style="font-size:0.8rem;color:#8ab89c;margin-bottom:4px">' +
+            (noMove ? (tenpaiNum === 0 ? '全員ノーテン（点棒の動きなし）' : '全員テンパイ（点棒の動きなし）')
+                    : 'テンパイ料（合計3000点）') + '</div>' +
+            tenpaiFlags.map(function(tp, i) {
+              var dv = (r.deltas && r.deltas[i]) || 0;
+              return '<div class="fr-row"><span class="fr-name">' + esc(names[i]) + '</span>' +
+                '<span>' + (tp ? 'テンパイ' : 'ノーテン') + '</span>' +
+                '<span style="color:' + (dv > 0 ? 'var(--gold)' : (dv < 0 ? '#ff9a8a' : '#8ab89c')) + '">' +
+                (dv > 0 ? '+' : '') + dv.toLocaleString() + '</span></div>';
+            }).join('') + '</div>';
+        }
         endHtml = '<div class="fr-result-float"><div class="fr-panel"><strong>流局</strong>（山がなくなりました）' +
-          nagashiHtml +
+          nagashiHtml + tenpaiHtml +
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
       } else if (r) {
@@ -4695,6 +4713,17 @@ var App = {
       var hanText = sc ? sc.han + '翻' : '—';
       var tierText = (sc && sc.han >= 5) ? sc.label + ' ' : '';
 
+      // 上乗せの内訳（素点と実際の増減が食い違って見えないように出す）
+      var extraRows = '';
+      if (sc && sc.honba) {
+        extraRows += '<div class="fr-row"><span>'+sc.honba+'本場</span><span class="fr-score">'+
+          (s.winType === 'tsumo' ? '1人100点ずつ' : '300点')+'</span></div>';
+      }
+      if (sc && sc.kyotaku) {
+        extraRows += '<div class="fr-row"><span>立直棒 '+sc.kyotaku+'本</span><span class="fr-score">'+
+          (sc.kyotaku * 1000).toLocaleString()+'点</span></div>';
+      }
+
       // 点数移動
       var deltaHtml = (sc && sc.deltas) ? Battle.PLAYER_NAMES.map(function(nm, i) {
         var d = sc.deltas[i];
@@ -4710,7 +4739,7 @@ var App = {
             '<div class="fr-result-hand-row" style="margin-bottom:8px">' + handHtml + '</div>' +
             meldsHtml +
             nukiResultHtml +
-            yakuHtml +
+            yakuHtml + extraRows +
             '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + hanText + ' ' + tierText + ptsText + '</div>' +
             doraRowHtml +
             uraRowHtml +
@@ -4740,11 +4769,19 @@ var App = {
 
     var renderRyukyoku = function() {
       var matchOver = Battle.isMatchOver();
+      // テンパイ料の精算（2回呼んでも二重に動かない）
+      var ry = Battle.settleRyukyoku();
+      var tenpaiOf = function(i) { return !!(ry && ry.tenpai && ry.tenpai[i]); };
+      var deltaOf  = function(i) { return (ry && ry.deltas) ? (ry.deltas[i] || 0) : 0; };
+      var noteText = !ry ? '山がなくなりました。'
+        : (ry.tenpaiCount === 0) ? '全員ノーテンのため点棒の動きはありません。'
+        : (ry.tenpaiCount === Battle.getState().playerCount) ? '全員テンパイのため点棒の動きはありません。'
+        : 'テンパイ料をやりとりしました（合計3000点）。';
       main.innerHTML = '<div class="agari-result-wrap"><div class="battle-end-card"><div class="battle-end-icon">🌊</div>' +
         '<div class="battle-end-title">流局'+(matchOver?' ／ 対局終了':'')+'</div>' +
-        '<div class="battle-end-detail">'+Battle.getRoundLabel()+'<br>山がなくなりました。引き分けです。</div>' +
+        '<div class="battle-end-detail">'+Battle.getRoundLabel()+'<br>'+noteText+'</div>' +
         '<div class="battle-final-scores">'+
-        Battle.PLAYER_NAMES.map(function(name,i){var s=Battle.getState();var wn=Battle.seatWindNum(i)-1;return '<div class="battle-final-score-row"><div class="name">'+Battle.WIND_NAMES[wn]+' '+Battle.WIND_READINGS[wn]+' '+name+'</div><div class="pts">'+s.scores[i].toLocaleString()+'点</div></div>';}).join('')+
+        Battle.PLAYER_NAMES.map(function(name,i){var s=Battle.getState();var wn=Battle.seatWindNum(i)-1;var dv=deltaOf(i);var dtxt=dv?(' <span class="pts-delta">'+(dv>0?'+':'')+dv.toLocaleString()+'</span>'):'';return '<div class="battle-final-score-row"><div class="name">'+Battle.WIND_NAMES[wn]+' '+Battle.WIND_READINGS[wn]+' '+name+'（'+(tenpaiOf(i)?'テンパイ':'ノーテン')+'）</div><div class="pts">'+s.scores[i].toLocaleString()+'点'+dtxt+'</div></div>';}).join('')+
         '</div>' +
         '<div class="btn-row">'+(matchOver?'<button class="btn btn-primary" id="btnPA2">再戦</button>':'<button class="btn btn-primary" id="btnNR2">次の局へ</button>')+'<button class="btn btn-secondary" id="btnBH2">ホームへ</button></div></div></div>';
       var btnNR2 = document.getElementById('btnNR2');

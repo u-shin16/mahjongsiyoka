@@ -12,7 +12,8 @@
 var Yaku = (function() {
   var YAKUMAN_HAN = 13; // 役満1つぶんの翻数（表示・合算用。点数は別途yakumanUnitsで計算）
   var YAKUMAN_PTS = 32000; // 役満1つぶんの点数（積み満貫方式：複数役満は加算）
-  var BASE_SCORES = [1000, 2000, 3900, 7700, 8000, 12000, 16000];
+  var BASE_SCORES = [1000, 2000, 3900, 7700, 8000, 12000, 16000]; // 子の素点（30符固定）
+  var DEALER_BASE_SCORES = [1500, 2900, 5800, 11600];               // 親の素点（30符固定）
 
   function isHonorTile(t) { return t.suit === 'wind' || t.suit === 'dragon'; }
   function isTerminalTile(t) { return (t.suit === 'man' || t.suit === 'pin' || t.suit === 'sou') && (t.num === 1 || t.num === 9); }
@@ -334,27 +335,32 @@ var Yaku = (function() {
   }
 
   // 役の内訳(yakuList)から翻数・点数・表示ラベルを求める（積み満貫方式）
-  function calcPoints(yakuList) {
+  // isDealer を渡すと親の点数（子の1.5倍）で返す。
+  // 4翻以下は1.5倍ちょうどではない（子2翻2000点に対し親2翻は2900点）ため、
+  // 親用の素点表を別に持っている。
+  function calcPoints(yakuList, isDealer) {
     var han = yakuList.reduce(function(a, y) { return a + y.han; }, 0);
     var yakumanUnits = yakuList.reduce(function(a, y) { return a + (y.yakuman ? Math.round(y.han / YAKUMAN_HAN) : 0); }, 0);
+    var mul = isDealer ? 1.5 : 1;
     var pts, label;
     if (yakumanUnits > 0) {
-      pts = yakumanUnits * YAKUMAN_PTS;
+      pts = yakumanUnits * YAKUMAN_PTS * mul;
       label = yakumanUnits > 1 ? (yakumanUnits + '倍役満') : '役満';
     } else if (han >= 13) {
       // 役満そのものではなく翻数の積み上げで13翻以上になった場合（数え役満）
-      pts = YAKUMAN_PTS;
+      pts = YAKUMAN_PTS * mul;
       label = '役満';
     } else if (han >= 11) {
-      pts = 24000; label = '三倍満';
+      pts = 24000 * mul; label = '三倍満';
     } else if (han >= 8) {
-      pts = 16000; label = '倍満';
+      pts = 16000 * mul; label = '倍満';
     } else if (han >= 6) {
-      pts = 12000; label = '跳満';
+      pts = 12000 * mul; label = '跳満';
     } else if (han >= 5) {
-      pts = 8000; label = '満貫';
+      pts = 8000 * mul; label = '満貫';
     } else {
-      pts = BASE_SCORES[Math.min(Math.max(han, 1) - 1, 3)];
+      var idx = Math.min(Math.max(han, 1) - 1, 3);
+      pts = isDealer ? DEALER_BASE_SCORES[idx] : BASE_SCORES[idx];
       label = han + '翻';
     }
     return { han: han, pts: pts, label: label, yakumanUnits: yakumanUnits };
@@ -364,6 +370,7 @@ var Yaku = (function() {
     YAKUMAN_HAN: YAKUMAN_HAN,
     YAKUMAN_PTS: YAKUMAN_PTS,
     BASE_SCORES: BASE_SCORES,
+    DEALER_BASE_SCORES: DEALER_BASE_SCORES,
     isHonorTile: isHonorTile,
     isTerminalTile: isTerminalTile,
     isTerminalOrHonor: isTerminalOrHonor,

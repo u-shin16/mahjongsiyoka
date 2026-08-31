@@ -47,6 +47,7 @@ var Battle = (function() {
       dealerSeat: 0,
       honba: 0,
       kyokuNum: 1,
+      kyotaku: 0,   // 場に出ている立直棒の本数（和了者が全部回収する）
       scores: makePlayerArray(playerCount, playerCount === 3 ? 35000 : 25000),
       doraIndicator: null,
       kanDoraIndicators: [],
@@ -71,6 +72,8 @@ var Battle = (function() {
       difficulty: opts.difficulty || 'easy',
       settled: false,
       lastScore: null,
+      ryukyokuSettled: false,
+      lastRyukyoku: null,
     };
     startRound();
   }
@@ -109,6 +112,8 @@ var Battle = (function() {
     state.aiAdvice = '';
     state.settled = false;
     state.lastScore = null;
+    state.ryukyokuSettled = false;
+    state.lastRyukyoku = null;
     state.riichiWaits = [];
     state.drewTile = null;
     drawForPlayer();
@@ -451,6 +456,7 @@ var Battle = (function() {
   function playerRiichi(tileIdx) {
     state.riichi[0] = true;
     state.scores[0] -= 1000;
+    state.kyotaku = (state.kyotaku || 0) + 1;
     // ダブルリーチ：自分の最初の打牌で、かつそれまで誰も鳴いていなければ成立
     var noCallsYet = state.melds.every(function(m) { return !m || m.length === 0; });
     state.riichiDouble[0] = noCallsYet && state.discards[0].length === 0;
@@ -495,6 +501,7 @@ var Battle = (function() {
   function cpuRiichi(pidx) {
     state.riichi[pidx] = true;
     state.scores[pidx] -= 1000;
+    state.kyotaku = (state.kyotaku || 0) + 1;
     // ダブルリーチ：自分の最初の打牌で、かつそれまで誰も鳴いていなければ成立
     var noCallsYet = state.melds.every(function(m) { return !m || m.length === 0; });
     state.riichiDouble[pidx] = noCallsYet && state.discards[pidx].length === 0;
@@ -1005,12 +1012,13 @@ var Battle = (function() {
     }
 
     // 天和・地和：誰も鳴いておらず、自分がまだ一度も捨てていない状態でのツモ和了。
-    // このアプリのCPU戦は席が常に固定（seat0=あなた=常に東）なので、
-    // 座席そのものが親判定になる（人和はロン経路の特殊条件のため対象外）。
+    // 親は局ごとに移る（nextRoundでdealerSeatが動く）ため、席番号ではなく
+    // dealerSeatと比べる（人和はロン経路の特殊条件のため対象外）。
     var noCallsYet = state.melds.every(function(m) { return !m || m.length === 0; });
     var winnerHasNotDiscarded = (state.discards[seat] || []).length === 0;
     if (winType === 'tsumo' && noCallsYet && winnerHasNotDiscarded) {
-      if (seat === 0) yaku.push({ name: '天和', han: Yaku.YAKUMAN_HAN, yakuman: true });
+      // 天和は親専用、子は地和。親は局ごとに移るので dealerSeat で見る
+      if (seat === state.dealerSeat) yaku.push({ name: '天和', han: Yaku.YAKUMAN_HAN, yakuman: true });
       else yaku.push({ name: '地和', han: Yaku.YAKUMAN_HAN, yakuman: true });
     }
     return yaku;
@@ -1051,7 +1059,7 @@ var Battle = (function() {
     if (uraDora > 0) yaku.push({ name: '裏ドラ',   han: uraDora });
     if (nuki > 0)    yaku.push({ name: '抜き北',   han: nuki });
 
-    var points = Yaku.calcPoints(yaku);
+    var points = Yaku.calcPoints(yaku, w === state.dealerSeat);
     var ippatsu = !!(state.ippatsuActive && state.ippatsuActive[w]);
 
     return { han: points.han, dora: dora, nuki: nuki, kanDora: kanDora, uraDora: uraDora,
@@ -1062,6 +1070,11 @@ var Battle = (function() {
     return Math.ceil(n / 100) * 100;
   }
 
+  // 和了の精算。sc.pts は calcScore の時点で親なら親の点数になっている。
+  //   ロン  ：放銃者が全額を払う
+  //   ツモ  ：親の和了は子が3等分、子の和了は親が半分・他の子が4分の1ずつ払う
+  //   本場  ：1本につきロンで300点、ツモで1人100点ずつ上乗せする
+  //   供託  ：場に出ている立直棒は和了者が全部回収する
   function settleScore() {
     if (!state || state.winner < 0) return null;
     if (state.settled) return state.lastScore;
@@ -1069,25 +1082,81 @@ var Battle = (function() {
     var sc = calcScore();
     if (!sc) return null;
 
-    var deltas = makePlayerArray(state.playerCount, 0);
+    var n = state.playerCount;
+    var winner = state.winner;
+    var isDealerWin = winner === state.dealerSeat;
+    var honba = state.honba || 0;
+    var deltas = makePlayerArray(n, 0);
+
     if (state.winType === 'ron') {
       var loser = state.loser >= 0 ? state.loser : 0;
-      deltas[state.winner] += sc.pts;
-      deltas[loser] -= sc.pts;
+      var pay = sc.pts + honba * 300;
+      deltas[winner] += pay;
+      deltas[loser] -= pay;
     } else {
-      var each = round100(sc.pts / (state.playerCount - 1));
-      for (var i = 0; i < state.playerCount; i++) {
-        if (i === state.winner) continue;
-        deltas[i] -= each;
-        deltas[state.winner] += each;
+      // 親ツモは全員が同額（基本点の1/3）。子ツモは親が1/2、他の子が1/4を払う。
+      var dealerPay = round100(sc.pts / (isDealerWin ? 3 : 2));
+      var childPay  = round100(sc.pts / (isDealerWin ? 3 : 4));
+      for (var i = 0; i < n; i++) {
+        if (i === winner) continue;
+        var amount = (i === state.dealerSeat ? dealerPay : childPay) + honba * 100;
+        deltas[i] -= amount;
+        deltas[winner] += amount;
       }
     }
 
-    for (var j = 0; j < state.playerCount; j++) state.scores[j] += deltas[j];
+    // 立直棒（供託）は和了者がすべて受け取る
+    var sticks = state.kyotaku || 0;
+    if (sticks > 0) {
+      deltas[winner] += sticks * 1000;
+      state.kyotaku = 0;
+    }
+
+    for (var j = 0; j < n; j++) state.scores[j] += deltas[j];
     sc.deltas = deltas;
+    sc.honba = honba;
+    sc.kyotaku = sticks;
     state.lastScore = sc;
     state.settled = true;
     return sc;
+  }
+
+  // 手牌がテンパイかどうか。山が尽きた時点で14枚持っている席もあるため、
+  // その場合はどれか1枚を切ればテンパイになるかで見る。
+  function isTenpaiHand(tiles) {
+    if (!tiles || tiles.length === 0) return false;
+    if (tiles.length % 3 === 1) return getBattleWaits(tiles).length > 0;
+    for (var i = 0; i < tiles.length; i++) {
+      var rest = tiles.filter(function(_, j) { return j !== i; });
+      if (getBattleWaits(rest).length > 0) return true;
+    }
+    return false;
+  }
+
+  // 流局の精算：テンパイ料（ノーテン罰符）を合計3000点でやりとりする。
+  // 全員テンパイ・全員ノーテンのときは点棒は動かない。
+  // 立直棒は流局では誰も回収せず、次の局へ持ち越す（state.kyotakuをそのまま残す）。
+  function settleRyukyoku() {
+    if (!state || state.phase !== 'ryukyoku') return null;
+    if (state.ryukyokuSettled) return state.lastRyukyoku;
+
+    var n = state.playerCount;
+    var tenpai = [];
+    for (var i = 0; i < n; i++) tenpai.push(isTenpaiHand(state.hands[i] || []));
+    var tenpaiCount = tenpai.filter(Boolean).length;
+
+    var deltas = makePlayerArray(n, 0);
+    if (tenpaiCount > 0 && tenpaiCount < n) {
+      var notenCount = n - tenpaiCount;
+      var recv = round100(3000 / tenpaiCount);
+      var pay  = round100(3000 / notenCount);
+      for (var k = 0; k < n; k++) deltas[k] = tenpai[k] ? recv : -pay;
+      for (var j = 0; j < n; j++) state.scores[j] += deltas[j];
+    }
+
+    state.lastRyukyoku = { tenpai: tenpai, tenpaiCount: tenpaiCount, deltas: deltas };
+    state.ryukyokuSettled = true;
+    return state.lastRyukyoku;
   }
 
   function isMatchOver() {
@@ -1113,6 +1182,7 @@ var Battle = (function() {
     playerRonSkip: playerRonSkip,
     calcScore: calcScore,
     settleScore: settleScore,
+    settleRyukyoku: settleRyukyoku,
     getRiichiCandidates: getRiichiCandidates,
     isFuriten: function(seat) { return !!state && isFuriten(seat == null ? 0 : seat); },
     hasYaku: function(seat, winType, winningTile) { return !!state && hasYaku(seat == null ? 0 : seat, winType, winningTile); },
