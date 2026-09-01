@@ -1091,6 +1091,18 @@ function fitBattleTable() {
       (-(padY + Math.ceil(overY / 2))) + 'px ' + (-(padX + Math.ceil(overX / 2))) + 'px',
       'important');
   }
+
+  // ここまでで大きさは合うが、置かれる位置は入れ子の作りに左右されて
+  // 中央に来ないことがある（実機のスマホ横画面で左端に寄っていた）。
+  // 実際の位置を測って、中心からずれた分だけ動かす。
+  // translate は scale より先に書く。こうすると画面のpxのまま動く。
+  var tr2 = table.getBoundingClientRect();
+  var dx = Math.round((doc.clientWidth - tr2.width) / 2 - tr2.left);
+  var dy = Math.round(rowTop + Math.max(0, (availH - tr2.height) / 2) - tr2.top);
+  if (dx !== 0 || dy !== 0) {
+    table.style.setProperty('transform',
+      'translate(' + dx + 'px, ' + dy + 'px) scale(' + scale.toFixed(4) + ')', 'important');
+  }
 }
 
 window.addEventListener('resize', fitBattleTable);
