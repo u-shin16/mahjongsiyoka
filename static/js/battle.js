@@ -1209,6 +1209,16 @@ var Battle = (function() {
     getRiichiCandidates: getRiichiCandidates,
     isFuriten: function(seat) { return !!state && isFuriten(seat == null ? 0 : seat); },
     hasYaku: function(seat, winType, winningTile) { return !!state && hasYaku(seat == null ? 0 : seat, winType, winningTile); },
+    // 「この牌を切ったらどうなるか」の見込み表示用のフリテン判定。
+    // isFuriten(0) は state.hands[0] から待ちを出すが、自分の番は手牌が
+    // 14枚あって待ちが定まらないため常にfalseになる。打牌前の表示には
+    // 「その牌を切ったあとの13枚」で見た結果が要る。
+    isFuritenForHand: function(hand13) {
+      if (!state) return false;
+      if (state.riichiFuriten[0] || state.tempFuriten[0]) return true;
+      var waits = getBattleWaits(hand13 || [], 0);
+      return Yaku.isFuritenBySelf(waits, state.discards[0]);
+    },
     // 「この牌を切ったらどうなるか」の見込み表示用。
     // 実際の手牌ではなく、渡された13枚＋和了牌で役が付くかを見る。
     // 打牌前は手牌が14枚あるため、実際の手牌で判定すると15枚になって

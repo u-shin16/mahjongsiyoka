@@ -3904,6 +3904,8 @@ var App = {
       // 役の判定：Battle.hasYaku はロンのとき和了牌を手牌へ足して数えるので、
       // 形に役があるかはロンで見る。門前ならツモに門前清自摸和が必ず付くため、
       // 門前かどうかも見てツモで和了れるかを決める。
+      // 門前かどうか。「役なし」は鳴いているときだけ出すために使う
+      var handIsClosed = ((s.melds && s.melds[0]) || []).every(function(m) { return m.type === 'ankan'; });
       // 役の判定は「その牌を切ったあとの13枚」で行う。
       // 打牌前は手牌が14枚あるので、そのまま判定すると15枚になって
       // 和了形にならず、フリテンでもないのに「ツモのみ」と出てしまう。
@@ -3919,9 +3921,14 @@ var App = {
         var t = { suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num };
         var ronYaku   = Battle.hasYakuForHand(baseHand, 'ron', t);
         var tsumoYaku = Battle.hasYakuForHand(baseHand, 'tsumo', t);
+        // フリテンも「その牌を切ったあとの13枚」で見る。
+        // 自分の番は手牌が14枚あって待ちが定まらないため、
+        // 今の手牌のままだと常にフリテンでない扱いになってしまう。
+        var furiten = Battle.isFuritenForHand(baseHand);
         return {
           tile: t,
-          canRon:   !isFuriten && ronYaku,
+          furiten: furiten,
+          canRon:   !furiten && ronYaku,
           canTsumo: tsumoYaku,
         };
       };
@@ -3934,7 +3941,7 @@ var App = {
       // 門前の手に誤った印が出ないよう、ここで明示的に外している。
       var markOf = function(info) {
         if (!handIsClosed && !info.canRon && !info.canTsumo) return { mark: '役なし', cls: ' is-dead' };
-        if (isFuriten && !info.canRon) return { mark: 'ツモのみ', cls: ' is-tsumo-only' };
+        if (info.furiten && !info.canRon) return { mark: 'ツモのみ', cls: ' is-tsumo-only' };
         return { mark: '', cls: '' };
       };
       // 待ち牌そのものの表示。**ここは何があっても牌を出す。**
