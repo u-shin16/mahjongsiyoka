@@ -6681,26 +6681,6 @@ body.is-battle-page .app-footer {
   .ryu-move { margin-left: 0; }
 }
 
-/* 流局：全員の手牌を見せる画面 */
-.ryu-hands-card { max-width: 560px; }
-.ryu-hand-list { display: grid; gap: 8px; margin-bottom: 12px; }
-.ryu-hand-card {
-  background: rgba(0,0,0,0.25);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  text-align: left;
-}
-.ryu-hand-card.is-tenpai { border-color: rgba(255,215,106,0.45); }
-.ryu-hand-card .ryu-who { margin-bottom: 6px; }
-.ryu-hand-tiles { display: flex; flex-direction: column; gap: 4px; }
-.ryu-waits { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.ryu-waits-label {
-  font-size: 0.74rem; color: #ffe38a; font-weight: 700;
-  background: rgba(255,215,106,0.15); border-radius: 999px; padding: 2px 8px;
-}
-
-
 /* ─────────────────────────────────
    和了画面：手牌と和了牌を分けて出す
    「手牌 ｜ ロン/ツモの牌」の並び。どの牌でアガったのかを

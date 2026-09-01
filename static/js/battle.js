@@ -990,12 +990,24 @@ var Battle = (function() {
     state.discards[pidx].push(disc);
     // 自分の打牌で同巡内フリテンは解消（永久フリテンは解消されない）
     state.tempFuriten[pidx] = false;
-    // プレイヤー ロン確認（フリテン・役なしならロンできない）
+    // プレイヤーのロンと鳴きを確認する。
+    // 同じ牌でロンも鳴きも両方できることがあるため、通常の打牌後と同じく
+    // 両方の選択肢を保持する（ここで鳴きを拾っていなかったため、CPUが
+    // 鳴いた直後に捨てた牌はポン・チー・カンができなかった）。
     var playerTest = state.hands[0].slice();
     playerTest.push(disc);
-    if (!isFuriten(0) && Agari.isWinningHand(playerTest) && hasYaku(0, 'ron', disc)) {
+    var canPlayerRon = !isFuriten(0) && Agari.isWinningHand(playerTest) && hasYaku(0, 'ron', disc);
+
+    var callOpts = !state.riichi[0] ? getPlayerCallOptions(disc, pidx) : [];
+    if (callOpts.length > 0) {
+      state.callPending = { tile: disc, fromPlayer: pidx, nextCPUIdx: pidx + 1, options: callOpts };
+    }
+
+    if (canPlayerRon) {
       state.pendingRon = { tile: disc, from: pidx };
       state.phase = 'pending_ron';
+    } else if (state.callPending) {
+      state.phase = 'pending_call';
     }
   }
 
@@ -1190,41 +1202,6 @@ var Battle = (function() {
     calcScore: calcScore,
     settleScore: settleScore,
     settleRyukyoku: settleRyukyoku,
-    // 流局時に「その席が何を待っていたか」を見せるために使う。
-    // 14枚持っている席は、どれかを切ればテンパイになる形のうち最初に見つかった待ちを返す。
-    tenpaiWaitsOf: function(seat) {
-      if (!state) return [];
-      var tiles = state.hands[seat] || [];
-      if (tiles.length % 3 === 1) return getBattleWaits(tiles, seat);
-      for (var i = 0; i < tiles.length; i++) {
-        var rest = tiles.filter(function(_, j) { return j !== i; });
-        var w = getBattleWaits(rest, seat);
-        if (w.length > 0) return w;
-      }
-      return [];
-    },
-    getRiichiCandidates: getRiichiCandidates,
-    isFuriten: function(seat) { return !!state && isFuriten(seat == null ? 0 : seat); },
-    hasYaku: function(seat, winType, winningTile) { return !!state && hasYaku(seat == null ? 0 : seat, winType, winningTile); },
-    playerNuki: playerNuki,
-    canNuki: function() { return !!(state && state.isSanma && state.phase === 'player_turn' && findNukiIdx(0) >= 0); },
-    isNukiTile: isNukiTile,
-    canTsumo: function() {
-      if (!state) return false;
-      var hand = state.hands[0];
-      if (!Agari.isWinningHand(hand)) return false;
-      var winTile = hand[hand.length - 1];
-      return hasYaku(0, 'tsumo', winTile);
-    },
-    canRiichi: function() {
-      if (!state || state.riichi[0] || state.scores[0] < 1000 || !isClosed(0)) return false;
-      var h = state.hands[0];
-      for (var i = 0; i < h.length; i++) {
-        var rest = h.filter(function(_, j) { return j !== i; });
-        if (getBattleWaits(rest, 0).length > 0) return true;
-      }
-      return false;
-    },
     // 鳴き/カン
     playerDiscardNaki: playerDiscardNaki,
     playerPon:    playerPon,
