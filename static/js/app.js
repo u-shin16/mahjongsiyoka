@@ -2365,7 +2365,7 @@ var App = {
     var canNuki = g.isSanma && myTurn && g.phase === 'turn' && myHand.some(function(t) { return FriendGame.isNukiTile(t); });
     var actionBtns = '';
     var frCallFloatHtml = '';
-    // CPU戦の手牌の上の帯（テンパイ！／ツモ可）と同じ表示に使う
+    // ツモできるかどうか（右下のツモボタンの出し分けに使う）
     var canFrTsumo = !!(myTurn && g.phase === 'turn' && Agari.isWinningHand(myHand));
     // CPU戦と同じく、ツモ・ロン・スルーもポン/チー/カンと同じ右下の
     // フロートパネルに置く（下部アクション行に残すのはリーチのみ）
@@ -2652,7 +2652,6 @@ var App = {
             '<div class="jt-hand-infobar">' +
               (g.riichi[my] ? '<span class="mj-riichi-badge">リーチ中</span>' : '') +
               (!g.riichi[my] && canRiichi ? '<span class="mj-tenpai-notice">🀄 テンパイ！</span>' : '') +
-              (canFrTsumo ? '<span class="mj-tsumo-flag">▲ツモ可</span>' : '') +
               (FriendGame.isFuriten(my) ? '<span class="mj-furiten-badge">フリテン</span>' : '') +
               (isDisconnected(my) ? '<span class="fr-disconnect-mark">⚡ 切断扱い</span>' : '') +
             '</div>' +
@@ -4243,7 +4242,6 @@ var App = {
               '<div class="jt-hand-infobar">' +
                 (isRiichi ? '<span class="mj-riichi-badge">リーチ中</span>' : '') +
                 (!isRiichi && canRiichi ? '<span class="mj-tenpai-notice">🀄 テンパイ！</span>' : '') +
-                (canTsumo ? '<span class="mj-tsumo-flag">▲ツモ可</span>' : '') +
                 (isFuriten ? '<span class="mj-furiten-badge">フリテン</span>' : '') +
               '</div>' +
               waitsHtml +

@@ -1644,7 +1644,6 @@ button { font-family: inherit; cursor: pointer; }
   padding: 2px 8px; border-radius: 12px;
   font-size: 0.72rem; font-weight: 900;
 }
-.mj-tsumo-flag { color: #f0c040; font-weight: 900; font-size: 0.85rem; }
 .mj-furiten-badge {
   background: #555; color: #fff;
   padding: 2px 8px; border-radius: 12px;
