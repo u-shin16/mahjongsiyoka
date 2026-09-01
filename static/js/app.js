@@ -3891,11 +3891,14 @@ var App = {
       //      （フレンド対戦専用）はここでは出さない。
       // リーチ後は別枠(waitsHtml)で常時表示するのでここでは対象外にする ──
       var selectedWaits = [];
+      // 選んだ牌を切ったあとの13枚。役の判定にもこれを使う
+      var selHandForWaits = null;
       if (!isRiichi) {
         var hasSelection = selectedIdx >= 0 && selectedIdx < displayOrder.length;
         if (hasSelection) {
           var selHand = displayOrder.filter(function(_, wi) { return wi !== selectedIdx; });
           if (selHand.length % 3 === 1) {
+            selHandForWaits = selHand;
             selectedWaits = Agari.getTenpaiWaits(selHand);
             if (isSanma) selectedWaits = selectedWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
           }
@@ -3907,14 +3910,25 @@ var App = {
       // 役の判定：Battle.hasYaku はロンのとき和了牌を手牌へ足して数えるので、
       // 形に役があるかはロンで見る。門前ならツモに門前清自摸和が必ず付くため、
       // 門前かどうかも見てツモで和了れるかを決める。
-      var handIsClosed = (((s.melds && s.melds[0]) || []).every(function(m) { return m.type === 'ankan'; }));
-      var waitInfo = function(w) {
+      // 役の判定は「その牌を切ったあとの13枚」で行う。
+      // 打牌前は手牌が14枚あるので、そのまま判定すると15枚になって
+      // 和了形にならず、フリテンでもないのに「ツモのみ」と出てしまう。
+      var baseHandOf = function(waits) {
+        if (waits === selectedWaits && selHandForWaits) return selHandForWaits;
+        var h = ((s.hands && s.hands[0]) || []).slice();
+        if (h.length % 3 === 1) return h;
+        var di = s.drewTile ? h.map(function(t) { return t.id; }).indexOf(s.drewTile.id) : -1;
+        if (di >= 0) h.splice(di, 1); else h.pop();
+        return h;
+      };
+      var waitInfo = function(w, baseHand) {
         var t = { suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num };
-        var shapeYaku = Battle.hasYaku(0, 'ron', t);
+        var ronYaku   = Battle.hasYakuForHand(baseHand, 'ron', t);
+        var tsumoYaku = Battle.hasYakuForHand(baseHand, 'tsumo', t);
         return {
           tile: t,
-          canRon:   !isFuriten && shapeYaku,
-          canTsumo: handIsClosed || shapeYaku,
+          canRon:   !isFuriten && ronYaku,
+          canTsumo: tsumoYaku,
         };
       };
       // 牌1枚ずつに、その牌でどう和了れるかの印を付ける。
@@ -3922,8 +3936,9 @@ var App = {
       //   ツモのみ：ロンできないがツモなら和了れる（フリテンのとき。金色）
       //   印なし  ：ロンもツモもできる
       var renderWaitTiles = function(waits) {
+        var base = baseHandOf(waits);
         return waits.map(function(w) {
-          var info = waitInfo(w);
+          var info = waitInfo(w, base);
           var mark = '', cls = '';
           if (!info.canRon && !info.canTsumo) { mark = '役なし';   cls = ' is-dead'; }
           else if (!info.canRon)              { mark = 'ツモのみ'; cls = ' is-tsumo-only'; }
@@ -3937,7 +3952,8 @@ var App = {
       // 「1枚も和了れない」ときだけ理由を1行出す。
       var waitsNote = function(waits) {
         if (!waits.length) return '';
-        var infos = waits.map(waitInfo);
+        var base = baseHandOf(waits);
+        var infos = waits.map(function(w) { return waitInfo(w, base); });
         if (infos.every(function(i) { return !i.canRon && !i.canTsumo; })) {
           return '<span class="mj-wait-note note-ng">このままでは和了れません</span>';
         }

@@ -1209,6 +1209,24 @@ var Battle = (function() {
     getRiichiCandidates: getRiichiCandidates,
     isFuriten: function(seat) { return !!state && isFuriten(seat == null ? 0 : seat); },
     hasYaku: function(seat, winType, winningTile) { return !!state && hasYaku(seat == null ? 0 : seat, winType, winningTile); },
+    // 「この牌を切ったらどうなるか」の見込み表示用。
+    // 実際の手牌ではなく、渡された13枚＋和了牌で役が付くかを見る。
+    // 打牌前は手牌が14枚あるため、実際の手牌で判定すると15枚になって
+    // 和了形にならず、常に役なし扱いになってしまう。
+    hasYakuForHand: function(hand13, winType, winningTile) {
+      if (!state || !hand13 || !winningTile) return false;
+      var hand = hand13.slice().concat([winningTile]);
+      if (!Agari.isWinningHand(hand)) return false;
+      var openMelds = state.melds[0] || [];
+      var closed = isClosed(0);
+      var yaku = Yaku.computeShapeYaku(hand, openMelds, closed,
+        seatWindNum(0), roundWindNum(), winType, winningTile);
+      // 門前のツモには門前清自摸和が必ず付く
+      if (winType === 'tsumo' && closed) return true;
+      // リーチ中はリーチそのものが役になる
+      if (state.riichi[0]) return true;
+      return yaku.length > 0;
+    },
     playerNuki: playerNuki,
     canNuki: function() { return !!(state && state.isSanma && state.phase === 'player_turn' && findNukiIdx(0) >= 0); },
     isNukiTile: isNukiTile,
