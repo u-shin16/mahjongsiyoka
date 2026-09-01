@@ -211,27 +211,37 @@ const Agari = (() => {
     return waits;
   }
 
-  function getTenpaiWaits(tiles13) {
+  // 待ち牌を返す。
+  //
+  // usedTiles には、手牌以外で自分が使っている牌（副露・暗槓・抜き北）を渡す。
+  // 同じ牌は全部で4枚しかないため、**自分で4枚使い切っている牌は待ちにならない**。
+  // 除外しないと、永久に和了れない形でリーチできてしまい、流局でもテンパイ扱いになる。
+  function getTenpaiWaits(tiles13, usedTiles) {
     const waits = [];
     const allSuits = ['man', 'pin', 'sou'];
-    const maxN = { man: 9, pin: 9, sou: 9, wind: 4, dragon: 3 };
+
+    // 自分が持っている枚数を数える（手牌＋副露など）
+    const held = {};
+    const countUp = (t) => {
+      if (!t || t.suit == null) return;
+      const key = t.suit + '_' + t.num;
+      held[key] = (held[key] || 0) + 1;
+    };
+    (tiles13 || []).forEach(countUp);
+    (usedTiles || []).forEach(countUp);
+    const isExhausted = (suit, num) => (held[suit + '_' + num] || 0) >= 4;
+
+    const tryWait = (suit, num) => {
+      if (isExhausted(suit, num)) return;   // 5枚目は存在しない
+      const test = { suit, num, id: 'test_wait' };
+      if (isWinningHand([...tiles13, test])) waits.push({ suit, num });
+    };
 
     for (const suit of allSuits) {
-      for (let n = 1; n <= 9; n++) {
-        const test = { suit, num: n, id: 'test_wait' };
-        if (isWinningHand([...tiles13, test])) {
-          waits.push({ suit, num: n });
-        }
-      }
+      for (let n = 1; n <= 9; n++) tryWait(suit, n);
     }
-    for (let n = 1; n <= 4; n++) {
-      const test = { suit: 'wind', num: n, id: 'test_wait' };
-      if (isWinningHand([...tiles13, test])) waits.push({ suit: 'wind', num: n });
-    }
-    for (let n = 1; n <= 3; n++) {
-      const test = { suit: 'dragon', num: n, id: 'test_wait' };
-      if (isWinningHand([...tiles13, test])) waits.push({ suit: 'dragon', num: n });
-    }
+    for (let n = 1; n <= 4; n++) tryWait('wind', n);
+    for (let n = 1; n <= 3; n++) tryWait('dragon', n);
     return waits;
   }
 

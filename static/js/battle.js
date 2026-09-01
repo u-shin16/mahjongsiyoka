@@ -273,8 +273,15 @@ var Battle = (function() {
     return count;
   }
 
-  function getBattleWaits(tiles) {
-    var waits = Agari.getTenpaiWaits(tiles);
+  // seat を渡すと、その席の副露・抜き北も「自分が使っている牌」として数える。
+  // 同じ牌は4枚しかないので、4枚使い切っている牌は待ちにならない。
+  function getBattleWaits(tiles, seat) {
+    var used = [];
+    if (state && seat != null) {
+      (state.melds[seat] || []).forEach(function(m) { used = used.concat(m.tiles || []); });
+      used = used.concat(state.nuki[seat] || []);
+    }
+    var waits = Agari.getTenpaiWaits(tiles, used);
     if (!state || !state.isSanma) return waits;
     return waits.filter(function(w) {
       return w.suit !== 'man' || w.num === 1 || w.num === 9;
@@ -288,7 +295,7 @@ var Battle = (function() {
   function isFuriten(seat) {
     if (state.riichiFuriten[seat]) return true;
     if (state.tempFuriten[seat]) return true;
-    var waits = getBattleWaits(state.hands[seat]);
+    var waits = getBattleWaits(state.hands[seat], seat);
     return Yaku.isFuritenBySelf(waits, state.discards[seat]);
   }
 
@@ -464,7 +471,7 @@ var Battle = (function() {
     state.riichiDiscardIdx = state.discards[0].length;
     // 捨てた後の13枚で待ち牌を計算して保存
     var afterDiscard = state.hands[0].filter(function(_, i) { return i !== tileIdx; });
-    state.riichiWaits = getBattleWaits(afterDiscard);
+    state.riichiWaits = getBattleWaits(afterDiscard, 0);
     playerDiscard(tileIdx);
     // リーチ宣言牌の捨て後に一発フラグをセット
     // （playerDiscard内でippatsuActiveリセットを試みるが、宣言時はfalseのため影響なし）
@@ -479,7 +486,7 @@ var Battle = (function() {
     var candidates = [];
     state.hands[0].forEach(function(_, i) {
       var test = state.hands[0].filter(function(_, j) { return j !== i; });
-      if (getBattleWaits(test).length > 0) candidates.push(i);
+      if (getBattleWaits(test, 0).length > 0) candidates.push(i);
     });
     return candidates;
   }
@@ -492,7 +499,7 @@ var Battle = (function() {
     var best = -1, bestWaitCount = 0;
     state.hands[pidx].forEach(function(_, i) {
       var test = state.hands[pidx].filter(function(_, j) { return j !== i; });
-      var waits = getBattleWaits(test);
+      var waits = getBattleWaits(test, pidx);
       if (waits.length > bestWaitCount) { bestWaitCount = waits.length; best = i; }
     });
     return best;
@@ -1123,12 +1130,12 @@ var Battle = (function() {
 
   // 手牌がテンパイかどうか。山が尽きた時点で14枚持っている席もあるため、
   // その場合はどれか1枚を切ればテンパイになるかで見る。
-  function isTenpaiHand(tiles) {
+  function isTenpaiHand(tiles, seat) {
     if (!tiles || tiles.length === 0) return false;
-    if (tiles.length % 3 === 1) return getBattleWaits(tiles).length > 0;
+    if (tiles.length % 3 === 1) return getBattleWaits(tiles, seat).length > 0;
     for (var i = 0; i < tiles.length; i++) {
       var rest = tiles.filter(function(_, j) { return j !== i; });
-      if (getBattleWaits(rest).length > 0) return true;
+      if (getBattleWaits(rest, seat).length > 0) return true;
     }
     return false;
   }
@@ -1142,7 +1149,7 @@ var Battle = (function() {
 
     var n = state.playerCount;
     var tenpai = [];
-    for (var i = 0; i < n; i++) tenpai.push(isTenpaiHand(state.hands[i] || []));
+    for (var i = 0; i < n; i++) tenpai.push(isTenpaiHand(state.hands[i] || [], i));
     var tenpaiCount = tenpai.filter(Boolean).length;
 
     var deltas = makePlayerArray(n, 0);
@@ -1188,10 +1195,10 @@ var Battle = (function() {
     tenpaiWaitsOf: function(seat) {
       if (!state) return [];
       var tiles = state.hands[seat] || [];
-      if (tiles.length % 3 === 1) return getBattleWaits(tiles);
+      if (tiles.length % 3 === 1) return getBattleWaits(tiles, seat);
       for (var i = 0; i < tiles.length; i++) {
         var rest = tiles.filter(function(_, j) { return j !== i; });
-        var w = getBattleWaits(rest);
+        var w = getBattleWaits(rest, seat);
         if (w.length > 0) return w;
       }
       return [];
@@ -1214,7 +1221,7 @@ var Battle = (function() {
       var h = state.hands[0];
       for (var i = 0; i < h.length; i++) {
         var rest = h.filter(function(_, j) { return j !== i; });
-        if (getBattleWaits(rest).length > 0) return true;
+        if (getBattleWaits(rest, 0).length > 0) return true;
       }
       return false;
     },

@@ -529,8 +529,15 @@ var FriendGame = (function() {
     return tiles;
   }
 
-  function getValidWaits(state, tiles13) {
-    var waits = Agari.getTenpaiWaits(tiles13 || []);
+  // seat を渡すと、その席の副露・抜き北も「自分が使っている牌」として数える。
+  // 同じ牌は4枚しかないので、4枚使い切っている牌は待ちにならない。
+  function getValidWaits(state, tiles13, seat) {
+    var used = [];
+    if (state && seat != null) {
+      ((state.melds && state.melds[seat]) || []).forEach(function(m) { used = used.concat(m.tiles || []); });
+      used = used.concat((state.nuki && state.nuki[seat]) || []);
+    }
+    var waits = Agari.getTenpaiWaits(tiles13 || [], used);
     if (!state || !state.isSanma) return waits;
     return waits.filter(function(w) {
       return w.suit !== 'man' || w.num === 1 || w.num === 9;
@@ -715,7 +722,7 @@ var FriendGame = (function() {
     var bestScore = -999;
     for (var i = 0; i < hand.length; i++) {
       var rest = hand.filter(function(_, ii) { return ii !== i; });
-      var waits = getValidWaits(state, rest);
+      var waits = getValidWaits(state, rest, seat);
       if (waits.length === 0) continue;
       var score = _cpuDiscardScore(state, hand, hand[i]);
       if (score > bestScore) { bestScore = score; best = i; }
@@ -761,12 +768,12 @@ var FriendGame = (function() {
 
   // 手牌がテンパイかどうか。山が尽きた時点で14枚持っている席もあるため、
   // その場合はどれか1枚を切ればテンパイになるかで見る。
-  function _isTenpaiHand(state, tiles) {
+  function _isTenpaiHand(state, tiles, seat) {
     if (!tiles || tiles.length === 0) return false;
-    if (tiles.length % 3 === 1) return getValidWaits(state, tiles).length > 0;
+    if (tiles.length % 3 === 1) return getValidWaits(state, tiles, seat).length > 0;
     for (var i = 0; i < tiles.length; i++) {
       var rest = tiles.filter(function(_, j) { return j !== i; });
-      if (getValidWaits(state, rest).length > 0) return true;
+      if (getValidWaits(state, rest, seat).length > 0) return true;
     }
     return false;
   }
@@ -802,7 +809,7 @@ var FriendGame = (function() {
         // 全員テンパイ・全員ノーテンのときは動かない。
         // 流し満貫が成立した局では罰符を取らない。
         for (var tf = 0; tf < state.playerCount; tf++) {
-          tenpaiFlags.push(_isTenpaiHand(state, state.hands[tf] || []));
+          tenpaiFlags.push(_isTenpaiHand(state, state.hands[tf] || [], tf));
         }
         var tenpaiCount = tenpaiFlags.filter(Boolean).length;
         if (tenpaiCount > 0 && tenpaiCount < state.playerCount) {
@@ -968,7 +975,7 @@ var FriendGame = (function() {
     ensureRuntimeArrays(state);
     if (state.riichiFuriten && state.riichiFuriten[seat]) return true;
     if (state.tempFuriten && state.tempFuriten[seat]) return true;
-    var waits = getValidWaits(state, state.hands[seat] || []);
+    var waits = getValidWaits(state, state.hands[seat] || [], seat);
     return Yaku.isFuritenBySelf(waits, state.discards[seat]);
   }
 
@@ -1350,7 +1357,7 @@ var FriendGame = (function() {
     _consumeTurnTimer(state, seat);
     if (riichi) {
       var rest = hand.filter(function(_, i) { return i !== idx; });
-      var waits = getValidWaits(state, rest);
+      var waits = getValidWaits(state, rest, seat);
       if (state.riichi[seat] || !isClosed(state, seat) || waits.length === 0 || state.scores[seat] < 1000) return false;
       state.riichi[seat] = true;
       state.riichiWaits[seat] = waits;
