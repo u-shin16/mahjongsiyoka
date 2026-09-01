@@ -6720,13 +6720,12 @@ body.is-battle-page .app-footer {
 /* 牌の下に印を積む。重ねると隣の牌の印とぶつかるため、
    印のぶんだけ幅を取らせる（inline-flexの縦並び）。 */
 .mj-wait-tile {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  display: inline-block;
+  text-align: center;
   margin: 0 2px;
   vertical-align: top;
 }
+.mj-wait-tile .mj-wait-mark { display: block; margin-top: 2px; }
 .mj-wait-tile.is-dead .tile { opacity: 0.42; filter: grayscale(0.7); }
 .mj-wait-tile.is-tsumo-only .tile { opacity: 0.75; }
 .mj-wait-tile.is-tsumo-only .mj-wait-mark {

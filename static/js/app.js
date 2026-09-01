@@ -3938,15 +3938,19 @@ var App = {
         if (isFuriten && !info.canRon) return { mark: 'ツモのみ', cls: ' is-tsumo-only' };
         return { mark: '', cls: '' };
       };
-      var renderWaitTiles = function(waits) {
-        var base = baseHandOf(waits);
+      // baseHand を渡せるようにしてある。ホバーで待ちを出すときは
+      // 「その牌を切ったあとの13枚」が呼び出し側にしかないため。
+      var renderWaitTiles = function(waits, baseHand) {
+        var base = baseHand || baseHandOf(waits);
         return waits.map(function(w) {
           var info = waitInfo(w, base);
           var mk = markOf(info);
-          return '<span class="mj-wait-tile' + mk.cls + '">' +
-            Tiles.renderTile(info.tile, { noHover: true, extraClass: 'xs' }) +
-            (mk.mark ? '<span class="mj-wait-mark">' + mk.mark + '</span>' : '') +
-          '</span>';
+          var tileHtml = Tiles.renderTile(info.tile, { noHover: true, extraClass: 'xs' });
+          // 印が無いときは包まずそのまま出す。包むと入れ子が増えて
+          // 待ちが見えなくなることがあったため、印が要るときだけ包む
+          if (!mk.mark) return tileHtml;
+          return '<span class="mj-wait-tile' + mk.cls + '">' + tileHtml +
+            '<span class="mj-wait-mark">' + mk.mark + '</span></span>';
         }).join('');
       };
       // 待ち全体に添える注記。牌ごとの印で足りるので、
@@ -4314,13 +4318,16 @@ var App = {
       // （＝ホバー中は選択中扱いという方針のため、フルre-renderはせず
       //   .mj-waits-area だけを直接差し込む。全体を再描画すると
       //   ホバー中の要素ごと消えてチラつく/連鎖するため避ける）
+      var hoverBaseHand = null;   // ホバー中の牌を切ったあとの13枚（役の判定に使う）
       var computeWaitsForDI = function(di) {
+        hoverBaseHand = null;
         if (isRiichi) return [];
         if (riichiArmed && riichiActualIdxs.indexOf(getActualIdx(di)) < 0) return [];
         var testHand = displayOrder.filter(function(_, wi) { return wi !== di; });
         if (testHand.length % 3 !== 1) return [];
         var w = Agari.getTenpaiWaits(testHand);
         if (isSanma) w = w.filter(function(x) { return x.suit !== 'man' || x.num === 1 || x.num === 9; });
+        hoverBaseHand = testHand;
         return w;
       };
       var hoverWaitsArea = null;
@@ -4335,7 +4342,7 @@ var App = {
           var row = container.querySelector('.jt-hand-tiles-row');
           if (row && row.parentNode) row.parentNode.insertBefore(hoverWaitsArea, row);
         }
-        hoverWaitsArea.innerHTML = renderWaitTiles(waits);
+        hoverWaitsArea.innerHTML = renderWaitTiles(waits, hoverBaseHand);
       };
       var hideHoverWaits = function() {
         if (hoverWaitsArea && hoverWaitsArea.isConnected) hoverWaitsArea.remove();
