@@ -5926,7 +5926,6 @@ body.is-battle-page .app-footer {
 .fr-river .fr-riichi-tile { outline: 2px solid var(--gold); border-radius: 4px; }
 .fr-hand  { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; align-items: flex-end; }
 .fr-msg   { text-align: center; color: #a8d8b0; margin: 10px 0; font-size: 0.95rem; }
-.fr-drawn-gap { width: 12px; }
 .fr-melds {
   display: flex;
   flex-wrap: wrap;
