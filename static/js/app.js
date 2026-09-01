@@ -3938,30 +3938,48 @@ var App = {
         if (isFuriten && !info.canRon) return { mark: 'ツモのみ', cls: ' is-tsumo-only' };
         return { mark: '', cls: '' };
       };
+      // 待ち牌そのものの表示。**ここは何があっても牌を出す。**
+      // 印（役なし・ツモのみ）は付加情報なので、その判定で失敗しても
+      // 待ちが消えてはいけない。判定を丸ごとtry/catchで囲み、
+      // 失敗したときも空になったときも素の牌に戻す。
+      var renderWaitTilesPlain = function(waits) {
+        return waits.map(function(w) {
+          return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num },
+            { noHover: true, extraClass: 'xs' });
+        }).join('');
+      };
       // baseHand を渡せるようにしてある。ホバーで待ちを出すときは
       // 「その牌を切ったあとの13枚」が呼び出し側にしかないため。
       var renderWaitTiles = function(waits, baseHand) {
-        var base = baseHand || baseHandOf(waits);
-        return waits.map(function(w) {
-          var info = waitInfo(w, base);
-          var mk = markOf(info);
-          var tileHtml = Tiles.renderTile(info.tile, { noHover: true, extraClass: 'xs' });
-          // 印が無いときは包まずそのまま出す。包むと入れ子が増えて
-          // 待ちが見えなくなることがあったため、印が要るときだけ包む
-          if (!mk.mark) return tileHtml;
-          return '<span class="mj-wait-tile' + mk.cls + '">' + tileHtml +
-            '<span class="mj-wait-mark">' + mk.mark + '</span></span>';
-        }).join('');
+        if (!waits || !waits.length) return '';
+        var html = '';
+        try {
+          var base = baseHand || baseHandOf(waits);
+          html = waits.map(function(w) {
+            var info = waitInfo(w, base);
+            var mk = markOf(info);
+            var tileHtml = Tiles.renderTile(info.tile, { noHover: true, extraClass: 'xs' });
+            // 印が無いときは包まずそのまま出す（今までと同じ形）
+            if (!mk.mark) return tileHtml;
+            return '<span class="mj-wait-tile' + mk.cls + '">' + tileHtml +
+              '<span class="mj-wait-mark">' + mk.mark + '</span></span>';
+          }).join('');
+        } catch (e) {
+          html = '';
+        }
+        return html || renderWaitTilesPlain(waits);
       };
       // 待ち全体に添える注記。牌ごとの印で足りるので、
       // 「1枚も和了れない」ときだけ理由を1行出す。
       var waitsNote = function(waits) {
-        if (!waits.length || handIsClosed) return '';
-        var base = baseHandOf(waits);
-        var infos = waits.map(function(w) { return waitInfo(w, base); });
-        if (infos.every(function(i) { return !i.canRon && !i.canTsumo; })) {
-          return '<span class="mj-wait-note note-ng">このままでは和了れません</span>';
-        }
+        if (!waits || !waits.length || handIsClosed) return '';
+        try {
+          var base = baseHandOf(waits);
+          var infos = waits.map(function(w) { return waitInfo(w, base); });
+          if (infos.every(function(i) { return !i.canRon && !i.canTsumo; })) {
+            return '<span class="mj-wait-note note-ng">このままでは和了れません</span>';
+          }
+        } catch (e) { /* 判定に失敗したら注記は出さない */ }
         return '';
       };
       var selectedWaitsHtml = selectedWaits.length > 0
