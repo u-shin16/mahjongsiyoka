@@ -35,6 +35,24 @@ function showOverlay(html) {
   document.getElementById('overlay').classList.remove('hidden');
 }
 function hideOverlay() { document.getElementById('overlay').classList.add('hidden'); }
+
+// 「はい／いいえ」の確認を出す。押し間違いで対局から抜けるのを防ぐために使う。
+// onYes は「はい」を押したときだけ呼ばれる。
+function confirmDialog(message, onYes, yesLabel) {
+  showOverlay(
+    '<div style="text-align:center">' +
+      '<p style="margin:4px 0 20px;font-size:1rem;line-height:1.6">' + esc(message) + '</p>' +
+      '<div class="btn-row" style="justify-content:center">' +
+        '<button class="btn btn-primary" id="cfmYes">' + esc(yesLabel || 'はい') + '</button>' +
+        '<button class="btn btn-secondary" id="cfmNo">いいえ</button>' +
+      '</div>' +
+    '</div>'
+  );
+  var yes = document.getElementById('cfmYes');
+  var no  = document.getElementById('cfmNo');
+  if (yes) yes.addEventListener('click', function() { hideOverlay(); onYes(); });
+  if (no)  no.addEventListener('click', hideOverlay);
+}
 document.addEventListener('click', function(e) {
   var ov = document.getElementById('overlay');
   if (!ov.classList.contains('hidden') && e.target === ov) hideOverlay();
@@ -3215,9 +3233,10 @@ var App = {
     var exitBtn = document.getElementById('btnFrExit');
     if (exitBtn) exitBtn.addEventListener('click', function() { FriendGame.leaveRoom().then(function() { self._render('friend', {}); }); });
     document.getElementById('btnFrLeave2').addEventListener('click', function() {
-      if (confirm('対局から退出しますか？（ルームIDでまた戻れます）')) {
+      // ブラウザ標準の confirm はスマホで見た目が浮くため、アプリ内の確認にそろえる
+      confirmDialog('対局から退出しますか？　ルームIDでまた戻れます。', function() {
         FriendGame.leaveRoom().then(function() { self._render('friend', {}); });
-      }
+      }, '退出する');
     });
     var tickFrClock = function() {
       if (self.current !== 'friend') return;
@@ -4508,7 +4527,9 @@ var App = {
       if (window.scrollY && !isFirstBattleRender) window.scrollTo(0, 0);
       isFirstBattleRender = false;
       var battleBack = document.getElementById('jtBattleBack');
-      if (battleBack) battleBack.addEventListener('click', function() { self.goBack(); });
+      if (battleBack) battleBack.addEventListener('click', function() {
+        confirmDialog('対局を退出しますか？　この局の内容は残りません。', function() { self.goBack(); }, '退出する');
+      });
       // ── 捨て牌実行ヘルパー ──
       var afterDiscard = function() {
         var ns = Battle.getState();
