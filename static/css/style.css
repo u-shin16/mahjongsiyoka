@@ -6751,7 +6751,10 @@ body.is-battle-page .app-footer {
 ───────────────────────────────── */
 .battle-main .jt-ai-beside-self {
   position: absolute;
-  z-index: 14;
+  /* 手牌のエリア(.jt-hand-in-table)はボタンの上に重なる位置にあり、
+     そのままだと押せない場所ができていた（実測で確認）。
+     手牌エリアの実際の重なり順は80だったため、それより上に出す。 */
+  z-index: 90 !important;
   /* .battle-main .jt-seat-self は left:12% / bottom:7% に置かれ、
      アイコン48px＋その下に名前と点数が続く。
      アイコンの右へ少し離して、縦はアイコンの中心にそろえる。
