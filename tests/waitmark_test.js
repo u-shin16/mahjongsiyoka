@@ -57,6 +57,34 @@ st2.tempFuriten=[false,false,false,false]; st2.riichiFuriten=[false,false,false,
 eq('發をポンしていれば役牌で役が付く',
    Battle.hasYakuForHand(openHand, 'ron', {suit:'wind',num:1,id:'w'}), false);
 
+// ---- 門前の手には「役なし」を出さない ----
+// 門前ならツモに門前清自摸和が必ず付くので、和了れないことがない。
+// 2026-09-01に、門前なのに「役なし」「ツモのみ」が出るという指摘を受けて
+// 表示の規則を「役なしは鳴いているときだけ、ツモのみはフリテンのときだけ」に変えた。
+(function() {
+  function mk(su, n) { return { suit: su, num: n, id: su + n + '_chk' + (uid++) }; }
+  var closedHands = [
+    // 断幺九＋平和になる形（5萬8萬待ち）
+    [m(2),m(3),m(4), p(3),p(4),p(5), s(5),s(6),s(7), p(2),p(2), m(6),m(7)],
+    // 役が付きにくい形（6萬9萬待ち）
+    [m(1),m(2),m(3), p(7),p(8),p(9), s(1),s(2),s(3), T('wind',1),T('wind',1), m(7),m(8)],
+  ];
+  closedHands.forEach(function(h, hi) {
+    Battle.init({ playerCount: 4, gameType: 'tonpu' });
+    var st3 = Battle.getState();
+    st3.hands[0] = h.slice();
+    st3.melds[0] = [];
+    st3.riichi = [false, false, false, false];
+    var waits = Agari.getTenpaiWaits(h);
+    eq('門前の手' + (hi + 1) + ' はテンパイしている', waits.length > 0, true);
+    waits.forEach(function(wt) {
+      var t = mk(wt.suit, wt.num);
+      eq('門前の手' + (hi + 1) + ' の' + Tiles.label(t) + '待ちはツモで必ず和了れる',
+         Battle.hasYakuForHand(h, 'tsumo', t), true);
+    });
+  });
+})();
+
 print('');
 print('=== 待ちの印の判定テスト ===');
 print('通過: ' + pass + ' / 失敗: ' + fail);

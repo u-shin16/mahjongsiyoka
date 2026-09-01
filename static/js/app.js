@@ -2478,11 +2478,6 @@ var App = {
             '</div></div>';
         }
 
-        // 立直棒は流局では戻らず場に残る
-        var rySticks = g.kyotaku || 0;
-        var ryStickHtml = rySticks > 0
-          ? '<div class="ryu-kyotaku">立直棒 ' + rySticks + '本　<b>' + (rySticks * 1000).toLocaleString() + '点</b>　場に残る</div>'
-          : '';
         var ryNoMoveHtml = (nagashiSeats.length || !tenpaiFlags.length || ryMoved) ? '' :
           '<div class="ryu-kyotaku">' + (tenpaiNum === 0 ? '全員ノーテン' : '全員テンパイ') + '　点棒の動きなし</div>';
         var ryNagashiLabel = nagashiSeats.length ? '<div class="ryu-kyotaku">流し満貫</div>' : '';
@@ -2491,7 +2486,7 @@ var App = {
           '<div class="page-title" style="margin-bottom:8px">流局</div>' +
           ryNagashiLabel +
           '<div class="ryu-list">' + ryRows + '</div>' +
-          ryNoMoveHtml + ryStickHtml +
+          ryNoMoveHtml +
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
       } else if (r) {
@@ -3931,27 +3926,33 @@ var App = {
           canTsumo: tsumoYaku,
         };
       };
-      // 牌1枚ずつに、その牌でどう和了れるかの印を付ける。
-      //   役なし  ：ロンでもツモでも和了れない（灰色）
-      //   ツモのみ：ロンできないがツモなら和了れる（フリテンのとき。金色）
-      //   印なし  ：ロンもツモもできる
+      // 牌1枚ずつに印を付ける。出すのは次の2つだけ。
+      //   ツモのみ：フリテンのとき（ロンできない。金色）
+      //   役なし  ：鳴いていて、その牌では役が付かないとき（灰色）
+      //
+      // **門前には「役なし」を出さない。** 門前ならツモに門前清自摸和が
+      // 必ず付くので、和了れないことがないため。判定を間違えたときも
+      // 門前の手に誤った印が出ないよう、ここで明示的に外している。
+      var markOf = function(info) {
+        if (!handIsClosed && !info.canRon && !info.canTsumo) return { mark: '役なし', cls: ' is-dead' };
+        if (isFuriten && !info.canRon) return { mark: 'ツモのみ', cls: ' is-tsumo-only' };
+        return { mark: '', cls: '' };
+      };
       var renderWaitTiles = function(waits) {
         var base = baseHandOf(waits);
         return waits.map(function(w) {
           var info = waitInfo(w, base);
-          var mark = '', cls = '';
-          if (!info.canRon && !info.canTsumo) { mark = '役なし';   cls = ' is-dead'; }
-          else if (!info.canRon)              { mark = 'ツモのみ'; cls = ' is-tsumo-only'; }
-          return '<span class="mj-wait-tile' + cls + '">' +
+          var mk = markOf(info);
+          return '<span class="mj-wait-tile' + mk.cls + '">' +
             Tiles.renderTile(info.tile, { noHover: true, extraClass: 'xs' }) +
-            (mark ? '<span class="mj-wait-mark">' + mark + '</span>' : '') +
+            (mk.mark ? '<span class="mj-wait-mark">' + mk.mark + '</span>' : '') +
           '</span>';
         }).join('');
       };
       // 待ち全体に添える注記。牌ごとの印で足りるので、
       // 「1枚も和了れない」ときだけ理由を1行出す。
       var waitsNote = function(waits) {
-        if (!waits.length) return '';
+        if (!waits.length || handIsClosed) return '';
         var base = baseHandOf(waits);
         var infos = waits.map(function(w) { return waitInfo(w, base); });
         if (infos.every(function(i) { return !i.canRon && !i.canTsumo; })) {
@@ -4854,10 +4855,6 @@ var App = {
         extraRows += '<div class="fr-row"><span>'+sc.honba+'本場</span><span class="fr-score">'+
           (s.winType === 'tsumo' ? '1人100点ずつ' : '300点')+'</span></div>';
       }
-      if (sc && sc.kyotaku) {
-        extraRows += '<div class="fr-row"><span>立直棒 '+sc.kyotaku+'本</span><span class="fr-score">'+
-          (sc.kyotaku * 1000).toLocaleString()+'点</span></div>';
-      }
 
       // 点数移動
       var deltaHtml = (sc && sc.deltas) ? Battle.PLAYER_NAMES.map(function(nm, i) {
@@ -4936,11 +4933,6 @@ var App = {
         '</div>';
       }).join('');
 
-      // 立直棒は流局では戻らず場に残る（説明はせず、残っている点数だけ出す）
-      var sticks = st.kyotaku || 0;
-      var stickHtml = sticks > 0
-        ? '<div class="ryu-kyotaku">立直棒 ' + sticks + '本　<b>' + (sticks * 1000).toLocaleString() + '点</b>　場に残る</div>'
-        : '';
       var noMoveHtml = moved ? '' :
         '<div class="ryu-kyotaku">' + (tenpaiCount === 0 ? '全員ノーテン' : '全員テンパイ') + '　点棒の動きなし</div>';
 
@@ -4948,7 +4940,7 @@ var App = {
         '<div class="battle-end-title">流局'+(matchOver?' ／ 対局終了':'')+'</div>' +
         '<div class="battle-end-detail">'+Battle.getRoundLabel()+'</div>' +
         '<div class="ryu-list">'+rows+'</div>' +
-        noMoveHtml + stickHtml +
+        noMoveHtml +
         '<div class="btn-row">'+(matchOver?'<button class="btn btn-primary" id="btnPA2">再戦</button>':'<button class="btn btn-primary" id="btnNR2">次の局へ</button>')+'<button class="btn btn-secondary" id="btnBH2">ホームへ</button></div></div></div>';
       var btnNR2 = document.getElementById('btnNR2');
       if (btnNR2) btnNR2.addEventListener('click', function(){Battle.nextRound(); resetLocalRound(); renderGame();});
