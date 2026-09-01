@@ -1038,7 +1038,10 @@ function renderMeldAndNukiAreasShared(melds, nuki, playerCount, seatClsMap, isSa
     return (melds[pi] || []).map(function(meld) {
       var typeLabel = meld.type === 'pon' ? 'ポン' : meld.type === 'chi' ? 'チー' : meld.type === 'kan' ? 'カン' : '暗カン';
       var meldTiles = meld.tiles.map(function(t, ti) {
-        var isCalled = meld.calledTile && t.id === meld.calledTile.id && ti === meld.tiles.length - 1;
+        // 鳴いた牌は横向きにして、どこから来たかが分かるようにする。
+        // チーは数字順に並べ替えるため鳴いた牌が最後に来るとは限らない。
+        // 位置ではなくidで一致を見る（ポン・カンは元から最後に入る）。
+        var isCalled = !!(meld.calledTile && t.id === meld.calledTile.id);
         var isHidden = meld.type === 'ankan' && (ti === 0 || ti === 3);
         if (isHidden) return Tiles.renderTile({ suit: 'back', num: 0, id: 'meldh' + pi + '_' + ti }, { faceDown: true, noHover: true, extraClass: 'meld-tile' });
         return Tiles.renderTile(t, { noHover: true, extraClass: 'meld-tile' + (isCalled ? ' meld-called' : '') });
@@ -4752,7 +4755,9 @@ var App = {
       var meldsHtml = winnerMelds.length ? '<div class="fr-melds">' + winnerMelds.map(function(m) {
         var typeLabel = m.type === 'pon' ? 'ポン' : m.type === 'chi' ? 'チー' : m.type === 'kan' ? 'カン' : '暗カン';
         var mTiles = (m.tiles || []).map(function(t, ti) {
-          var isCalled = m.calledTile && Tiles.isSame(t, m.calledTile) && ti === m.tiles.length - 1;
+          // 鳴いた牌の判定は牌の種類ではなくidで行う。
+          // 種類で見るとポンの3枚すべてが該当してしまう。
+          var isCalled = !!(m.calledTile && t.id === m.calledTile.id);
           var isHidden = m.type === 'ankan' && (ti === 0 || ti === 3);
           if (isHidden) return Tiles.renderTile({suit:'back',num:0,id:'agrh_'+ti}, {faceDown:true, noHover:true, extraClass:'xxs'});
           return Tiles.renderTile(t, {noHover:true, extraClass:'xxs'+(isCalled?' meld-called':'')});
