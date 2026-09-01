@@ -1672,6 +1672,32 @@ var FriendGame = (function() {
     checkAnkan: function(seat) { return checkAnkanCandidates(_game, seat); },
     checkKakan: function(seat) { return checkKakanCandidates(_game, seat); },
     isFuriten: function(seat) { return !!_game && isFuriten(_game, seat == null ? mySeat() : seat); },
+    // 打牌前の見込み表示用（CPU戦の Battle.isFuritenForHand と同じ役割）。
+    // 自分の番は手牌が1枚多く待ちが定まらないため、
+    // 「その牌を切ったあとの手牌」で見た結果が要る。
+    isFuritenForHand: function(hand13) {
+      if (!_game) return false;
+      var seat = mySeat();
+      ensureRuntimeArrays(_game);
+      if (_game.riichiFuriten && _game.riichiFuriten[seat]) return true;
+      if (_game.tempFuriten && _game.tempFuriten[seat]) return true;
+      var waits = getValidWaits(_game, hand13 || [], seat);
+      return Yaku.isFuritenBySelf(waits, _game.discards[seat] || []);
+    },
+    // 「この牌を切ったらどうなるか」の見込み表示用（CPU戦の Battle.hasYakuForHand と同じ）
+    hasYakuForHand: function(hand13, winType, winningTile) {
+      if (!_game || !hand13 || !winningTile) return false;
+      var seat = mySeat();
+      var hand = hand13.slice().concat([winningTile]);
+      if (!Agari.isWinningHand(hand)) return false;
+      var openMelds = (_game.melds && _game.melds[seat]) || [];
+      var closed = isClosed(_game, seat);
+      var yaku = Yaku.computeShapeYaku(hand, openMelds, closed,
+        seatWindNum(_game, seat), roundWindNum(_game), winType, winningTile);
+      if (winType === 'tsumo' && closed) return true;   // 門前清自摸和
+      if (_game.riichi && _game.riichi[seat]) return true;
+      return yaku.length > 0;
+    },
     hasYaku: function(seat, winType, fromSeat, winningTile, isChankan) {
       return !!_game && hasYaku(_game, seat == null ? mySeat() : seat, winType, fromSeat, winningTile, isChankan);
     },

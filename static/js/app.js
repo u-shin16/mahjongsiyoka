@@ -2344,15 +2344,19 @@ var App = {
       : null;
     var selectedWaits = [];
     var tsumogiriWaits = [];
+    var selHandTilesForWaits = null;   // 選んだ牌を切ったあとの手牌（判定に使う）
+    var tsumogiriBaseHand = null;      // ツモ切りしたあとの手牌
     if (frSelectedEntry) {
       var selHandTiles = displayEntries.filter(function(e) { return e !== frSelectedEntry; }).map(function(e) { return e.tile; });
       if (selHandTiles.length % 3 === 1) {
+        selHandTilesForWaits = selHandTiles;
         selectedWaits = Agari.getTenpaiWaits(selHandTiles);
         if (g.isSanma) selectedWaits = selectedWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
       }
     } else {
       var tsumoHandTiles = displayEntries.filter(function(e) { return e !== drawnEntry; }).map(function(e) { return e.tile; });
       if (tsumoHandTiles.length % 3 === 1) {
+        tsumogiriBaseHand = tsumoHandTiles;
         tsumogiriWaits = Agari.getTenpaiWaits(tsumoHandTiles);
         if (g.isSanma) tsumogiriWaits = tsumogiriWaits.filter(function(w) { return w.suit !== 'man' || w.num === 1 || w.num === 9; });
       }
@@ -2420,20 +2424,52 @@ var App = {
       });
       if (floatBtnsFr) frCallFloatHtml = '<div class="hand-action-float">' + floatBtnsFr + '</div>';
     }
-    var frRenderWaitTiles = function(waits) {
+    // 待ちの印はCPU戦と同じ規則にそろえる。
+    //   ツモのみ：フリテンのとき（ロンできない）
+    //   役なし  ：鳴いていて、その牌では役が付かないとき
+    // 門前には「役なし」を出さない（ツモに門前清自摸和が必ず付くため）。
+    // 判定は必ず「その牌を切ったあとの手牌」で行う。今の手牌のままだと
+    // 1枚多くて待ちが定まらず、常に判定を外す。
+    var frRenderWaitTilesPlain = function(waits) {
       return waits.map(function(w) {
         return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xs' });
       }).join('');
     };
+    var frRenderWaitTiles = function(waits, baseHand) {
+      if (!waits || !waits.length) return '';
+      if (!baseHand) return frRenderWaitTilesPlain(waits);
+      var html = '';
+      try {
+        var furiten = FriendGame.isFuritenForHand(baseHand);
+        html = waits.map(function(w) {
+          var t = { suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num };
+          var tileHtml = Tiles.renderTile(t, { noHover: true, extraClass: 'xs' });
+          var ronYaku   = FriendGame.hasYakuForHand(baseHand, 'ron', t);
+          var tsumoYaku = FriendGame.hasYakuForHand(baseHand, 'tsumo', t);
+          var canRon = !furiten && ronYaku;
+          var mark = '', cls = '';
+          if (!isClosed && !canRon && !tsumoYaku) { mark = '役なし';   cls = ' is-dead'; }
+          else if (furiten && !canRon)            { mark = 'ツモのみ'; cls = ' is-tsumo-only'; }
+          // 印が無いときは包まずそのまま出す（今までと同じ形）
+          if (!mark) return tileHtml;
+          return '<span class="mj-wait-tile' + cls + '">' + tileHtml +
+            '<span class="mj-wait-mark">' + mark + '</span></span>';
+        }).join('');
+      } catch (e) {
+        html = '';
+      }
+      // 判定に失敗しても待ちは必ず出す
+      return html || frRenderWaitTilesPlain(waits);
+    };
     var selectedWaitsHtml = selectedWaits.length > 0
-      ? '<div class="mj-waits-area">' + frRenderWaitTiles(selectedWaits) + '</div>'
+      ? '<div class="mj-waits-area">' + frRenderWaitTiles(selectedWaits, selHandTilesForWaits) + '</div>'
       : '';
     var waitsBtnHtml = '';
     if (tsumogiriWaits.length > 0) {
       waitsBtnHtml = '<div class="fr-waits-fab-wrap">' +
         '<div class="fr-waits-panel">' +
           '<div class="fr-waits-panel-title">ツモ切りの待ち</div>' +
-          '<div class="fr-waits-panel-tiles">' + frRenderWaitTiles(tsumogiriWaits) + '</div>' +
+          '<div class="fr-waits-panel-tiles">' + frRenderWaitTiles(tsumogiriWaits, tsumogiriBaseHand) + '</div>' +
         '</div>' +
         '<button type="button" class="fr-waits-fab" id="btnFrShowWaits">待ちを表示</button>' +
       '</div>';
@@ -2699,13 +2735,16 @@ var App = {
       }
     };
     // ── マウス：カーソルを合わせた時点で待ちをプレビュー表示（CPU戦と同じ仕組み） ──
+    var hoverBaseHandFr = null;   // ホバー中の牌を切ったあとの手牌（判定に使う）
     var computeWaitsForEntry = function(entry) {
+      hoverBaseHandFr = null;
       if (g.riichi[my]) return [];
       if (self._frRiichiSel && riichiBlockedIdx[entry.idx]) return [];
       var testHand = displayEntries.filter(function(e) { return e !== entry; }).map(function(e) { return e.tile; });
       if (testHand.length % 3 !== 1) return [];
       var w = Agari.getTenpaiWaits(testHand);
       if (g.isSanma) w = w.filter(function(x) { return x.suit !== 'man' || x.num === 1 || x.num === 9; });
+      hoverBaseHandFr = testHand;
       return w;
     };
     var hoverWaitsAreaFr = null;
@@ -2720,10 +2759,16 @@ var App = {
         var row = container.querySelector('.jt-hand-tiles-row');
         if (row && row.parentNode) row.parentNode.insertBefore(hoverWaitsAreaFr, row);
       }
-      hoverWaitsAreaFr.innerHTML = frRenderWaitTiles(waits);
+      // 元からある待ちの枠と二重に出て重なるため、ホバー中はそちらを隠す
+      container.querySelectorAll('.mj-waits-area').forEach(function(el) {
+        if (el !== hoverWaitsAreaFr) el.style.display = 'none';
+      });
+      hoverWaitsAreaFr.innerHTML = frRenderWaitTiles(waits, hoverBaseHandFr);
     };
     var hideHoverWaitsFr = function() {
       if (hoverWaitsAreaFr && hoverWaitsAreaFr.isConnected) hoverWaitsAreaFr.remove();
+      var c2 = document.querySelector('.jt-hand-in-table');
+      if (c2) c2.querySelectorAll('.mj-waits-area').forEach(function(el) { el.style.display = ''; });
     };
 
     {
