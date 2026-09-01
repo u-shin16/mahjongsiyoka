@@ -1206,6 +1206,28 @@ var Battle = (function() {
     calcScore: calcScore,
     settleScore: settleScore,
     settleRyukyoku: settleRyukyoku,
+    getRiichiCandidates: getRiichiCandidates,
+    isFuriten: function(seat) { return !!state && isFuriten(seat == null ? 0 : seat); },
+    hasYaku: function(seat, winType, winningTile) { return !!state && hasYaku(seat == null ? 0 : seat, winType, winningTile); },
+    playerNuki: playerNuki,
+    canNuki: function() { return !!(state && state.isSanma && state.phase === 'player_turn' && findNukiIdx(0) >= 0); },
+    isNukiTile: isNukiTile,
+    canTsumo: function() {
+      if (!state) return false;
+      var hand = state.hands[0];
+      if (!Agari.isWinningHand(hand)) return false;
+      var winTile = hand[hand.length - 1];
+      return hasYaku(0, 'tsumo', winTile);
+    },
+    canRiichi: function() {
+      if (!state || state.riichi[0] || state.scores[0] < 1000 || !isClosed(0)) return false;
+      var h = state.hands[0];
+      for (var i = 0; i < h.length; i++) {
+        var rest = h.filter(function(_, j) { return j !== i; });
+        if (getBattleWaits(rest, 0).length > 0) return true;
+      }
+      return false;
+    },
     // 鳴き/カン
     playerDiscardNaki: playerDiscardNaki,
     playerPon:    playerPon,
