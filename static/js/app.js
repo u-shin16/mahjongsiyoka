@@ -3917,28 +3917,29 @@ var App = {
           canTsumo: handIsClosed || shapeYaku,
         };
       };
+      // 牌1枚ずつに、その牌でどう和了れるかの印を付ける。
+      //   役なし  ：ロンでもツモでも和了れない（灰色）
+      //   ツモのみ：ロンできないがツモなら和了れる（フリテンのとき。金色）
+      //   印なし  ：ロンもツモもできる
       var renderWaitTiles = function(waits) {
         return waits.map(function(w) {
           var info = waitInfo(w);
-          var dead = !info.canRon && !info.canTsumo;
-          return '<span class="mj-wait-tile' + (dead ? ' is-dead' : '') + '">' +
+          var mark = '', cls = '';
+          if (!info.canRon && !info.canTsumo) { mark = '役なし';   cls = ' is-dead'; }
+          else if (!info.canRon)              { mark = 'ツモのみ'; cls = ' is-tsumo-only'; }
+          return '<span class="mj-wait-tile' + cls + '">' +
             Tiles.renderTile(info.tile, { noHover: true, extraClass: 'xs' }) +
-            (dead ? '<span class="mj-wait-mark">役なし</span>' : '') +
+            (mark ? '<span class="mj-wait-mark">' + mark + '</span>' : '') +
           '</span>';
         }).join('');
       };
-      // 待ち全体に添える注記
+      // 待ち全体に添える注記。牌ごとの印で足りるので、
+      // 「1枚も和了れない」ときだけ理由を1行出す。
       var waitsNote = function(waits) {
         if (!waits.length) return '';
         var infos = waits.map(waitInfo);
         if (infos.every(function(i) { return !i.canRon && !i.canTsumo; })) {
-          return '<span class="mj-wait-note note-ng">役なし（このままでは和了れません）</span>';
-        }
-        if (isFuriten) {
-          return '<span class="mj-wait-note note-tsumo">フリテン：ツモのみ</span>';
-        }
-        if (infos.some(function(i) { return !i.canRon && !i.canTsumo; })) {
-          return '<span class="mj-wait-note note-ng">「役なし」の牌では和了れません</span>';
+          return '<span class="mj-wait-note note-ng">このままでは和了れません</span>';
         }
         return '';
       };
