@@ -4420,7 +4420,6 @@ var App = {
       var tableHtml =
         '<div class="jt-game-topbar">' +
           '<button class="jt-game-nav" id="jtBattleBack">退出</button>' +
-          '<button class="jt-game-nav" id="jtBattleProgress">設定</button>' +
         '</div>' +
         // 上段：CPU対面の情報
         '<div class="jt-top-cpu">'+cpuChip(T,true)+'</div>' +
@@ -4510,9 +4509,6 @@ var App = {
       isFirstBattleRender = false;
       var battleBack = document.getElementById('jtBattleBack');
       if (battleBack) battleBack.addEventListener('click', function() { self.goBack(); });
-      var battleProgress = document.getElementById('jtBattleProgress');
-      if (battleProgress) battleProgress.addEventListener('click', function() { self.goBack(); });
-
       // ── 捨て牌実行ヘルパー ──
       var afterDiscard = function() {
         var ns = Battle.getState();
