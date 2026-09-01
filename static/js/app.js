@@ -984,26 +984,64 @@ function fitBattleTable() {
     row.style.removeProperty('margin');
     table.style.removeProperty('transform');
     table.style.removeProperty('transform-origin');
+    var o0 = row.closest('.jt-outer');
+    if (o0) {
+    o0.style.removeProperty('overflow');
+    o0.style.removeProperty('display');
+    o0.style.removeProperty('flex-direction');
+    o0.style.removeProperty('align-items');
+    o0.style.removeProperty('justify-content');
+  }
     return;
   }
 
-  // 使える広さ。上下の余白（ヘッダー・操作行）を少し見込む
-  var availW = document.documentElement.clientWidth;
-  var availH = window.innerHeight - 12;
+  // 先に前回の指定を全部外してから測る。
+  // 縮小を掛けたままだと位置も大きさも変わっていて、正しい余白が測れない。
+  row.style.removeProperty('width');
+  row.style.removeProperty('height');
+  row.style.removeProperty('flex');
+  row.style.removeProperty('margin');
+  table.style.removeProperty('transform');
+  table.style.removeProperty('transform-origin');
+  var outerEl = row.closest('.jt-outer');
+  if (outerEl) {
+    outerEl.style.removeProperty('overflow');
+    outerEl.style.removeProperty('display');
+    outerEl.style.removeProperty('flex-direction');
+    outerEl.style.removeProperty('align-items');
+    outerEl.style.removeProperty('justify-content');
+  }
+
+  // 使える広さ。友人戦は上に部屋IDの帯があるなど、雀卓の上下に置かれる
+  // ものがモードによって違うため、実際の位置を測って残りの高さを出す。
+  // ぴったりに収めると枠線や端数で1〜2pxはみ出すことがあるため、少し余裕を取る
+  var availW = document.documentElement.clientWidth - 8;
+  var rowTop = row.getBoundingClientRect().top;
+  var outer = row.closest('.jt-outer');
+  var below = 0;
+  if (outer) {
+    // 雀卓より下にある要素（実況ログ・AI相談など）の高さ
+    var oRect = outer.getBoundingClientRect();
+    below = Math.max(0, oRect.bottom - (rowTop + row.offsetHeight));
+  }
+  var availH = window.innerHeight - rowTop - below - 8;
+  if (availH < 200) availH = window.innerHeight - 8;   // 測れないときの保険
   var scale = Math.min(1, availW / BATTLE_DESIGN_W, availH / BATTLE_DESIGN_H);
 
-  if (scale >= 0.999) {
-    // 収まっているときは何もしない（今までどおりの伸縮するレイアウト）
-    row.style.removeProperty('width');
-    row.style.removeProperty('height');
-    row.style.removeProperty('flex');
-    row.style.removeProperty('margin');
-    table.style.removeProperty('transform');
-    table.style.removeProperty('transform-origin');
-    return;
-  }
+  // 収まっているときは何もしない（今までどおりの伸縮するレイアウト）
+  if (scale >= 0.999) return;
 
-  // 設計サイズで組んでから、まとめて縮める
+  // 設計サイズで組んでから、まとめて縮める。
+  // 縮めても場所取りの箱は元の大きさのまま残るので、外枠ではみ出しを隠す。
+  // 雀卓そのものは縮小後の見た目の範囲に収まっているので、切れることはない。
+  if (outer) {
+    outer.style.setProperty('overflow', 'hidden', 'important');
+    // 中央に置く。寄っていると、はみ出しを隠したときに片側だけ切れる
+    outer.style.setProperty('display', 'flex', 'important');
+    outer.style.setProperty('flex-direction', 'column', 'important');
+    outer.style.setProperty('align-items', 'center', 'important');
+    outer.style.setProperty('justify-content', 'center', 'important');
+  }
   row.style.setProperty('flex', 'none', 'important');
   row.style.setProperty('width', BATTLE_DESIGN_W + 'px', 'important');
   row.style.setProperty('height', BATTLE_DESIGN_H + 'px', 'important');
@@ -1017,6 +1055,17 @@ function fitBattleTable() {
   var padX = Math.round(BATTLE_DESIGN_W * (1 - scale) / 2);
   var padY = Math.round(BATTLE_DESIGN_H * (1 - scale) / 2);
   row.style.setProperty('margin', (-padY) + 'px ' + (-padX) + 'px', 'important');
+
+  // 計算どおりに詰まらないことがある（モードによって雀卓の外側の作りが
+  // 違うため）。実際のはみ出し量を測って、残っていれば追加で詰める。
+  var doc = document.documentElement;
+  var overX = Math.max(0, document.body.scrollWidth  - doc.clientWidth);
+  var overY = Math.max(0, document.body.scrollHeight - window.innerHeight);
+  if (overX > 0 || overY > 0) {
+    row.style.setProperty('margin',
+      (-(padY + Math.ceil(overY / 2))) + 'px ' + (-(padX + Math.ceil(overX / 2))) + 'px',
+      'important');
+  }
 }
 
 window.addEventListener('resize', fitBattleTable);
