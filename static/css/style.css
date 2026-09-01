@@ -6700,3 +6700,34 @@ body.is-battle-page .app-footer {
   background: rgba(255,215,106,0.15); border-radius: 999px; padding: 2px 8px;
 }
 
+
+/* ─────────────────────────────────
+   和了画面：手牌と和了牌を分けて出す
+   「手牌 ｜ ロン/ツモの牌」の並び。どの牌でアガったのかを
+   14枚の中から探さずに済むようにする。
+───────────────────────────────── */
+.agr-hand-split {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.agr-hand-part { display: flex; flex-direction: column; gap: 4px; }
+.agr-part-label {
+  font-size: 0.7rem;
+  color: #8ab89c;
+  text-align: left;
+  letter-spacing: 0.04em;
+}
+/* 和了牌は破線で区切って、色を変えたラベルで目立たせる */
+.agr-hand-win {
+  padding-left: 14px;
+  border-left: 2px dashed rgba(232,184,75,0.55);
+}
+.agr-hand-win .agr-part-label { color: #ffe38a; font-weight: 700; }
+
+@media (max-width: 480px) {
+  .agr-hand-split { gap: 8px; }
+  .agr-hand-win { padding-left: 8px; }
+}

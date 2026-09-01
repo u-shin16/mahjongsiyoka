@@ -1047,6 +1047,8 @@ var FriendGame = (function() {
       label: points.label,
       deltas: deltas,
       hand: Tiles.sortTiles(hand.slice()),
+      // 和了画面で手牌と和了牌を分けて出すため、どの牌でアガったかを残す
+      winTileId: (winningTile && winningTile.id) || null,
       melds: (state.melds && state.melds[winner]) || [],
       nuki: state.nuki[winner] || [],
       uraInd: state.riichi[winner] ? state.uraInd : null,

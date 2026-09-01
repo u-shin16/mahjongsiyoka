@@ -2514,10 +2514,29 @@ var App = {
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
       } else if (r) {
-        // 手牌は自分の生手牌と同じ「フラットに理牌」した表示にする（面子ごとのグループ化はしない）
-        var resultHandHtml = '<span class="agr-tile-group">' + Tiles.sortTiles((r.hand || []).slice()).map(function(t) {
-          return Tiles.renderTile(t, { noHover: true, small: true });
-        }).join('') + '</span>';
+        // 手牌は自分の生手牌と同じ「フラットに理牌」した表示にする（面子ごとのグループ化はしない）。
+        // 和了牌だけは手牌から抜き出して、「手牌 ｜ ロン/ツモの牌」の並びで分けて出す。
+        var frResultTiles = (r.hand || []).slice();
+        var frWinTile = null;
+        if (r.winTileId) {
+          var fwi = frResultTiles.findIndex(function(t) { return t.id === r.winTileId; });
+          if (fwi >= 0) frWinTile = frResultTiles.splice(fwi, 1)[0];
+        }
+        var resultHandHtml =
+          '<div class="agr-hand-split">' +
+            '<div class="agr-hand-part">' +
+              '<div class="agr-part-label">手牌</div>' +
+              '<span class="agr-tile-group">' + Tiles.sortTiles(frResultTiles).map(function(t) {
+                return Tiles.renderTile(t, { noHover: true, small: true });
+              }).join('') + '</span>' +
+            '</div>' +
+            (frWinTile
+              ? '<div class="agr-hand-part agr-hand-win">' +
+                  '<div class="agr-part-label">' + (r.type === 'tsumo' ? 'ツモ' : 'ロン') + 'の牌</div>' +
+                  '<span class="agr-tile-group">' + Tiles.renderTile(frWinTile, { noHover: true, small: true }) + '</span>' +
+                '</div>'
+              : '') +
+          '</div>';
         // ドラ・裏ドラ表示牌（カンドラはドラ表示牌の行にまとめて表示する）
         var resultKanDoraInds = r.kanDoraInds || [];
         var resultDoraRowHtml = g.doraInd
@@ -4728,10 +4747,29 @@ var App = {
 
       // 手牌 HTML（面子・雀頭ごとに分けると一盃口などが分かりにくいとの指摘のため、
       // 自分の手牌表示と同じ理牌方法（Tiles.sortTiles：スート→数字順）で1グループに並べる）
+      // 手牌と和了牌を分けて出す（「手牌 ｜ ロン/ツモの牌」の並び）。
+      // 和了牌は手牌の中に入っているので、idで1枚だけ抜き出す。
       var resultHandTiles = (s.hands[winner] || []).slice();
-      var handHtml = '<span class="agr-tile-group">' + Tiles.sortTiles(resultHandTiles).map(function(t) {
-        return Tiles.renderTile(t, { noHover: true, small: true });
-      }).join('') + '</span>';
+      var winTileObj = null;
+      if (s.winTile) {
+        var wi = resultHandTiles.findIndex(function(t) { return t.id === s.winTile.id; });
+        if (wi >= 0) winTileObj = resultHandTiles.splice(wi, 1)[0];
+      }
+      var handHtml =
+        '<div class="agr-hand-split">' +
+          '<div class="agr-hand-part">' +
+            '<div class="agr-part-label">手牌</div>' +
+            '<span class="agr-tile-group">' + Tiles.sortTiles(resultHandTiles).map(function(t) {
+              return Tiles.renderTile(t, { noHover: true, small: true });
+            }).join('') + '</span>' +
+          '</div>' +
+          (winTileObj
+            ? '<div class="agr-hand-part agr-hand-win">' +
+                '<div class="agr-part-label">' + (s.winType === 'tsumo' ? 'ツモ' : 'ロン') + 'の牌</div>' +
+                '<span class="agr-tile-group">' + Tiles.renderTile(winTileObj, { noHover: true, small: true }) + '</span>' +
+              '</div>'
+            : '') +
+        '</div>';
 
       // 副露（鳴き牌）
       var winnerMelds = (s.melds && s.melds[winner]) || [];
