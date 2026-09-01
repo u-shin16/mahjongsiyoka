@@ -3901,13 +3901,49 @@ var App = {
           }
         }
       }
+      // 待ちの表示は、牌を並べるだけだと「なぜ和了れないのか」が分からない。
+      // フリテンのときは「ツモのみ」、その牌では役が付かないときは「役なし」を添える。
+      //
+      // 役の判定：Battle.hasYaku はロンのとき和了牌を手牌へ足して数えるので、
+      // 形に役があるかはロンで見る。門前ならツモに門前清自摸和が必ず付くため、
+      // 門前かどうかも見てツモで和了れるかを決める。
+      var handIsClosed = (((s.melds && s.melds[0]) || []).every(function(m) { return m.type === 'ankan'; }));
+      var waitInfo = function(w) {
+        var t = { suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num };
+        var shapeYaku = Battle.hasYaku(0, 'ron', t);
+        return {
+          tile: t,
+          canRon:   !isFuriten && shapeYaku,
+          canTsumo: handIsClosed || shapeYaku,
+        };
+      };
       var renderWaitTiles = function(waits) {
         return waits.map(function(w) {
-          return Tiles.renderTile({ suit: w.suit, num: w.num, id: 'wait_' + w.suit + w.num }, { noHover: true, extraClass: 'xs' });
+          var info = waitInfo(w);
+          var dead = !info.canRon && !info.canTsumo;
+          return '<span class="mj-wait-tile' + (dead ? ' is-dead' : '') + '">' +
+            Tiles.renderTile(info.tile, { noHover: true, extraClass: 'xs' }) +
+            (dead ? '<span class="mj-wait-mark">役なし</span>' : '') +
+          '</span>';
         }).join('');
       };
+      // 待ち全体に添える注記
+      var waitsNote = function(waits) {
+        if (!waits.length) return '';
+        var infos = waits.map(waitInfo);
+        if (infos.every(function(i) { return !i.canRon && !i.canTsumo; })) {
+          return '<span class="mj-wait-note note-ng">役なし（このままでは和了れません）</span>';
+        }
+        if (isFuriten) {
+          return '<span class="mj-wait-note note-tsumo">フリテン：ツモのみ</span>';
+        }
+        if (infos.some(function(i) { return !i.canRon && !i.canTsumo; })) {
+          return '<span class="mj-wait-note note-ng">「役なし」の牌では和了れません</span>';
+        }
+        return '';
+      };
       var selectedWaitsHtml = selectedWaits.length > 0
-        ? '<div class="mj-waits-area">' + renderWaitTiles(selectedWaits) + '</div>'
+        ? '<div class="mj-waits-area">' + renderWaitTiles(selectedWaits) + waitsNote(selectedWaits) + '</div>'
         : '';
 
       // ── テンパイ候補牌を計算（表示インデックス→actual index のマップ） ──
@@ -3922,9 +3958,8 @@ var App = {
       if (isRiichi && s.riichiWaits && s.riichiWaits.length > 0) {
         waitsHtml = '<div class="mj-waits-area">' +
           '<span class="mj-waits-label">🎯 待ち：</span>' +
-          s.riichiWaits.map(function(w) {
-            return Tiles.renderTile(Tiles.make(w.suit, w.num), {noHover: true, extraClass: 'xs'});
-          }).join('') +
+          renderWaitTiles(s.riichiWaits) +
+          waitsNote(s.riichiWaits) +
         '</div>';
       }
 

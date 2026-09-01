@@ -6711,3 +6711,43 @@ body.is-battle-page .app-footer {
   .agr-hand-split { gap: 8px; }
   .agr-hand-win { padding-left: 8px; }
 }
+
+/* ─────────────────────────────────
+   待ち牌の注記
+   牌を並べるだけだと「なぜ和了れないのか」が分からないため、
+   フリテンなら「ツモのみ」、役が付かない牌には「役なし」を添える。
+───────────────────────────────── */
+.mj-wait-tile { position: relative; display: inline-block; }
+.mj-wait-tile.is-dead .tile { opacity: 0.42; filter: grayscale(0.7); }
+.mj-wait-mark {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  transform: translateX(-50%);
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #ff9a8a;
+  background: rgba(0,0,0,0.72);
+  border-radius: 3px;
+  padding: 0 3px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.mj-wait-note {
+  margin-left: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.mj-wait-note.note-tsumo {
+  color: #ffe38a;
+  background: rgba(255,215,106,0.16);
+  border: 1px solid rgba(255,215,106,0.45);
+}
+.mj-wait-note.note-ng {
+  color: #ff9a8a;
+  background: rgba(255,120,100,0.14);
+  border: 1px solid rgba(255,120,100,0.4);
+}

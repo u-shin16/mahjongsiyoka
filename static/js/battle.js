@@ -57,6 +57,7 @@ var Battle = (function() {
       rinshanPending: false,
       tempFuriten: makePlayerArray(playerCount, false),
       riichiFuriten: makePlayerArray(playerCount, false),
+      riichiDiscardIdx: null,   // 自分のリーチ宣言牌が河の何枚目か（横向き表示用）
       nuki: makePlayerArray(playerCount, function() { return []; }),
       melds:  makePlayerArray(playerCount, function() { return []; }),
       callPending:    null,   // pending_call 時に鳴き選択肢を保存
@@ -115,6 +116,9 @@ var Battle = (function() {
     state.ryukyokuSettled = false;
     state.lastRyukyoku = null;
     state.riichiWaits = [];
+    // リーチ宣言牌の位置。局をまたいで残ると、リーチしていないのに
+    // 同じ枚数目の捨て牌が横向きになってしまうため必ず戻す
+    state.riichiDiscardIdx = null;
     state.drewTile = null;
     drawForPlayer();
   }
