@@ -6627,24 +6627,6 @@ body.is-battle-page .app-footer {
    「流局」とだけ出しても何が起きたのか分からないため、
    テンパイ／ノーテンと点棒の増減を一目で追えるようにする。
 ───────────────────────────────── */
-.ryu-rule {
-  background: rgba(0,0,0,0.25);
-  border-left: 3px solid var(--gold);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  margin-bottom: 12px;
-  text-align: left;
-  font-size: 0.88rem;
-  line-height: 1.6;
-  color: #d7ecdc;
-}
-.ryu-breakdown {
-  margin-top: 6px;
-  font-size: 0.82rem;
-  color: #a8d8b0;
-}
-.ryu-breakdown b { color: var(--text-light); }
-
 .ryu-list { display: grid; gap: 6px; margin-bottom: 12px; }
 
 .ryu-row {
@@ -6682,17 +6664,18 @@ body.is-battle-page .app-footer {
 .ryu-delta.zero  { color: #7fa88f; }
 
 .ryu-kyotaku {
-  background: rgba(255,215,106,0.10);
-  border: 1px solid rgba(255,215,106,0.35);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: rgba(0,0,0,0.2);
   border-radius: var(--radius-sm);
-  padding: 8px 12px;
+  padding: 6px 12px;
   margin-bottom: 12px;
   text-align: left;
-  font-size: 0.82rem;
-  line-height: 1.6;
-  color: #d7ecdc;
+  font-size: 0.84rem;
+  color: #8ab89c;
 }
-.ryu-kyotaku b { color: #ffe38a; }
+.ryu-kyotaku b { color: #ffe38a; font-weight: 700; }
 
 @media (max-width: 480px) {
   .ryu-row { flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -6717,8 +6700,4 @@ body.is-battle-page .app-footer {
   font-size: 0.74rem; color: #ffe38a; font-weight: 700;
   background: rgba(255,215,106,0.15); border-radius: 999px; padding: 2px 8px;
 }
-.ryu-note {
-  font-size: 0.76rem; line-height: 1.6; color: #8ab89c;
-  background: rgba(255,255,255,0.04); border-radius: var(--radius-sm);
-  padding: 8px 10px; margin-bottom: 12px; text-align: left;
-}
+
