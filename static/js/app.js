@@ -973,10 +973,17 @@ function fitBattleTable() {
   var table = document.querySelector('.jt-table');
   if (!row || !table) return;
 
-  // スマホ向けのCSS（レターボックス）が効いている場面では、そちらに任せる。
-  // 二重に縮めると小さくなりすぎる。
-  var cssScaled = window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
-                  window.matchMedia('(orientation: landscape) and (max-height: 460px)').matches;
+  // スマホ向けのCSSが実際に縮小を担当している場面だけ、そちらに任せる。
+  // 「タッチ端末なら全部CSSに任せる」にしていたため、CSSが担当しない
+  // 範囲（横画面で高さが460pxより大きい端末など）で誰も縮小せず、
+  // 雀卓が画面から見切れていた。条件をCSS側とそろえる。
+  var cssScaled =
+    // 縦画面のタッチ端末：CSSが対局画面を隠して「横にして」を出す
+    window.matchMedia('(hover: none) and (pointer: coarse) and (orientation: portrait)').matches ||
+    // 横画面で高さが低い端末：CSSが縮小する
+    window.matchMedia('(orientation: landscape) and (max-height: 460px)').matches ||
+    // 縦画面の小さめ端末（タッチでないもの）：CSSが縮小する
+    window.matchMedia('(hover: hover) and (orientation: portrait) and (max-width: 900px)').matches;
   if (cssScaled) {
     row.style.removeProperty('width');
     row.style.removeProperty('height');
@@ -1024,8 +1031,12 @@ function fitBattleTable() {
     var oRect = outer.getBoundingClientRect();
     below = Math.max(0, oRect.bottom - (rowTop + row.offsetHeight));
   }
-  var availH = window.innerHeight - rowTop - below - 8;
-  if (availH < 200) availH = window.innerHeight - 8;   // 測れないときの保険
+  // スマホはアドレスバーの出し引きで見えている高さが変わる。
+  // window.innerHeight はバーを含んだ値になることがあるため、
+  // 実際に見えている高さ（100dvh 相当）が取れる端末ではそちらを使う。
+  var viewH = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  var availH = viewH - rowTop - below - 8;
+  if (availH < 200) availH = viewH - 8;   // 測れないときの保険
   var scale = Math.min(1, availW / BATTLE_DESIGN_W, availH / BATTLE_DESIGN_H);
 
   // 収まっているときは何もしない（今までどおりの伸縮するレイアウト）
@@ -1060,7 +1071,7 @@ function fitBattleTable() {
   // 違うため）。実際のはみ出し量を測って、残っていれば追加で詰める。
   var doc = document.documentElement;
   var overX = Math.max(0, document.body.scrollWidth  - doc.clientWidth);
-  var overY = Math.max(0, document.body.scrollHeight - window.innerHeight);
+  var overY = Math.max(0, document.body.scrollHeight - viewH);
   if (overX > 0 || overY > 0) {
     row.style.setProperty('margin',
       (-(padY + Math.ceil(overY / 2))) + 'px ' + (-(padX + Math.ceil(overX / 2))) + 'px',
@@ -1070,6 +1081,12 @@ function fitBattleTable() {
 
 window.addEventListener('resize', fitBattleTable);
 window.addEventListener('orientationchange', fitBattleTable);
+// スマホのアドレスバーが出入りすると見えている高さだけが変わり、
+// resize が飛ばないことがあるため、こちらでも掛け直す
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', fitBattleTable);
+  window.visualViewport.addEventListener('scroll', fitBattleTable);
+}
 window.addEventListener('resize', positionDiscardRivers);
 window.addEventListener('resize', positionMeldAreas);
 
