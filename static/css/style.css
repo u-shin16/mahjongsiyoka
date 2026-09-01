@@ -6743,3 +6743,27 @@ body.is-battle-page .app-footer {
   background: rgba(255,120,100,0.14);
   border: 1px solid rgba(255,120,100,0.4);
 }
+
+/* ─────────────────────────────────
+   「AIに聞く」を自分のアイコンのすぐ右に置く
+   手牌のすぐ下にあると、牌を切る操作の邪魔になるため移した。
+   座席と同じく雀卓の上へ絶対配置で重ねる。
+───────────────────────────────── */
+.battle-main .jt-ai-beside-self {
+  position: absolute;
+  z-index: 14;
+  /* .battle-main .jt-seat-self は left:12% / bottom:7% に置かれ、
+     アイコン48px＋その下に名前と点数が続く。
+     アイコンの右へ少し離して、縦はアイコンの中心にそろえる。
+     （実測でアイコン中心と30pxずれていたぶんを足している） */
+  left: calc(12% + 70px);
+  bottom: calc(7% + 44px);
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .battle-main .jt-ai-beside-self {
+    left: calc(12% + 62px);
+    bottom: calc(7% + 38px);
+  }
+}

@@ -4347,6 +4347,16 @@ var App = {
       // ─────────────────────────────────────────────────────────
       // perPlayerMeldsHtml: 各プレイヤー専用副露パネル（それぞれの右下に配置）
       // ─────────────────────────────────────────────────────────
+      // 「AIに聞く」は自分のアイコンのすぐ右に置く。
+      // 手牌のすぐ下にあると、牌を切る操作の邪魔になるため。
+      // 座席と同じく雀卓の上に絶対配置で重ねる。
+      var aiBtnHtml = (s.phase === 'player_turn' || s.phase === 'naki_discard')
+        ? '<button class="btn-battle btn-ai-intable jt-ai-beside-self" id="btnAiGame" ' +
+            (battleAdviceLoading ? 'disabled' : '') + '>' +
+            (battleAdviceLoading ? 'AI考え中' : 'AIに聞く') +
+          '</button>'
+        : '';
+
       var allMeldsHtml = '';  // 旧グローバルパネルは使用しない
       var perPlayerMeldsHtml = '';
       var perPlayerNukiHtml = '';
@@ -4375,9 +4385,6 @@ var App = {
              isRiichi    ? 'ツモ切り：引いた牌をダブルタップ' :
                            '牌をダブルタップ or 上スワイプで切る') +
           '</span>' +
-          '<button class="btn-battle btn-ai-intable" id="btnAiGame" '+(battleAdviceLoading ? 'disabled' : '')+'>' +
-            (battleAdviceLoading ? 'AI考え中' : 'AIに聞く') +
-          '</button>' +
         '</div>';
       } else if (s.phase==='pending_call') {
         // 鳴き選択中はヒントのみ（ボタンは callFloatHtml に移動済み）
@@ -4428,7 +4435,7 @@ var App = {
             seatBadge(T, 'top') +
             (L >= 0 ? seatBadge(L, 'left') : '') +
             seatBadge(R, 'right') +
-            seatBadge(0, 'self') +
+            seatBadge(0, 'self') + aiBtnHtml +
             doraHtml +
             '<div class="jt-hidden-hand jt-hidden-top">' + hiddenTiles('top-wall-', s.hands[T].length, 13) + '</div>' +
             (L >= 0 ? '<div class="jt-hidden-hand jt-hidden-left">' + hiddenTiles('left-wall-', s.hands[L].length, 13) + '</div>' : '') +
