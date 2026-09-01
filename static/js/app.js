@@ -4360,10 +4360,18 @@ var App = {
           var row = container.querySelector('.jt-hand-tiles-row');
           if (row && row.parentNode) row.parentNode.insertBefore(hoverWaitsArea, row);
         }
+        // 元からある待ちの枠と二重に出て重なるため、ホバー中はそちらを隠す
+        container.querySelectorAll('.mj-waits-area').forEach(function(el) {
+          if (el !== hoverWaitsArea) el.style.display = 'none';
+        });
         hoverWaitsArea.innerHTML = renderWaitTiles(waits, hoverBaseHand);
       };
       var hideHoverWaits = function() {
         if (hoverWaitsArea && hoverWaitsArea.isConnected) hoverWaitsArea.remove();
+        var container = document.querySelector('.jt-hand-in-table');
+        if (container) {
+          container.querySelectorAll('.mj-waits-area').forEach(function(el) { el.style.display = ''; });
+        }
       };
 
       // ── 手牌タイル汎用ポインタイベントバインド ──
