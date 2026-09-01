@@ -4610,16 +4610,17 @@ body.is-battle-page .app-main.battle-main {
 /* 手牌タイルを小さく（zoom 0.78 → 0.65） */
 /* 手牌の大きさ。雀卓ごと縮小する作りなので、ここを上げると
    PCでもスマホでも一律に大きくなる。
-   2026-09-01に0.65から1.05へ上げた（小さくて読みにくい・押しにくい）。
-   手牌14枚を並べても雀卓の横幅にはまだ余裕がある（実測で確認）。 */
+   2026-09-01に調整。0.65は小さすぎ、1.05は大きすぎたため0.85にした。
+   PCで44x60、スマホ横で19x25になる。
+   手牌14枚を並べても雀卓の横幅には余裕がある（実測で確認）。 */
 .jt-hand-in-table .mj-sorted-tiles .tile,
 .jt-hand-in-table .mj-drew-area .tile {
-  zoom: 1.05 !important;
+  zoom: 0.85 !important;
 }
 
 /* セパレーターも比例縮小 */
 .jt-hand-in-table .mj-hand-sep {
-  height: 74px !important;
+  height: 60px !important;
 }
 
 /* パディングも詰める */
