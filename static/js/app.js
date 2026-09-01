@@ -977,13 +977,16 @@ function fitBattleTable() {
   // 「タッチ端末なら全部CSSに任せる」にしていたため、CSSが担当しない
   // 範囲（横画面で高さが460pxより大きい端末など）で誰も縮小せず、
   // 雀卓が画面から見切れていた。条件をCSS側とそろえる。
+  // CSSに任せるのは「縦画面のタッチ端末」だけ。ここは対局画面そのものを
+  // 隠して「横にしてください」を出すので、縮小する対象がない。
+  //
+  // 横画面のスマホもCSSに任せていたが、**CSS側には詰め直しが入っていない**。
+  // transform:scale() は見た目だけを縮めて場所取りの箱は元の大きさのまま
+  // 残るため、はみ出して雀卓が見切れていた（実機で確認）。
+  // 縮小はJSに一本化する。JSはインラインで !important を付けるので、
+  // CSS側の transform より優先され、二重には掛からない。
   var cssScaled =
-    // 縦画面のタッチ端末：CSSが対局画面を隠して「横にして」を出す
-    window.matchMedia('(hover: none) and (pointer: coarse) and (orientation: portrait)').matches ||
-    // 横画面で高さが低い端末：CSSが縮小する
-    window.matchMedia('(orientation: landscape) and (max-height: 460px)').matches ||
-    // 縦画面の小さめ端末（タッチでないもの）：CSSが縮小する
-    window.matchMedia('(hover: hover) and (orientation: portrait) and (max-width: 900px)').matches;
+    window.matchMedia('(hover: none) and (pointer: coarse) and (orientation: portrait)').matches;
   if (cssScaled) {
     row.style.removeProperty('width');
     row.style.removeProperty('height');
@@ -1037,12 +1040,25 @@ function fitBattleTable() {
   var viewH = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
   var availH = viewH - rowTop - below - 8;
   if (availH < 200) availH = viewH - 8;   // 測れないときの保険
-  var scale = Math.min(1, availW / BATTLE_DESIGN_W, availH / BATTLE_DESIGN_H);
+
+  // 縮小率は「設計サイズ」ではなく**実際に組み上がった大きさ**から出す。
+  // 画面が狭いと中身が折り返して設計より縦に伸びることがあり、
+  // 設計サイズを前提にすると縮め足りずに見切れる。
+  // まず設計幅で組ませてから、その状態の実寸を測る。
+  row.style.setProperty('flex', 'none', 'important');
+  row.style.setProperty('width', BATTLE_DESIGN_W + 'px', 'important');
+  var natW = Math.max(row.offsetWidth, BATTLE_DESIGN_W);
+  var natH = Math.max(row.offsetHeight, BATTLE_DESIGN_H);
+  var scale = Math.min(1, availW / natW, availH / natH);
 
   // 収まっているときは何もしない（今までどおりの伸縮するレイアウト）
-  if (scale >= 0.999) return;
+  if (scale >= 0.999) {
+    row.style.removeProperty('flex');
+    row.style.removeProperty('width');
+    return;
+  }
 
-  // 設計サイズで組んでから、まとめて縮める。
+  // 実寸で組んでから、まとめて縮める。
   // 縮めても場所取りの箱は元の大きさのまま残るので、外枠ではみ出しを隠す。
   // 雀卓そのものは縮小後の見た目の範囲に収まっているので、切れることはない。
   if (outer) {
@@ -1053,9 +1069,7 @@ function fitBattleTable() {
     outer.style.setProperty('align-items', 'center', 'important');
     outer.style.setProperty('justify-content', 'center', 'important');
   }
-  row.style.setProperty('flex', 'none', 'important');
-  row.style.setProperty('width', BATTLE_DESIGN_W + 'px', 'important');
-  row.style.setProperty('height', BATTLE_DESIGN_H + 'px', 'important');
+  row.style.setProperty('height', natH + 'px', 'important');
   table.style.setProperty('transform', 'scale(' + scale.toFixed(4) + ')', 'important');
   table.style.setProperty('transform-origin', 'center center', 'important');
 
@@ -1063,8 +1077,8 @@ function fitBattleTable() {
   // そのままだと画面からはみ出してスクロールバーが出るため、
   // 余った分を負の余白で詰めて、見た目の大きさに合わせる。
   // 原点が中央なので、はみ出しは上下左右へ半分ずつ出る。
-  var padX = Math.round(BATTLE_DESIGN_W * (1 - scale) / 2);
-  var padY = Math.round(BATTLE_DESIGN_H * (1 - scale) / 2);
+  var padX = Math.round(natW * (1 - scale) / 2);
+  var padY = Math.round(natH * (1 - scale) / 2);
   row.style.setProperty('margin', (-padY) + 'px ' + (-padX) + 'px', 'important');
 
   // 計算どおりに詰まらないことがある（モードによって雀卓の外側の作りが
