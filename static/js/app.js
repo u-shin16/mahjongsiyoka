@@ -951,6 +951,76 @@ function positionMeldAreas() {
 }
 
 // ウィンドウリサイズ時も再配置
+// ============================================================
+// ウィンドウを縮めたときに雀卓を丸ごと縮小して収める
+//
+// 雀卓は 1400x700 の設計サイズで組んである。ウィンドウがそれより
+// 小さいと、中の要素が個別に折り返して見た目が崩れていた。
+// スマホ向けには同じ考え方のCSS（設計サイズで組んで transform:scale で
+// 縮める）が既に入っているので、PCのウィンドウ縮小にも同じ手を当てる。
+//
+// scale は .jt-table 自身に掛ける。河や副露は position:fixed で
+// 配置しており、その基準は「transform が掛かっている一番近い祖先」に
+// なる。positionDiscardRivers / positionMeldAreas は .jt-table 自身の
+// transform を見て座標を変換する作りなので、ここより外側に掛けると
+// 配置がズレる。
+// ============================================================
+var BATTLE_DESIGN_W = 1400;
+var BATTLE_DESIGN_H = 700;
+
+function fitBattleTable() {
+  var row = document.querySelector('.is-battle-page .jt-row, .jt-outer .jt-row');
+  var table = document.querySelector('.jt-table');
+  if (!row || !table) return;
+
+  // スマホ向けのCSS（レターボックス）が効いている場面では、そちらに任せる。
+  // 二重に縮めると小さくなりすぎる。
+  var cssScaled = window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
+                  window.matchMedia('(orientation: landscape) and (max-height: 460px)').matches;
+  if (cssScaled) {
+    row.style.removeProperty('width');
+    row.style.removeProperty('height');
+    row.style.removeProperty('flex');
+    row.style.removeProperty('margin');
+    table.style.removeProperty('transform');
+    table.style.removeProperty('transform-origin');
+    return;
+  }
+
+  // 使える広さ。上下の余白（ヘッダー・操作行）を少し見込む
+  var availW = document.documentElement.clientWidth;
+  var availH = window.innerHeight - 12;
+  var scale = Math.min(1, availW / BATTLE_DESIGN_W, availH / BATTLE_DESIGN_H);
+
+  if (scale >= 0.999) {
+    // 収まっているときは何もしない（今までどおりの伸縮するレイアウト）
+    row.style.removeProperty('width');
+    row.style.removeProperty('height');
+    row.style.removeProperty('flex');
+    row.style.removeProperty('margin');
+    table.style.removeProperty('transform');
+    table.style.removeProperty('transform-origin');
+    return;
+  }
+
+  // 設計サイズで組んでから、まとめて縮める
+  row.style.setProperty('flex', 'none', 'important');
+  row.style.setProperty('width', BATTLE_DESIGN_W + 'px', 'important');
+  row.style.setProperty('height', BATTLE_DESIGN_H + 'px', 'important');
+  table.style.setProperty('transform', 'scale(' + scale.toFixed(4) + ')', 'important');
+  table.style.setProperty('transform-origin', 'center center', 'important');
+
+  // transform:scale() は見た目だけを縮め、場所取りは元の大きさのまま残る。
+  // そのままだと画面からはみ出してスクロールバーが出るため、
+  // 余った分を負の余白で詰めて、見た目の大きさに合わせる。
+  // 原点が中央なので、はみ出しは上下左右へ半分ずつ出る。
+  var padX = Math.round(BATTLE_DESIGN_W * (1 - scale) / 2);
+  var padY = Math.round(BATTLE_DESIGN_H * (1 - scale) / 2);
+  row.style.setProperty('margin', (-padY) + 'px ' + (-padX) + 'px', 'important');
+}
+
+window.addEventListener('resize', fitBattleTable);
+window.addEventListener('orientationchange', fitBattleTable);
 window.addEventListener('resize', positionDiscardRivers);
 window.addEventListener('resize', positionMeldAreas);
 
@@ -2704,10 +2774,10 @@ var App = {
         '<div class="jt-side"></div>' +
       '</div>' +
     '</div>';
+    fitBattleTable();
     positionDiscardRivers();
     positionMeldAreas();
-    requestAnimationFrame(positionDiscardRivers);
-    requestAnimationFrame(positionMeldAreas);
+    requestAnimationFrame(function() { fitBattleTable(); positionDiscardRivers(); positionMeldAreas(); });
 
     var sendFrAction = function(type, payload) {
       FriendGame.sendAction(type, payload)['catch'](function(e) {
@@ -4334,6 +4404,7 @@ var App = {
         logHtml + '<div id="aiAdvArea">' + renderBattleAdvicePanel() + '</div>' +
       '</div>';
       // innerHTML 更新直後に同期配置（初回描画でも正しい位置に表示）
+      fitBattleTable();
       positionDiscardRivers();
       positionMeldAreas();
       if (window.scrollY && !isFirstBattleRender) window.scrollTo(0, 0);
@@ -4808,8 +4879,7 @@ var App = {
       if (btnAi) btnAi.addEventListener('click', requestBattleAdvice);
 
       // 対面・左家の河を点数板 bounding box 基準で正確に配置
-      requestAnimationFrame(positionDiscardRivers);
-      requestAnimationFrame(positionMeldAreas);
+      requestAnimationFrame(function() { fitBattleTable(); positionDiscardRivers(); positionMeldAreas(); });
     };
 
     // ── 役一覧を組み立てる ──────────────────────────────────────
