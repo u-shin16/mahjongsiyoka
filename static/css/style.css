@@ -6269,11 +6269,15 @@ body.is-battle-page .app-footer {
   body.is-battle-page .app-header,
   body.is-battle-page .app-main,
   body.is-battle-page .app-main.battle-main,
-  body.is-battle-page .app-footer {
+  body.is-battle-page .app-footer,
+  body.is-friend-create-rotate-prompt .app-header,
+  body.is-friend-create-rotate-prompt .app-main,
+  body.is-friend-create-rotate-prompt .app-footer {
     display: none !important;
   }
 
-  body.is-battle-page .rotate-lock-overlay {
+  body.is-battle-page .rotate-lock-overlay,
+  body.is-friend-create-rotate-prompt .rotate-lock-overlay {
     display: flex;
     position: fixed;
     inset: 0;

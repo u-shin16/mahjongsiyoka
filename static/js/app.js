@@ -36,6 +36,36 @@ function showOverlay(html) {
 }
 function hideOverlay() { document.getElementById('overlay').classList.add('hidden'); }
 
+var __friendCreateRotateCleanup = null;
+function isPortraitTouchDevice() {
+  return !!(window.matchMedia &&
+    window.matchMedia('(hover: none) and (pointer: coarse) and (orientation: portrait)').matches);
+}
+function clearFriendCreateRotatePrompt() {
+  document.body.classList.remove('is-friend-create-rotate-prompt');
+  var rotateOverlay = document.getElementById('rotateLockOverlay');
+  if (rotateOverlay) rotateOverlay.setAttribute('aria-hidden', 'true');
+  if (__friendCreateRotateCleanup) {
+    __friendCreateRotateCleanup();
+    __friendCreateRotateCleanup = null;
+  }
+}
+function showFriendCreateRotatePrompt() {
+  clearFriendCreateRotatePrompt();
+  document.body.classList.add('is-friend-create-rotate-prompt');
+  var rotateOverlay = document.getElementById('rotateLockOverlay');
+  if (rotateOverlay) rotateOverlay.setAttribute('aria-hidden', 'false');
+  var clearWhenLandscape = function() {
+    if (!isPortraitTouchDevice()) clearFriendCreateRotatePrompt();
+  };
+  window.addEventListener('resize', clearWhenLandscape);
+  window.addEventListener('orientationchange', clearWhenLandscape);
+  __friendCreateRotateCleanup = function() {
+    window.removeEventListener('resize', clearWhenLandscape);
+    window.removeEventListener('orientationchange', clearWhenLandscape);
+  };
+}
+
 // 鳴いたときに画面の中央へ大きく出す演出。
 // これまでは実況ログに文字が流れるだけで、鳴きが起きたことに気づきにくかった。
 // 対局の進行は止めない（見せるだけで、押す必要はない）。
@@ -1733,6 +1763,7 @@ var App = {
   _renderNow: function(page, params) {
     this._updateHeaderAccount();   // 画面が変わるたびに右上のアカウント表示も更新
     var main = document.getElementById('appMain');
+    if (page !== 'friend') clearFriendCreateRotatePrompt();
     if (this._missionReadingsObserver) {
       this._missionReadingsObserver.disconnect();
       this._missionReadingsObserver = null;
@@ -2702,6 +2733,11 @@ var App = {
         }
       };
       document.getElementById('btnFrCreate').addEventListener('click', function() {
+        if (isPortraitTouchDevice()) {
+          showFriendCreateRotatePrompt();
+          return;
+        }
+        clearFriendCreateRotatePrompt();
         var c = getCode(false);
         if (c === null) return;
         runRoomAction(this, function() { return FriendGame.createRoom(c, count); }, '部屋を作れませんでした', '作成中...');
