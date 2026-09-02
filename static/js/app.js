@@ -43,7 +43,8 @@ function hideOverlay() { document.getElementById('overlay').classList.add('hidde
 // 直前の枚数を覚えておき、増えていればその席の鳴きとして演出を出す。
 var __meldCounts = null;
 var __nukiCounts = null;
-function resetCallWatch() { __meldCounts = null; __nukiCounts = null; }
+var __riichiFlags = null;
+function resetCallWatch() { __meldCounts = null; __nukiCounts = null; __riichiFlags = null; }
 function watchCpuCalls(state, names) {
   if (!state || !state.melds) return;
   var now = state.melds.map(function(m) { return (m || []).length; });
@@ -72,6 +73,20 @@ function watchCpuCalls(state, names) {
     }
     __nukiCounts = nk;
   }
+
+  // 立直も、宣言した瞬間にフラグが立つので、それで気づく
+  if (state.riichi) {
+    var rc = state.riichi.map(function(r) { return !!r; });
+    if (!shown && __riichiFlags && __riichiFlags.length === rc.length) {
+      for (var k = 1; k < rc.length; k++) {          // 0は自分なので除く
+        if (rc[k] && !__riichiFlags[k]) {
+          showCallEffect('riichi', (names && names[k]) || '');
+          break;
+        }
+      }
+    }
+    __riichiFlags = rc;
+  }
 }
 
 // 和了の演出を見せてから、点数の画面へ進む。
@@ -84,7 +99,7 @@ function showWinEffect(type, playerName, thenShowScore) {
 function showCallEffect(type, playerName) {
   // カンは暗カン・加カンも含めて、表示はすべて「カン」に統一する
   var labels = { pon: 'ポン', chi: 'チー', kan: 'カン', ankan: 'カン', kakan: 'カン', nuki: '北抜き',
-                 ron: 'ロン', tsumo: 'ツモ' };
+                 ron: 'ロン', tsumo: 'ツモ', riichi: 'リーチ' };
   var label = labels[type] || type;
   var old = document.querySelector('.mj-call-effect');
   if (old) old.remove();
@@ -2971,6 +2986,7 @@ var App = {
       if (self._frRiichiSel) {
         var rest = myHand.filter(function(_, i) { return i !== idx; });
         if (!FriendGame.isTenpai13(rest)) { showToast('その牌を捨てるとテンパイが崩れちゃう！'); return; }
+        showCallEffect('riichi', 'あなた');
         sendFrAction('riichi', { idx: idx });
       } else {
         sendFrAction('discard', { idx: idx });
@@ -4640,6 +4656,7 @@ var App = {
         clearBattleAdvice();
         riichiArmed = false;
         Battle.playerRiichi(ai);
+        showCallEffect('riichi', 'あなた');
         afterDiscard();
       };
 

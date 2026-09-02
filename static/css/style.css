@@ -6881,3 +6881,10 @@ body.is-battle-page .app-footer {
   .mj-call-ron .mj-call-word,
   .mj-call-tsumo .mj-call-word { font-size: 3rem; }
 }
+
+/* 立直は鳴きとも和了とも違う宣言なので、色を分ける（濃い橙） */
+.mj-call-riichi .mj-call-word { color: #d2691e; font-size: 3rem; }
+.mj-call-riichi .mj-call-who  { background: #d2691e; }
+@media (max-width: 860px) {
+  .mj-call-riichi .mj-call-word { font-size: 2.2rem; }
+}
