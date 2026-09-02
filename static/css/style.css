@@ -5845,6 +5845,7 @@ body.is-battle-page .app-footer {
 }
 .fr-copy-code-btn {
   min-height: 30px;
+  margin-left: 6px;
   padding: 4px 10px;
   border: 1px solid rgba(232,184,75,0.55);
   border-radius: 7px;
