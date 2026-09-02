@@ -2554,10 +2554,9 @@ var App = {
               '<button class="ai-level-btn ' + (rules.gameType === 'tonpu' ? 'active' : '') + '" data-rule-game-type="tonpu">東風</button>' +
               '<button class="ai-level-btn ' + (rules.gameType === 'hanchan' ? 'active' : '') + '" data-rule-game-type="hanchan">半荘</button>' +
             '</div></label>' +
-            '<label>持ち点<input class="ai-input fr-small-input" id="frStartScore" type="number" min="10000" max="60000" step="1000" value="' + rules.startScore + '"></label>' +
-            '<label>基本秒<input class="ai-input fr-small-input" id="frBaseSec" type="number" min="3" max="15" value="' + rules.baseSeconds + '"></label>' +
+            '<label>持ち点<div class="fr-fixed-value">' + rules.startScore.toLocaleString('ja-JP') + '点</div></label>' +
+            '<label>基本秒<div class="fr-fixed-value">5秒</div></label>' +
             '<label>持ち時間<input class="ai-input fr-small-input" id="frReserveSec" type="number" min="0" max="120" step="5" value="' + rules.reserveSeconds + '"></label>' +
-            '<label class="fr-check-label"><input id="frSudden" type="checkbox" ' + (rules.suddenDeath ? 'checked' : '') + '> サドンデス</label>' +
           '</div>' +
           '<div class="fr-rule-note">変更するとReadyは解除されます。</div>' +
         '</div>';
@@ -2594,7 +2593,7 @@ var App = {
       document.querySelectorAll('[data-rule-player-count]').forEach(function(btn) {
         btn.addEventListener('click', function() {
           var pc = parseInt(btn.dataset.rulePlayerCount, 10);
-          updateRule({ playerCount: pc, startScore: pc === 3 ? 35000 : 25000 });
+          updateRule({ playerCount: pc });
         });
       });
       document.querySelectorAll('[data-rule-game-type]').forEach(function(btn) {
@@ -2609,11 +2608,7 @@ var App = {
           updateRule(patch);
         });
       };
-      bindRuleInput('frStartScore', 'startScore', function(v) { return parseInt(v, 10); });
-      bindRuleInput('frBaseSec', 'baseSeconds', function(v) { return parseInt(v, 10); });
       bindRuleInput('frReserveSec', 'reserveSeconds', function(v) { return parseInt(v, 10); });
-      var sudden = document.getElementById('frSudden');
-      if (sudden) sudden.addEventListener('change', function() { updateRule({ suddenDeath: sudden.checked }); });
       var addCpu = document.getElementById('btnFrAddCpu');
       if (addCpu) addCpu.addEventListener('click', function() { FriendGame.addCpu()['catch'](setErr); });
       document.querySelectorAll('[data-remove-cpu]').forEach(function(btn) {

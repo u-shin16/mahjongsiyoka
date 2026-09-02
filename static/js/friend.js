@@ -39,7 +39,7 @@ var FriendGame = (function() {
       playerCount: playerCount,
       gameType: 'tonpu',
       startScore: playerCount === 3 ? 35000 : 25000,
-      suddenDeath: false,
+      suddenDeath: true,
       baseSeconds: 5,
       reserveSeconds: 20,
     };
@@ -49,15 +49,13 @@ var FriendGame = (function() {
     var base = defaultRules(playerCount);
     rules = rules || {};
     var n = rules.playerCount === 3 ? 3 : (rules.playerCount === 4 ? 4 : base.playerCount);
-    var start = parseInt(rules.startScore, 10);
-    var baseSec = parseInt(rules.baseSeconds, 10);
     var reserveSec = parseInt(rules.reserveSeconds, 10);
     return {
       playerCount: n,
       gameType: rules.gameType === 'hanchan' ? 'hanchan' : 'tonpu',
-      startScore: isFinite(start) && start >= 10000 && start <= 60000 ? start : (n === 3 ? 35000 : 25000),
-      suddenDeath: !!rules.suddenDeath,
-      baseSeconds: isFinite(baseSec) && baseSec >= 3 && baseSec <= 15 ? baseSec : 5,
+      startScore: n === 3 ? 35000 : 25000,
+      suddenDeath: true,
+      baseSeconds: 5,
       reserveSeconds: isFinite(reserveSec) && reserveSec >= 0 && reserveSec <= 120 ? reserveSec : 20,
     };
   }
