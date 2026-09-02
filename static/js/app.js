@@ -2581,7 +2581,8 @@ var App = {
         '<div class="fr-wrap">' +
         '<div class="game-instruction"><div class="fr-room-code-line">ルームID：' +
         '<strong class="fr-room-code">' + esc(room.code) + '</strong>' +
-        '<button class="fr-copy-code-btn" id="btnFrCopyCode" type="button" aria-label="ルームIDをコピー">コピー</button></div>' +
+        '<button class="fr-copy-code-btn" id="btnFrCopyCode" type="button" aria-label="ルームIDをコピー" title="ルームIDをコピー">' +
+        '<span class="fr-copy-icon" aria-hidden="true"></span></button></div>' +
         '<div>友だちにこのIDを伝えて「IDで参加」してもらおう！</div></div>' +
         hostControls +
         '<div class="fr-panel"><div class="fr-panel-title">メンバー（' + room.players.length + '/' + room.playerCount + '）</div>' +
@@ -2609,10 +2610,13 @@ var App = {
         copyCodeBtn.addEventListener('click', function() {
           var code = String(room.code || '');
           var copied = function() {
-            copyCodeBtn.textContent = 'コピー済み';
+            copyCodeBtn.classList.add('copied');
+            copyCodeBtn.setAttribute('aria-label', 'ルームIDをコピーしました');
             showToast('ルームIDをコピーしました');
             setTimeout(function() {
-              if (document.body.contains(copyCodeBtn)) copyCodeBtn.textContent = 'コピー';
+              if (!document.body.contains(copyCodeBtn)) return;
+              copyCodeBtn.classList.remove('copied');
+              copyCodeBtn.setAttribute('aria-label', 'ルームIDをコピー');
             }, 1600);
           };
           var fallbackCopy = function() {
