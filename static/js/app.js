@@ -74,9 +74,17 @@ function watchCpuCalls(state, names) {
   }
 }
 
+// 和了の演出を見せてから、点数の画面へ進む。
+// すぐ点数を出すと何が起きたのか分からないため、いったん大きく出してから移る。
+function showWinEffect(type, playerName, thenShowScore) {
+  showCallEffect(type, playerName);
+  setTimeout(thenShowScore, 900);
+}
+
 function showCallEffect(type, playerName) {
   // カンは暗カン・加カンも含めて、表示はすべて「カン」に統一する
-  var labels = { pon: 'ポン', chi: 'チー', kan: 'カン', ankan: 'カン', kakan: 'カン', nuki: '北抜き' };
+  var labels = { pon: 'ポン', chi: 'チー', kan: 'カン', ankan: 'カン', kakan: 'カン', nuki: '北抜き',
+                 ron: 'ロン', tsumo: 'ツモ' };
   var label = labels[type] || type;
   var old = document.querySelector('.mj-call-effect');
   if (old) old.remove();
@@ -4595,7 +4603,12 @@ var App = {
       var afterDiscard = function() {
         var ns = Battle.getState();
         selectedIdx = -1; lastTap = { idx:-1, time:0 }; dragInfo = { active:false, idx:-1, startY:0, el:null };
-        if (ns.phase === 'end')           { log(Battle.PLAYER_NAMES[ns.winner]+'がロン！', 'ev-win'); renderEnd(); }
+        if (ns.phase === 'end') {
+          var wt = ns.winType === 'tsumo' ? 'ツモ' : 'ロン';
+          log(Battle.PLAYER_NAMES[ns.winner] + 'が' + wt + '！', 'ev-win');
+          showWinEffect(ns.winType === 'tsumo' ? 'tsumo' : 'ron',
+                        Battle.PLAYER_NAMES[ns.winner], renderEnd);
+        }
         else if (ns.phase === 'pending_ron')  renderGame();
         else if (ns.phase === 'pending_call') renderGame();
         else if (ns.phase === 'ryukyoku')     renderRyukyoku();
@@ -5014,7 +5027,8 @@ var App = {
       // ── Bind buttons ──
       var btnTsumo = document.getElementById('btnTsumo');
       if (btnTsumo) btnTsumo.addEventListener('click', function() {
-        Battle.playerTsumo(); log('ツモ！ あなたのアガリ！', 'ev-win'); renderEnd();
+        Battle.playerTsumo(); log('ツモ！ あなたのアガリ！', 'ev-win');
+        showWinEffect('tsumo', 'あなた', renderEnd);
       });
 
       var btnNuki = document.getElementById('btnNuki');
@@ -5044,7 +5058,8 @@ var App = {
       var btnRon = document.getElementById('btnRon');
       if (btnRon) btnRon.addEventListener('click', function() {
         clearBattleAdvice();
-        Battle.playerRonAccept(); log('ロン！ あなたのアガリ！', 'ev-win'); renderEnd();
+        Battle.playerRonAccept(); log('ロン！ あなたのアガリ！', 'ev-win');
+        showWinEffect('ron', 'あなた', renderEnd);
       });
 
       var btnSkip = document.getElementById('btnSkip');

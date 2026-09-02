@@ -6861,3 +6861,23 @@ body.is-battle-page .app-footer {
 @media (max-width: 860px) {
   .mj-call-nuki .mj-call-word { font-size: 2rem; }
 }
+
+/* 和了の演出は鳴きより大きく、金色で出す。局が決まる場面なので目立たせる */
+.mj-call-ron   .mj-call-word,
+.mj-call-tsumo .mj-call-word {
+  font-size: 4.2rem;
+  color: #c8102e;
+}
+.mj-call-ron   .mj-call-who,
+.mj-call-tsumo .mj-call-who { background: #c8102e; }
+.mj-call-ron,
+.mj-call-tsumo {
+  padding: 12px 36px 14px;
+  box-shadow:
+    0 8px 26px rgba(0,0,0,0.5),
+    0 0 0 4px rgba(200,16,46,0.35);
+}
+@media (max-width: 860px) {
+  .mj-call-ron .mj-call-word,
+  .mj-call-tsumo .mj-call-word { font-size: 3rem; }
+}
