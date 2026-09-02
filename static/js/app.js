@@ -1112,6 +1112,9 @@ function positionMeldAreas() {
 var __zoomLockOn = false;
 function __blockGesture(e) { e.preventDefault(); }
 function __blockPinch(e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }
+// パソコンのピンチ（トラックパッド）とCtrl+ホイールは wheel で来る。
+// ブラウザのメニューやCtrl+「＋/−」キーの拡大は、Webページ側からは止められない。
+function __blockWheelZoom(e) { if (e.ctrlKey || e.metaKey) e.preventDefault(); }
 
 function setBattleZoomLock(on) {
   on = !!on;
@@ -1128,6 +1131,7 @@ function setBattleZoomLock(on) {
     document[m](ev, __blockGesture, { passive: false });
   });
   document[m]('touchmove', __blockPinch, { passive: false });
+  window[m]('wheel', __blockWheelZoom, { passive: false });
 }
 
 var BATTLE_DESIGN_W = 1400;

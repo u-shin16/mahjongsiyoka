@@ -6922,3 +6922,19 @@ body.is-battle-page .app-footer {
 .fr-result-float .fr-melds {
   gap: 10px;
 }
+
+
+/* ─────────────────────────────────
+   対局中はピンチ操作を受け付けない
+   雀卓は fitBattleTable が画面に合わせて縮小して置いており、河や副露は
+   座標を計算して置いている。指で拡大されると位置がずれて卓が崩れる。
+   viewport の user-scalable=no は iOS Safari が無視するため、
+   touch-action でも止める（Safari 13以降が対応）。
+───────────────────────────────── */
+html.is-battle-page,
+body.is-battle-page,
+body.is-battle-page .app-main,
+body.is-battle-page .jt-outer,
+body.is-battle-page .jt-table {
+  touch-action: none !important;
+}
