@@ -293,7 +293,11 @@ var CH_INTROS = {
     tip: '💡 3枚が「順子になる？ならない？」を○✕で答えよう！',
   },
   ch4_2: {
-    icon: '🎴',
+    realTiles: [
+      { suit: 'wind', num: 1 },
+      { suit: 'wind', num: 1 },
+      { suit: 'wind', num: 1 },
+    ],
     points: [
       '字牌でも<strong>同じ牌3枚</strong>で刻子（セット）が作れる',
       '例：東・東・東 = 東の刻子',
