@@ -1992,7 +1992,7 @@ var App = {
           '<div class="game-instruction">'+mg.instruction+'</div>' +
           '<div class="game-area">'+Tiles.renderTile(Tiles.make(q.suit,q.num),{noHover:true})+
           '<div class="choice-grid" style="max-width:300px;margin-top:12px" id="suitC">'+
-          ['man','pin','sou'].map(function(s,ci){return '<button class="btn-choice" data-suit="'+s+'" data-ci="'+ci+'">'+(s==='man'?'萬子':s==='pin'?'筒子':'索子')+'</button>';}).join('')+
+          ['man','pin','sou'].map(function(s,ci){return '<button class="btn-choice" data-suit="'+s+'" data-ci="'+ci+'">'+(s==='man'?'萬子（マンズ）':s==='pin'?'筒子（ピンズ）':'索子（ソーズ）')+'</button>';}).join('')+
           '</div><div id="feedback"></div></div>';
         document.querySelectorAll('#suitC .btn-choice').forEach(function(el) {
           el.addEventListener('click', function() {

@@ -90,7 +90,7 @@ const Chapters = (() => {
   const ch3 = {
     mg1: {
       title: 'ミニゲーム①　牌の種類を当てよう',
-      instruction: 'この牌は<strong>萬子・筒子・索子</strong>どれ？',
+      instruction: 'この牌は<strong>萬子（マンズ）・筒子（ピンズ）・索子（ソーズ）</strong>のどれ？',
       questions: [
         { suit: 'man', num: 3, fb: '「萬」という漢字がついているのが萬子！' },
         { suit: 'pin', num: 5, fb: '丸（筒）の模様がついているのが筒子！' },
