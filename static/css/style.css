@@ -6852,3 +6852,12 @@ body.is-battle-page .app-footer {
     0% { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
   }
 }
+
+/* 北抜きは三麻だけの操作。鳴きとは別ものなので色を分ける（金色） */
+.mj-call-nuki .mj-call-word { color: #b8860b; }
+.mj-call-nuki .mj-call-who  { background: #b8860b; }
+/* 「北抜き」は3文字で長いので少し小さく */
+.mj-call-nuki .mj-call-word { font-size: 2.8rem; }
+@media (max-width: 860px) {
+  .mj-call-nuki .mj-call-word { font-size: 2rem; }
+}

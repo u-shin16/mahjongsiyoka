@@ -42,25 +42,41 @@ function hideOverlay() { document.getElementById('overlay').classList.add('hidde
 // CPUが鳴いたときは操作の入口が無いため、副露の数が増えたことで気づく。
 // 直前の枚数を覚えておき、増えていればその席の鳴きとして演出を出す。
 var __meldCounts = null;
-function resetCallWatch() { __meldCounts = null; }
+var __nukiCounts = null;
+function resetCallWatch() { __meldCounts = null; __nukiCounts = null; }
 function watchCpuCalls(state, names) {
   if (!state || !state.melds) return;
   var now = state.melds.map(function(m) { return (m || []).length; });
+  var shown = false;
   if (__meldCounts && __meldCounts.length === now.length) {
     for (var i = 1; i < now.length; i++) {          // 0は自分なので除く
       if (now[i] > __meldCounts[i]) {
         var last = state.melds[i][state.melds[i].length - 1];
-        if (last) showCallEffect(last.type, (names && names[i]) || '');
+        if (last) { showCallEffect(last.type, (names && names[i]) || ''); shown = true; }
         break;                                       // 同時に増えることは無い
       }
     }
   }
   __meldCounts = now;
+
+  // 三麻の北抜きも同じように、抜いた枚数が増えたことで気づく
+  if (state.nuki) {
+    var nk = state.nuki.map(function(n) { return (n || []).length; });
+    if (!shown && __nukiCounts && __nukiCounts.length === nk.length) {
+      for (var j = 1; j < nk.length; j++) {
+        if (nk[j] > __nukiCounts[j]) {
+          showCallEffect('nuki', (names && names[j]) || '');
+          break;
+        }
+      }
+    }
+    __nukiCounts = nk;
+  }
 }
 
 function showCallEffect(type, playerName) {
   // カンは暗カン・加カンも含めて、表示はすべて「カン」に統一する
-  var labels = { pon: 'ポン', chi: 'チー', kan: 'カン', ankan: 'カン', kakan: 'カン' };
+  var labels = { pon: 'ポン', chi: 'チー', kan: 'カン', ankan: 'カン', kakan: 'カン', nuki: '北抜き' };
   var label = labels[type] || type;
   var old = document.querySelector('.mj-call-effect');
   if (old) old.remove();
@@ -3219,7 +3235,7 @@ var App = {
     var nukiBtn = document.getElementById('btnFrNuki');
     if (nukiBtn) nukiBtn.addEventListener('click', function() {
       var north = myHand.find(function(t) { return FriendGame.isNukiTile(t); });
-      if (north) sendFrAction('nuki', { tileId: north.id });
+      if (north) { showCallEffect('nuki', 'あなた'); sendFrAction('nuki', { tileId: north.id }); }
     });
     document.querySelectorAll('[data-ankan-idx]').forEach(function(btn) {
       btn.addEventListener('click', function() {
@@ -4189,10 +4205,12 @@ var App = {
         // フリテンも「その牌を切ったあとの13枚」で見る。
         // 自分の番は手牌が14枚あって待ちが定まらないため、
         // 今の手牌のままだと常にフリテンでない扱いになってしまう。
-        var furiten = Battle.isFuritenForHand(baseHand);
+        var furitenWhy = Battle.furitenReason(baseHand);
+        var furiten = !!furitenWhy;
         return {
           tile: t,
           furiten: furiten,
+          furitenWhy: furitenWhy,
           canRon:   !furiten && ronYaku,
           canTsumo: tsumoYaku,
         };
@@ -4206,7 +4224,9 @@ var App = {
       // 門前の手に誤った印が出ないよう、ここで明示的に外している。
       var markOf = function(info) {
         if (!handIsClosed && !info.canRon && !info.canTsumo) return { mark: '役なし', cls: ' is-dead' };
-        if (info.furiten && !info.canRon) return { mark: 'ツモのみ', cls: ' is-tsumo-only' };
+        if (info.furiten && !info.canRon) {
+          return { mark: 'ツモのみ', cls: ' is-tsumo-only', why: info.furitenWhy };
+        }
         return { mark: '', cls: '' };
       };
       // 待ち牌そのものの表示。**ここは何があっても牌を出す。**
@@ -4232,7 +4252,8 @@ var App = {
             var tileHtml = Tiles.renderTile(info.tile, { noHover: true, extraClass: 'xs' });
             // 印が無いときは包まずそのまま出す（今までと同じ形）
             if (!mk.mark) return tileHtml;
-            return '<span class="mj-wait-tile' + mk.cls + '">' + tileHtml +
+            return '<span class="mj-wait-tile' + mk.cls + '"' +
+              (mk.why ? ' title="' + esc('フリテン：' + mk.why) + '"' : '') + '>' + tileHtml +
               '<span class="mj-wait-mark">' + mk.mark + '</span></span>';
           }).join('');
         } catch (e) {
@@ -5005,7 +5026,7 @@ var App = {
         var res = Battle.playerNuki(ai);
         if (res) clearBattleAdvice();
         selectedIdx = -1;
-        if (res) log('北抜き！ 抜き北 '+nukiCount(0)+'枚', 'ev-nuki');
+        if (res) { showCallEffect('nuki', 'あなた'); log('北抜き！ 抜き北 '+nukiCount(0)+'枚', 'ev-nuki'); }
         var ns = Battle.getState();
         if (ns.phase === 'ryukyoku') renderRyukyoku();
         else renderGame();

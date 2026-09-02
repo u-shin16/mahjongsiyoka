@@ -1214,10 +1214,24 @@ var Battle = (function() {
     // 14枚あって待ちが定まらないため常にfalseになる。打牌前の表示には
     // 「その牌を切ったあとの13枚」で見た結果が要る。
     isFuritenForHand: function(hand13) {
-      if (!state) return false;
-      if (state.riichiFuriten[0] || state.tempFuriten[0]) return true;
+      return !!this.furitenReason(hand13);
+    },
+    // なぜフリテンなのかを返す（フリテンでなければ空文字）。
+    // 画面に理由を出して、判定が正しいのか誤りなのかをその場で見分けられるようにする。
+    furitenReason: function(hand13) {
+      if (!state) return '';
+      if (state.riichiFuriten[0]) return 'リーチ後に見逃したため';
+      if (state.tempFuriten[0])   return '同じ巡で見逃したため';
       var waits = getBattleWaits(hand13 || [], 0);
-      return Yaku.isFuritenBySelf(waits, state.discards[0]);
+      var mine = state.discards[0] || [];
+      for (var i = 0; i < waits.length; i++) {
+        for (var j = 0; j < mine.length; j++) {
+          if (Tiles.isSame(mine[j], waits[i])) {
+            return Tiles.label(waits[i]) + 'を自分で捨てているため';
+          }
+        }
+      }
+      return '';
     },
     // 「この牌を切ったらどうなるか」の見込み表示用。
     // 実際の手牌ではなく、渡された13枚＋和了牌で役が付くかを見る。
