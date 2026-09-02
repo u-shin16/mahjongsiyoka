@@ -1073,6 +1073,39 @@ function positionMeldAreas() {
 // transform を見て座標を変換する作りなので、ここより外側に掛けると
 // 配置がズレる。
 // ============================================================
+// ============================================================
+// 雀卓画面ではブラウザのズームを止める
+// ------------------------------------------------------------
+// 雀卓は fitBattleTable が画面いっぱいに収まるよう縮小して置いている。
+// そこへ指で拡大されると、河や副露（position:fixed で座標を計算して
+// 置いている）が本来の位置からずれ、卓が見切れる。
+// 対局中に拡大する必要はないので、対局画面の間だけ止める。
+//
+// iOS Safari は user-scalable=no を無視するため、ジェスチャ自体も
+// 止める必要がある（gesturestart 系と、指2本のスクロール）。
+// 画面を出るときは必ず元に戻す。他の画面では拡大できてよい。
+// ============================================================
+var __zoomLockOn = false;
+function __blockGesture(e) { e.preventDefault(); }
+function __blockPinch(e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }
+
+function setBattleZoomLock(on) {
+  on = !!on;
+  if (on === __zoomLockOn) return;
+  __zoomLockOn = on;
+  var vp = document.querySelector('meta[name="viewport"]');
+  if (vp) {
+    vp.setAttribute('content', on
+      ? 'width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover'
+      : 'width=device-width, initial-scale=1.0');
+  }
+  var m = on ? 'addEventListener' : 'removeEventListener';
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(ev) {
+    document[m](ev, __blockGesture, { passive: false });
+  });
+  document[m]('touchmove', __blockPinch, { passive: false });
+}
+
 var BATTLE_DESIGN_W = 1400;
 var BATTLE_DESIGN_H = 700;
 
@@ -1219,7 +1252,7 @@ function fitBattleTable() {
   var timerBox = table.querySelector('.fr-diamond-timer');
   if (timerBox) {
     var inv = scale > 0.01 ? Math.min(1 / scale, 2.2) : 1;
-    timerBox.style.setProperty('zoom', inv.toFixed(3), 'important');
+    timerBox.style.setProperty('--tscale', inv.toFixed(3));
   }
 }
 
@@ -1510,6 +1543,10 @@ var App = {
     // :has()未対応の実機ブラウザでもhtml側のスクロール制御CSSが効くよう、
     // bodyと同時にhtmlにも同じクラスを付ける
     document.documentElement.classList.toggle('is-battle-page', page === 'battle');
+    // 友人戦は画面の中身で決まるので _renderFriend に任せる。
+    // ここで毎回いったん解除すると、対局中の再描画のたびに
+    // 解除→再設定を繰り返すことになる。
+    if (page !== 'friend') setBattleZoomLock(page === 'battle');
     document.getElementById('btnBack').classList.toggle('hidden', page === 'home');
     if      (page === 'home')          this._renderHome(main);
     else if (page === 'chapters')      this._renderChapters(main);
@@ -2364,6 +2401,7 @@ var App = {
 
     // ログイン必須（対戦相手に名前を表示するため）
     if (!window.Auth || !Auth.enabled() || !Auth.user()) {
+      setBattleZoomLock(false);
       main.innerHTML = '<div class="page-title">友人戦</div>' +
         '<div class="game-instruction">友人戦にはログインが必要です。<br>右上の「👤 ログイン」からログインしてください。</div>' +
         '<div class="btn-row" style="justify-content:flex-start;margin-top:14px"><button class="btn btn-primary" id="btnGoLogin">ログイン画面へ</button></div>';
@@ -2375,6 +2413,7 @@ var App = {
 
     // ── ロビー（部屋を作る / 6桁IDで参加）──
     if (!room) {
+      setBattleZoomLock(false);
       main.innerHTML = '<div class="page-title">友人戦</div>' +
         '<div class="fr-wrap">' +
         '<div class="game-instruction">友だちに<strong>6桁のルームID</strong>を伝えて同じ部屋に入れます。<br>' +
@@ -2496,6 +2535,7 @@ var App = {
           '<div class="fr-rule-note">変更するとReadyは解除されます。</div>' +
         '</div>';
       }
+      setBattleZoomLock(false);
       main.innerHTML = '<div class="page-title">待機室</div>' +
         '<div class="fr-wrap">' +
         '<div class="game-instruction">ルームID：<strong class="fr-room-code">' + esc(room.code) + '</strong><br>' +
@@ -2567,11 +2607,12 @@ var App = {
 
     // ── 対局画面 ──
     var g = FriendGame.game();
-    if (!g) { main.innerHTML = '<div class="fr-msg">読み込み中…</div>'; return; }
+    if (!g) { setBattleZoomLock(false); main.innerHTML = '<div class="fr-msg">読み込み中…</div>'; return; }
     var my = FriendGame.mySeat();
     var n = g.playerCount;
     var names = room.players.map(function(p) { return p.name; });
     if (my < 0 || my >= n) {
+      setBattleZoomLock(false);
       main.innerHTML = '<div class="fr-wrap"><div class="fr-panel"><div class="page-title">友人戦</div>' +
         '<div class="game-instruction">この部屋の参加メンバーではありません。ルームIDから入り直してください。</div>' +
         '<div class="btn-row"><button class="btn btn-primary" id="btnFrLeave2">ロビーへ</button></div></div></div>';
@@ -2614,6 +2655,7 @@ var App = {
     }
     document.body.classList.add('is-battle-page');
     document.documentElement.classList.add('is-battle-page');
+    setBattleZoomLock(true);
 
     var WINDS = ['東', '南', '西', '北'];
     var dealerSeat = (g.round - 1) % n;
@@ -2636,7 +2678,9 @@ var App = {
       if (seat === my) return '基準';
       return (diff > 0 ? '+' : '') + diff.toLocaleString();
     };
-    var timer = g.turnTimer || null;
+    // 残り時間は自分の番のときだけ出す。他家の番でカウントが動いていても
+    // こちらは何もできないので、見えていても意味がない。
+    var timer = (g.turnTimer && g.turnTimer.seat === my) ? g.turnTimer : null;
     var timerLeft = timer ? Math.max(0, timer.deadlineAt - Date.now()) : 0;
     var timerTotal = timer ? Math.max(1, timer.baseMs + timer.reserveMs) : 1;
     var timerPct = Math.max(0, Math.min(100, Math.round(timerLeft / timerTotal * 100)));
@@ -2758,6 +2802,10 @@ var App = {
     }
     if (canRiichi) actionBtns += '<button class="btn-battle btn-riichi" id="btnFrRiichi">リーチ</button>';
 
+    // 鳴きボタンと同じ縦並びの枠に入れる。flexの縦並びなので、ボタンが
+    // 何個出ても重ならず、常にボタンの真上に出る。
+    var timerSlotHtml = timerHtml ? '<div class="fr-diamond-timer">' + timerHtml + '</div>' : '';
+
     if (g.phase === 'call_wait' && g.call && g.call.candidates.indexOf(my) >= 0 && !this._frResponseSent) {
       var callOpts = (g.call.optionsBySeat && g.call.optionsBySeat[my]) || [];
       var callBtnsHtml = '';
@@ -2770,6 +2818,7 @@ var App = {
       // バナーは表示しない）
       frCallFloatHtml =
         '<div class="hand-action-float">' +
+          timerSlotHtml +
           callBtnsHtml +
           '<button class="btn-battle btn-skip-call" id="btnFrPass">スキップ</button>' +
         '</div>';
@@ -2792,6 +2841,7 @@ var App = {
       });
       frCallFloatHtml =
         '<div class="hand-action-float">' +
+          timerSlotHtml +
           '<button class="btn-battle btn-ron" id="btnFrRon">ロン！</button>' +
           ronCallBtnsHtml +
           '<button class="btn-battle btn-skip" id="btnFrPass">スルー</button>' +
@@ -2806,7 +2856,8 @@ var App = {
       kakanCands.forEach(function(c, ci) {
         floatBtnsFr += '<button class="btn-battle btn-ankan" data-kakan-idx="' + ci + '">カン</button>';
       });
-      if (floatBtnsFr) frCallFloatHtml = '<div class="hand-action-float">' + floatBtnsFr + '</div>';
+      if (floatBtnsFr || timerSlotHtml)
+        frCallFloatHtml = '<div class="hand-action-float">' + timerSlotHtml + floatBtnsFr + '</div>';
     }
     // 待ちの印はCPU戦と同じ規則にそろえる。
     //   ツモのみ：フリテンのとき（ロンできない）
@@ -2986,7 +3037,7 @@ var App = {
       diffCls: function(seat) { return showDiff && seat !== my ? (g.scores[seat] >= g.scores[my] ? 'plus' : 'minus') : ''; },
       disconnectedOf: isDisconnected,
       clickableId: 'frScoreToggle',
-      timerHtml: timerHtml,
+      // 残り時間はここ（ひし形の下）だと河と重なるので、鳴きボタンの枠へ移した
     });
     var doraHtml = '<div class="jt-table-dora">ドラ表示：' +
       Tiles.renderTile(g.doraInd, { noHover: true, extraClass: 'xxs' }) +
