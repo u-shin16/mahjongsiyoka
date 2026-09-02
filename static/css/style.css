@@ -5828,12 +5828,36 @@ body.is-battle-page .app-footer {
 .fr-wind  { color: var(--gold); font-weight: 900; }
 .fr-name  { font-weight: 800; }
 .fr-score { color: var(--gold); font-variant-numeric: tabular-nums; }
+.fr-room-code-line {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 2px;
+}
 .fr-room-code {
   display: inline-block;
   color: var(--gold);
   font-size: 1.28rem;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
+}
+.fr-copy-code-btn {
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid rgba(232,184,75,0.55);
+  border-radius: 7px;
+  background: rgba(232,184,75,0.14);
+  color: var(--gold);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.fr-copy-code-btn:hover,
+.fr-copy-code-btn:focus-visible {
+  background: rgba(232,184,75,0.28);
 }
 .fr-panel-title {
   width: 100%;

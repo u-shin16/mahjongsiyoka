@@ -2563,8 +2563,10 @@ var App = {
       setBattleZoomLock(false);
       main.innerHTML = '<div class="page-title">待機室</div>' +
         '<div class="fr-wrap">' +
-        '<div class="game-instruction">ルームID：<strong class="fr-room-code">' + esc(room.code) + '</strong><br>' +
-        '友だちにこのIDを伝えて「IDで参加」してもらおう！</div>' +
+        '<div class="game-instruction"><div class="fr-room-code-line">ルームID：' +
+        '<strong class="fr-room-code">' + esc(room.code) + '</strong>' +
+        '<button class="fr-copy-code-btn" id="btnFrCopyCode" type="button" aria-label="ルームIDをコピー">コピー</button></div>' +
+        '<div>友だちにこのIDを伝えて「IDで参加」してもらおう！</div></div>' +
         hostControls +
         '<div class="fr-panel"><div class="fr-panel-title">メンバー（' + room.players.length + '/' + room.playerCount + '）</div>' +
         room.players.map(function(p, i) {
@@ -2586,6 +2588,40 @@ var App = {
         '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px"></div></div>';
 
       var setErr = function(e) { document.getElementById('frErr').textContent = FriendGame.errorMessage(e) || String((e && e.message) || e || ''); };
+      var copyCodeBtn = document.getElementById('btnFrCopyCode');
+      if (copyCodeBtn) {
+        copyCodeBtn.addEventListener('click', function() {
+          var code = String(room.code || '');
+          var copied = function() {
+            copyCodeBtn.textContent = 'コピー済み';
+            showToast('ルームIDをコピーしました');
+            setTimeout(function() {
+              if (document.body.contains(copyCodeBtn)) copyCodeBtn.textContent = 'コピー';
+            }, 1600);
+          };
+          var fallbackCopy = function() {
+            var input = document.createElement('textarea');
+            input.value = code;
+            input.setAttribute('readonly', '');
+            input.style.position = 'fixed';
+            input.style.opacity = '0';
+            document.body.appendChild(input);
+            input.select();
+            try {
+              if (!document.execCommand('copy')) throw new Error('copy failed');
+              copied();
+            } catch (e) {
+              showToast('コピーできませんでした');
+            }
+            document.body.removeChild(input);
+          };
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(code).then(copied)['catch'](fallbackCopy);
+          } else {
+            fallbackCopy();
+          }
+        });
+      }
       var updateRule = function(patch) {
         FriendGame.updateRules(patch)['catch'](setErr);
       };
