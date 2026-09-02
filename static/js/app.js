@@ -2793,7 +2793,12 @@ var App = {
         clearFriendCreateRotatePrompt();
         var c = getCode(false);
         if (c === null) return;
-        runRoomAction(this, function() { return FriendGame.createRoom(c, 4); }, '部屋を作れませんでした', '作成中...');
+        // 押すとすぐ部屋ができてしまうので、一度確認する。
+        // 押し間違いで部屋だけ増えるのを防ぐ。
+        var btn = this;
+        confirmDialog('ルームを作成しますか？', function() {
+          runRoomAction(btn, function() { return FriendGame.createRoom(c, 4); }, '部屋を作れませんでした', '作成中...');
+        }, '作成する');
       });
       var joinBtn = document.getElementById('btnFrJoin');
       if (joinBtn) joinBtn.addEventListener('click', function() {
