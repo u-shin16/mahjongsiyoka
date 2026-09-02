@@ -197,8 +197,8 @@ var CH_INTROS = {
   ch1_0: {
     tiles: [1, 2, 3],
     points: [
-      '<strong>同じ数字3枚</strong> → セット（<strong>刻子</strong>・コーツ）',
-      '<strong>連続した数字3枚</strong> → セット（<strong>順子</strong>・シュンツ）',
+      '<strong>同じ数字3枚</strong> → セット（<strong>刻子（コーツ）</strong>）',
+      '<strong>連続した数字3枚</strong> → セット（<strong>順子（シュンツ）</strong>）',
       'どちらも「3枚のセット」として使えるよ！',
     ],
     example: '✅ 1・2・3（続いてる！）\n✅ 5・5・5（同じ3枚！）\n❌ 1・3・5（続いてない…）',
@@ -253,9 +253,9 @@ var CH_INTROS = {
       { suit: 'sou', num: 7 },
     ],
     points: [
-      '<strong>萬子（まんず）</strong>：「一・二・三…」の漢字が書いてある牌（赤系）',
-      '<strong>筒子（ぴんず）</strong>：丸い模様の牌（青系）',
-      '<strong>索子（そうず）</strong>：竹のような模様の牌（緑系）',
+      '<strong>萬子（マンズ）</strong>：「一・二・三…」の漢字が書いてある牌（赤系）',
+      '<strong>筒子（ピンズ）</strong>：丸い模様の牌（青系）',
+      '<strong>索子（ソーズ）</strong>：竹のような模様の牌（緑系）',
     ],
     example: '1萬〜9萬（萬子）\n1筒〜9筒（筒子）\n1索〜9索（索子）\nそれぞれ9種類ずつあるよ！',
     tip: '💡 表示された牌が「萬子・筒子・索子」のどれか選ぼう！',
@@ -282,8 +282,8 @@ var CH_INTROS = {
       { suit: 'dragon', num: 3 },
     ],
     points: [
-      '字牌（じはい）は<strong>東・南・西・北・白・發・中</strong>の7種類',
-      '東・南・西・北には方角以外に「<strong>場風（ばかぜ）</strong>」「<strong>自風（じかぜ）</strong>」という役割もある',
+      '字牌（ジハイ）は<strong>東・南・西・北・白・發・中</strong>の7種類',
+      '東・南・西・北には方角以外に「<strong>場風（バカゼ）</strong>」「<strong>自風（ジカゼ）</strong>」という役割もある',
       '場風は今の局の風（東1局なら場風は東）、自風は自分の座席の風。この2つは役牌になる',
       '数牌（1〜9の牌）と違って数字がないのが特徴',
     ],
@@ -381,12 +381,12 @@ var CH_INTROS = {
   ch8_3: {
     icon: '⚡',
     points: [
-      '<strong>一発（イッパツ）</strong>＝立直宣言後、1週以内・鳴きなしで和了すると成立する役（1翻）',
+      '<strong>一発（イッパツ）</strong>＝立直宣言後、一巡（イチジュン）以内・鳴きなしで和了すると成立する役（1翻）',
       '間に誰か（自分も含む）が鳴くと、その時点で一発は消える',
-      '2週目以降になっても一発は成立しない',
+      '二巡目（ニジュンメ）以降になっても一発は成立しない',
     ],
-    example: '✅ 立直後1週以内・鳴きなしで和了\n❌ 途中でポン・チー・カンが入る\n❌ 立直から2週目以降の和了',
-    tip: '💡 「1週以内」かつ「鳴きなし」の両方がそろっているかを見極めよう！',
+    example: '✅ 立直後、一巡（イチジュン）以内・鳴きなしで和了\n❌ 途中でポン・チー・カンが入る\n❌ 立直から二巡目（ニジュンメ）以降の和了',
+    tip: '💡 「一巡（イチジュン）以内」かつ「鳴きなし」の両方がそろっているかを見極めよう！',
   },
   ch8_4: {
     icon: '📢',
@@ -402,10 +402,10 @@ var CH_INTROS = {
     icon: '📛',
     points: [
       '初心者がよく使う役：<strong>立直・タンヤオ・平和・役牌・門前清自摸和・一発</strong>',
-      '立直＝門前テンパイで宣言／門前清自摸和＝門前でツモ和了／一発＝立直後1週以内で和了',
+      '立直＝門前テンパイで宣言／門前清自摸和＝門前でツモ和了／一発＝立直後、一巡（イチジュン）以内で和了',
       '説明文を読んで、ぴったり合う役の名前を選ぼう',
     ],
-    example: '「2〜8だけで作る役」→ タンヤオ\n「門前テンパイで1000点宣言」→ 立直\n「立直後1週以内で和了」→ 一発',
+    example: '「2〜8だけで作る役」→ タンヤオ\n「門前テンパイで1000点宣言」→ 立直\n「立直後、一巡（イチジュン）以内で和了」→ 一発',
     tip: '💡 選択肢から正しいものを1つ選ぼう！',
   },
   // Chapter 9: 翻を数えてみよう
@@ -663,6 +663,130 @@ var CH_INTROS = {
     tip: '💡 4つの選択肢から正しいものを選ぼう！',
   },
 };
+
+// ===== Beginner-friendly readings for chapter missions =====
+// Chapter screens contain many mahjong-only readings. Annotate visible text at
+// render time so instructions, questions, choices and feedback stay consistent.
+var MAHJONG_MISSION_READINGS = [
+  ['門前清自摸和', 'メンゼンツモ'],
+  ['純全帯幺九', 'ジュンチャン'],
+  ['混全帯幺九', 'チャンタ'],
+  ['三色同順', 'サンショクドウジュン'],
+  ['三色同刻', 'サンショクドウコウ'],
+  ['一気通貫', 'イッツウ'],
+  ['国士無双', 'コクシムソウ'],
+  ['雀士', 'ジャンシ'],
+  ['中張牌', 'チュンチャンパイ'],
+  ['么九牌', 'ヤオチュウハイ'],
+  ['両面待ち', 'リャンメンマチ'],
+  ['単騎待ち', 'タンキマチ'],
+  ['ダブル立直', 'ダブルリーチ'],
+  ['一盃口', 'イーペーコー'],
+  ['二盃口', 'リャンペーコー'],
+  ['七対子', 'チートイツ'],
+  ['対々和', 'トイトイ'],
+  ['三暗刻', 'サンアンコウ'],
+  ['三槓子', 'サンカンツ'],
+  ['小三元', 'ショウサンゲン'],
+  ['大三元', 'ダイサンゲン'],
+  ['清一色', 'チンイツ'],
+  ['混一色', 'ホンイツ'],
+  ['混老頭', 'ホンロウトウ'],
+  ['断么九', 'タンヤオ'],
+  ['三倍満', 'サンバイマン'],
+  ['北抜き', 'キタヌキ'],
+  ['抜きドラ', 'ヌキドラ'],
+  ['東風戦', 'トンプウセン'],
+  ['半荘戦', 'ハンチャンセン'],
+  ['三元牌', 'サンゲンパイ'],
+  ['数牌', 'スウパイ'],
+  ['字牌', 'ジハイ'],
+  ['萬子', 'マンズ'],
+  ['筒子', 'ピンズ'],
+  ['索子', 'ソーズ'],
+  ['風牌', 'フォンパイ'],
+  ['場風', 'バカゼ'],
+  ['自風', 'ジカゼ'],
+  ['上家', 'カミチャ'],
+  ['下家', 'シモチャ'],
+  ['対面', 'トイメン'],
+  ['他家', 'ターチャ'],
+  ['東家', 'トンチャ'],
+  ['南家', 'ナンチャ'],
+  ['西家', 'シャーチャ'],
+  ['北家', 'ペーチャ'],
+  ['暗槓', 'アンカン'],
+  ['暗カン', 'アンカン'],
+  ['暗刻', 'アンコウ'],
+  ['槓子', 'カンツ'],
+  ['順子', 'シュンツ'],
+  ['刻子', 'コーツ'],
+  ['対子', 'トイツ'],
+  ['面子', 'メンツ'],
+  ['雀頭', 'ジャントウ'],
+  ['手牌', 'テハイ'],
+  ['配牌', 'ハイパイ'],
+  ['和了', 'アガリ'],
+  ['嵌張', 'カンチャン'],
+  ['門前', 'メンゼン'],
+  ['立直', 'リーチ'],
+  ['一発', 'イッパツ'],
+  ['平和', 'ピンフ'],
+  ['役牌', 'ヤクハイ'],
+  ['翻数', 'ハンスウ'],
+  ['翻', 'ハン'],
+  ['満貫', 'マンガン'],
+  ['跳満', 'ハネマン'],
+  ['倍満', 'バイマン'],
+  ['役満', 'ヤクマン'],
+  ['供託', 'キョウタク'],
+  ['罰符', 'バップ'],
+  ['流局', 'リュウキョク'],
+  ['三麻', 'サンマ'],
+];
+
+var MAHJONG_MISSION_READING_MAP = MAHJONG_MISSION_READINGS.reduce(function(map, entry) {
+  map[entry[0]] = entry[1];
+  return map;
+}, {});
+var MAHJONG_MISSION_READING_PATTERN = new RegExp(
+  MAHJONG_MISSION_READINGS.map(function(entry) {
+    return entry[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }).sort(function(a, b) { return b.length - a.length; }).join('|'),
+  'g'
+);
+
+function annotateMahjongMissionReadings(root) {
+  if (!root || !document.createTreeWalker) return;
+  var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(node) {
+      var parent = node.parentElement;
+      if (!parent || /^(SCRIPT|STYLE|TEXTAREA)$/.test(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      if (parent.closest('[data-no-mahjong-readings]')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  var nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  var originals = nodes.map(function(node) { return node.nodeValue || ''; });
+
+  function followingText(nodeIndex, offset, maxLength) {
+    var value = originals[nodeIndex].slice(offset);
+    for (var i = nodeIndex + 1; value.length < maxLength && i < originals.length; i++) value += originals[i];
+    return value.slice(0, maxLength);
+  }
+
+  nodes.forEach(function(node, nodeIndex) {
+    var original = originals[nodeIndex];
+    var annotated = original.replace(MAHJONG_MISSION_READING_PATTERN, function(term, offset) {
+      var reading = MAHJONG_MISSION_READING_MAP[term];
+      var after = followingText(nodeIndex, offset + term.length, reading.length + 2);
+      if (after.indexOf('（' + reading + '）') === 0 || after.indexOf('(' + reading + ')') === 0) return term;
+      return term + '（' + reading + '）';
+    });
+    if (annotated !== original) node.nodeValue = annotated;
+  });
+}
 
 // ===== Show Mini-game Intro =====
 function showMgIntro(main, chapterTitle, mgTitle, intro, onStart) {
@@ -1609,6 +1733,17 @@ var App = {
   _renderNow: function(page, params) {
     this._updateHeaderAccount();   // 画面が変わるたびに右上のアカウント表示も更新
     var main = document.getElementById('appMain');
+    if (this._missionReadingsObserver) {
+      this._missionReadingsObserver.disconnect();
+      this._missionReadingsObserver = null;
+    }
+    var useMissionReadings = page === 'chapter' || page === 'chapters';
+    if (useMissionReadings && window.MutationObserver) {
+      this._missionReadingsObserver = new MutationObserver(function() {
+        if (App.current === 'chapter' || App.current === 'chapters') annotateMahjongMissionReadings(main);
+      });
+      this._missionReadingsObserver.observe(main, { childList: true, subtree: true });
+    }
     main.className = 'app-main' + (page === 'battle' ? ' battle-main' : '');
     document.body.classList.toggle('is-battle-page', page === 'battle');
     // :has()未対応の実機ブラウザでもhtml側のスクロール制御CSSが効くよう、
@@ -1634,6 +1769,7 @@ var App = {
     else if (page === 'login')         this._renderLogin(main);
     else if (page === 'friend')        this._renderFriend(main);
     else main.innerHTML = '<p style="color:#8ab89c;text-align:center;padding:40px">準備中...</p>';
+    if (useMissionReadings) annotateMahjongMissionReadings(main);
     // 対局画面(CPU戦/友人戦)に入る際のscrollTo(0,1)ナッジをここで(0,0)に
     // 戻すと台無しになるため、対局画面に入った直後だけは戻さない
     if (page !== 'battle' && page !== 'friend') window.scrollTo(0, 0);
@@ -1806,7 +1942,7 @@ var App = {
         var ch1Hints;
         if (mgIdx === 0) {
           ch1Hints = [
-            '「セット」とは<strong>3枚1組のまとまり</strong>のこと。①同じ数字3枚（刻子・コーツ）、または②数字が1ずつ続く3枚（順子・シュンツ）がセットになれるよ',
+            '「セット」とは<strong>3枚1組のまとまり</strong>のこと。①同じ数字3枚（刻子（コーツ））、または②数字が1ずつ続く3枚（順子（シュンツ））がセットになれるよ',
             'まず「同じ数字が3枚あるかな？」と考えてみよう。なければ次に「数字が1・2・3のように続いているかな？」と見てみよう',
           ];
         } else {
@@ -1868,7 +2004,7 @@ var App = {
         var handTiles = q.hand.map(function(n){return Tiles.makeNum(n);});
         var dispChoices1 = Tiles.shuffle(q.choices.slice());
         var mg3Hints = [
-          'この問題は「あと1枚でアガリになる手牌（テンパイ）」から、アガリに必要な牌を当てるものだよ。アガリには3枚セット×4つ＋頭（同じ2枚）が必要',
+          'この問題は「あと1枚でアガリになる状態（テンパイ）の手牌」から、アガリに必要な牌を当てるものだよ。アガリには3枚セット×4つ＋頭（同じ2枚）が必要',
           '完成している3枚セットと頭を先に見つけよう。残った2枚が「あと1枚で面子になる形」なら、その足りない数字がアガリ牌だよ',
           'たとえば2・4なら3、7・9なら8、8・8の刻子を作りたい8・8なら8が必要だよ',
         ];
