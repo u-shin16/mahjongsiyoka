@@ -141,7 +141,16 @@ const Agari = (() => {
           }
         }
       }
-      if (pairs.length === 7 && !skipChiitoitsu) return { type: 'chiitoitsu', groups: pairs };
+      // 七対子は**7種類の異なる牌**の対子が要る。
+      // 同じ牌4枚を2つの対子として数えることはできない（第10章のクイズでも
+      // そう教えている）。種類を数えずに対子の数だけ見ていたため、
+      // 4枚使いの手が七対子として成立していた。
+      var kinds = {};
+      pairs.forEach(function(pr) { kinds[pr[0].suit + '_' + pr[0].num] = true; });
+      var distinct = Object.keys(kinds).length;
+      if (pairs.length === 7 && distinct === 7 && !skipChiitoitsu) {
+        return { type: 'chiitoitsu', groups: pairs };
+      }
     }
 
     const sorted = Tiles.sortTiles(tiles);

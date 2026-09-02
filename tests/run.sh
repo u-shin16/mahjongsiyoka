@@ -18,8 +18,8 @@ fi
 WORK=$(mktemp -d /tmp/mahjong_test.XXXXXX)
 trap 'rm -rf "$WORK"' EXIT
 cp "$ROOT/static/js/tiles.js" "$ROOT/static/js/agari.js" "$ROOT/static/js/yaku.js" \
-   "$ROOT/static/js/battle.js" "$WORK/"
-cp "$ROOT/tests/yaku_test.js" "$ROOT/tests/score_test.js" "$ROOT/tests/waits_test.js" "$ROOT/tests/api_test.js" "$ROOT/tests/waitmark_test.js" "$WORK/"
+   "$ROOT/static/js/battle.js" "$ROOT/static/js/data.js" "$ROOT/static/js/chapters.js" "$WORK/"
+cp "$ROOT/tests/yaku_test.js" "$ROOT/tests/score_test.js" "$ROOT/tests/waits_test.js" "$ROOT/tests/api_test.js" "$ROOT/tests/waitmark_test.js" "$ROOT/tests/quiz_test.js" "$WORK/"
 
 FAILED=0
 
@@ -36,6 +36,7 @@ run_suite score_test.js "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK
 run_suite waits_test.js "$WORK/tiles.js" "$WORK/agari.js"
 run_suite api_test.js   "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK/battle.js"
 run_suite waitmark_test.js "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK/battle.js"
+run_suite quiz_test.js     "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK/data.js" "$WORK/chapters.js"
 
 echo ""
 if [ "$FAILED" -eq 0 ]; then echo "すべて通過しました。"; else echo "失敗したテストがあります。"; fi
