@@ -36,6 +36,43 @@ function showOverlay(html) {
 }
 function hideOverlay() { document.getElementById('overlay').classList.add('hidden'); }
 
+// 鳴いたときに画面の中央へ大きく出す演出。
+// これまでは実況ログに文字が流れるだけで、鳴きが起きたことに気づきにくかった。
+// 対局の進行は止めない（見せるだけで、押す必要はない）。
+// CPUが鳴いたときは操作の入口が無いため、副露の数が増えたことで気づく。
+// 直前の枚数を覚えておき、増えていればその席の鳴きとして演出を出す。
+var __meldCounts = null;
+function resetCallWatch() { __meldCounts = null; }
+function watchCpuCalls(state, names) {
+  if (!state || !state.melds) return;
+  var now = state.melds.map(function(m) { return (m || []).length; });
+  if (__meldCounts && __meldCounts.length === now.length) {
+    for (var i = 1; i < now.length; i++) {          // 0は自分なので除く
+      if (now[i] > __meldCounts[i]) {
+        var last = state.melds[i][state.melds[i].length - 1];
+        if (last) showCallEffect(last.type, (names && names[i]) || '');
+        break;                                       // 同時に増えることは無い
+      }
+    }
+  }
+  __meldCounts = now;
+}
+
+function showCallEffect(type, playerName) {
+  var labels = { pon: 'ポン', chi: 'チー', kan: 'カン', ankan: '暗カン', kakan: '加カン' };
+  var label = labels[type] || type;
+  var old = document.querySelector('.mj-call-effect');
+  if (old) old.remove();
+  var el = document.createElement('div');
+  el.className = 'mj-call-effect mj-call-' + type;
+  el.innerHTML =
+    '<span class="mj-call-word">' + esc(label) + '</span>' +
+    (playerName ? '<span class="mj-call-who">' + esc(playerName) + '</span>' : '');
+  document.body.appendChild(el);
+  // 再生し終わったら自分で消える。次の鳴きが来たら上で消してから出し直す
+  setTimeout(function() { if (el.parentNode) el.remove(); }, 1100);
+}
+
 // 「はい／いいえ」の確認を出す。押し間違いで対局から抜けるのを防ぐために使う。
 // onYes は「はい」を押したときだけ呼ばれる。
 function confirmDialog(message, onYes, yesLabel) {
@@ -3926,6 +3963,7 @@ var App = {
       selectedIdx = -1;
       riichiArmed = false;
       eventLog = [];
+      resetCallWatch();
       battleAdvice = null;
       battleAdviceLoading = false;
       battleAdviceError = '';
@@ -4521,6 +4559,7 @@ var App = {
         logHtml + '<div id="aiAdvArea">' + renderBattleAdvicePanel() + '</div>' +
       '</div>';
       // innerHTML 更新直後に同期配置（初回描画でも正しい位置に表示）
+      watchCpuCalls(s, Battle.PLAYER_NAMES);
       fitBattleTable();
       positionDiscardRivers();
       positionMeldAreas();
@@ -4896,14 +4935,17 @@ var App = {
           if (opt.type === 'pon') {
             clearBattleAdvice();
             Battle.playerPon(tile, from);
+            showCallEffect('pon', 'あなた');
             log('ポン！', 'ev-discard');
           } else if (opt.type === 'kan') {
             clearBattleAdvice();
             Battle.playerKan(tile, from);
+            showCallEffect('kan', 'あなた');
             log('カン！', 'ev-discard');
           } else if (opt.type === 'chi') {
             clearBattleAdvice();
             Battle.playerChi(tile, from, opt.tiles);
+            showCallEffect('chi', 'あなた');
             log('チー！', 'ev-discard');
           }
           afterDiscard();
@@ -4931,7 +4973,7 @@ var App = {
           if (!cand) return;
           var ok = Battle.playerAnkan(cand.tiles[0]);
           if (ok) clearBattleAdvice();
-          if (ok) { log('暗カン！', 'ev-discard'); afterDiscard(); }
+          if (ok) { showCallEffect('ankan', 'あなた'); log('暗カン！', 'ev-discard'); afterDiscard(); }
         });
       });
 
@@ -4943,7 +4985,7 @@ var App = {
           if (!cand) return;
           var ok = Battle.playerKakan(cand.tiles[0]);
           if (ok) clearBattleAdvice();
-          if (ok) { log('加カン！', 'ev-discard'); afterDiscard(); }
+          if (ok) { showCallEffect('kakan', 'あなた'); log('加カン！', 'ev-discard'); afterDiscard(); }
         });
       });
 
@@ -5156,7 +5198,7 @@ var App = {
 
       var btnNextRound = document.getElementById('btnNextRound');
       if (btnNextRound) btnNextRound.addEventListener('click', function() {
-        Battle.nextRound(); resetLocalRound(); renderGame();
+        Battle.nextRound(); resetLocalRound(); resetCallWatch(); renderGame();
       });
       var btnPlayAgain = document.getElementById('btnPlayAgain');
       if (btnPlayAgain) btnPlayAgain.addEventListener('click', function() {
