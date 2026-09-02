@@ -1211,6 +1211,16 @@ function fitBattleTable() {
     table.style.setProperty('transform',
       'translate(' + dx + 'px, ' + dy + 'px) scale(' + scale.toFixed(4) + ')', 'important');
   }
+
+  // 残り時間だけは、雀卓の縮小に巻き込まれると読めなくなる。
+  // 携帯の横画面（縮小率0.42）では文字が4pxまで縮んでいた。
+  // 縮小の逆数を掛けて、画面上の大きさが変わらないようにする。
+  // 上げすぎると雀卓の中で浮くので2.2倍で止める。
+  var timerBox = table.querySelector('.fr-diamond-timer');
+  if (timerBox) {
+    var inv = scale > 0.01 ? Math.min(1 / scale, 2.2) : 1;
+    timerBox.style.setProperty('zoom', inv.toFixed(3), 'important');
+  }
 }
 
 window.addEventListener('resize', fitBattleTable);

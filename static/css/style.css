@@ -6026,17 +6026,20 @@ body.is-battle-page .app-footer {
 .battle-main .jt-diamond-edge .pts.minus { color: #ff9a8a; }
 /* 友人戦：持ち時間タイマーはダイヤモンドの下に小さく表示 */
 .fr-diamond-timer {
-  width: 120px;
-  margin: 6px auto 0;
+  /* 雀卓の縮小を打ち消す zoom は fitBattleTable がここに掛ける */
+  width: 132px;
+  margin: 7px auto 0;
 }
 .fr-turn-timer {
   position: relative;
-  height: 18px;
+  height: 24px;
   width: 100%;
   overflow: hidden;
-  border-radius: 4px;
-  background: rgba(0,0,0,0.32);
-  border: 1px solid rgba(150,190,230,0.22);
+  border-radius: 5px;
+  /* 卓の緑に埋もれていたので、下地を濃くして枠をはっきりさせる */
+  background: rgba(0,0,0,0.62);
+  border: 1px solid rgba(190,220,250,0.5);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
 }
 .fr-turn-timer i {
   position: absolute;
@@ -6054,11 +6057,21 @@ body.is-battle-page .app-footer {
   z-index: 1;
   display: block;
   text-align: center;
-  color: #f5fbff;
-  font-size: 0.62rem;
+  color: #fff;
+  font-size: 0.95rem;
   font-weight: 900;
-  line-height: 17px;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  line-height: 23px;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7);
+}
+/* 残り5秒を切ったら点滅させて気づけるようにする */
+.fr-turn-timer.warn {
+  border-color: rgba(255,150,120,0.85);
+  animation: frTimerWarn 0.7s ease-in-out infinite;
+}
+@keyframes frTimerWarn {
+  0%, 100% { box-shadow: 0 2px 6px rgba(0,0,0,0.45); }
+  50%      { box-shadow: 0 0 12px rgba(255,140,110,0.9); }
 }
 /* 雀卓の全面を覆うフルスクリーン表示（背景を暗くしてアガリ結果に集中させる） */
 .fr-result-float {
