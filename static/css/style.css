@@ -7030,3 +7030,52 @@ body.is-battle-page .jt-table {
   color: #8ab89c;
   text-align: center;
 }
+
+/* ─────────────────────────────────
+   友人戦のロビー：作る人と入る人で画面を分ける
+───────────────────────────────── */
+.fr-choice-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.fr-choice-card {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 22px 16px;
+  border-radius: 16px;
+  border: 2px solid rgba(232,184,75,0.45);
+  background: rgba(8, 30, 18, 0.75);
+  color: #f2f7f3;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.fr-choice-card:hover {
+  border-color: var(--gold);
+  background: rgba(14, 46, 28, 0.9);
+}
+.fr-choice-card:active { transform: translateY(1px); }
+.fr-choice-emoji { font-size: 2.2rem; line-height: 1; }
+.fr-choice-title { font-size: 1.15rem; font-weight: 900; color: var(--gold); }
+.fr-choice-sub { font-size: 0.8rem; color: #8ab89c; line-height: 1.5; }
+
+/* IDの入力欄と貼り付けボタンを横に並べる */
+.fr-join-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0 0;
+}
+.fr-join-row .fr-room-input { flex: 1 1 auto; min-width: 0; }
+.fr-join-row .btn { flex: none; white-space: nowrap; }
+
+@media (max-width: 520px) {
+  .fr-choice-card { padding: 16px 12px; }
+  .fr-choice-emoji { font-size: 1.8rem; }
+  .fr-choice-title { font-size: 1rem; }
+}

@@ -2652,29 +2652,83 @@ var App = {
     // ── ロビー（部屋を作る / 6桁IDで参加）──
     if (!room) {
       setBattleZoomLock(false);
-      main.innerHTML = '<div class="page-title">友人戦</div>' +
-        '<div class="fr-wrap">' +
-        '<div class="game-instruction">友だちに<strong>6桁のルームID</strong>を伝えて同じ部屋に入れます。<br>' +
-        '<span style="font-size:0.82rem;color:#8ab89c">ホストが三麻/四麻、東風/半荘、持ち時間、CPU席を設定できます。</span></div>' +
-        '<input class="ai-input fr-room-input" id="frCode" type="text" inputmode="numeric" maxlength="6" placeholder="参加するID（作成時は空でもOK）" style="width:100%;margin:12px 0 10px">' +
-        '<div class="btn-row" style="justify-content:flex-start">' +
-          '<button class="btn btn-primary" id="btnFrCreate">ルームを作成</button>' +
-          '<button class="btn btn-secondary" id="btnFrJoin">IDで参加</button>' +
-        '</div>' +
-        '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px;min-height:1.3em"></div>' +
-        '</div>';
+      // 「作る人」と「入る人」で必要なものが違うので、まず選んでもらう。
+      // 1枚に両方を並べていたころは、入る人にも作成ボタンが見えていて迷いやすかった。
+      var mode = this._frLobbyMode || null;   // null=選ぶ / 'create' / 'join'
+
+      if (!mode) {
+        main.innerHTML = '<div class="page-title">友人戦</div>' +
+          '<div class="fr-wrap">' +
+          '<div class="game-instruction">友だちと同じ部屋に入って対局します。<br>' +
+          '<span style="font-size:0.82rem;color:#8ab89c">部屋を作る人が1人、あとの人はそのIDで参加します。</span></div>' +
+          '<div class="fr-choice-row">' +
+            '<button class="fr-choice-card" id="btnFrModeCreate">' +
+              '<span class="fr-choice-emoji" aria-hidden="true">🏠</span>' +
+              '<span class="fr-choice-title">ルームを作成</span>' +
+              '<span class="fr-choice-sub">人数やルールを決めて、IDを友だちに伝える</span>' +
+            '</button>' +
+            '<button class="fr-choice-card" id="btnFrModeJoin">' +
+              '<span class="fr-choice-emoji" aria-hidden="true">🚪</span>' +
+              '<span class="fr-choice-title">ルームに参加</span>' +
+              '<span class="fr-choice-sub">友だちに教えてもらった6桁のIDで入る</span>' +
+            '</button>' +
+          '</div>' +
+          '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px;min-height:1.3em"></div>' +
+          '</div>';
+        var errEl0 = document.getElementById('frErr');
+        if (FriendGame.error && FriendGame.error()) {
+          errEl0.textContent = FriendGame.errorMessage(FriendGame.error());
+        }
+        document.getElementById('btnFrModeCreate').addEventListener('click', function() {
+          self._frLobbyMode = 'create';
+          self._render('friend', {});
+        });
+        document.getElementById('btnFrModeJoin').addEventListener('click', function() {
+          self._frLobbyMode = 'join';
+          self._render('friend', {});
+        });
+        return;
+      }
+
+      if (mode === 'create') {
+        main.innerHTML = '<div class="page-title">ルームを作成</div>' +
+          '<div class="fr-wrap">' +
+          '<div class="game-instruction">部屋を作ると<strong>6桁のルームID</strong>が出ます。<br>' +
+          '<span style="font-size:0.82rem;color:#8ab89c">次の画面で三麻/四麻、東風/半荘、持ち時間、CPU席を決められます。</span></div>' +
+          '<div class="btn-row" style="justify-content:flex-start;margin-top:14px">' +
+            '<button class="btn btn-primary" id="btnFrCreate">この設定で作成</button>' +
+            '<button class="btn btn-secondary" id="btnFrLobbyBack">もどる</button>' +
+          '</div>' +
+          '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px;min-height:1.3em"></div>' +
+          '</div>';
+      } else {
+        main.innerHTML = '<div class="page-title">ルームに参加</div>' +
+          '<div class="fr-wrap">' +
+          '<div class="game-instruction">友だちに教えてもらった<strong>6桁のルームID</strong>を入れてください。</div>' +
+          '<div class="fr-join-row">' +
+            '<input class="ai-input fr-room-input" id="frCode" type="text" inputmode="numeric" maxlength="6" placeholder="例：123456">' +
+            '<button class="btn btn-secondary" id="btnFrPaste">貼り付け</button>' +
+          '</div>' +
+          '<div class="btn-row" style="justify-content:flex-start;margin-top:12px">' +
+            '<button class="btn btn-primary" id="btnFrJoin">参加する</button>' +
+            '<button class="btn btn-secondary" id="btnFrLobbyBack">もどる</button>' +
+          '</div>' +
+          '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px;min-height:1.3em"></div>' +
+          '</div>';
+      }
 
       var errEl = document.getElementById('frErr');
       if (FriendGame.error && FriendGame.error()) {
         errEl.textContent = FriendGame.errorMessage(FriendGame.error());
       }
-      document.getElementById('frCode').addEventListener('input', function(e) {
+      var codeEl = document.getElementById('frCode');   // 参加のときだけある
+      if (codeEl) codeEl.addEventListener('input', function(e) {
         e.target.value = FriendGame.normalizeCode(e.target.value);
       });
       var getCode = function(requireCode) {
-        var c = FriendGame.normalizeCode(document.getElementById('frCode').value);
+        if (!codeEl) return '';                          // 作成は空のIDで作る
+        var c = FriendGame.normalizeCode(codeEl.value);
         if (requireCode && !/^\d{6}$/.test(c)) { errEl.textContent = '6桁のルームIDを入力してください'; return null; }
-        if (!requireCode && c && !/^\d{6}$/.test(c)) { errEl.textContent = '作成時は空欄、または6桁のIDを入力してください'; return null; }
         return c;
       };
       var runRoomAction = function(btn, action, fallbackMessage, pendingLabel) {
@@ -2719,7 +2773,34 @@ var App = {
           return Promise.resolve();
         }
       };
-      document.getElementById('btnFrCreate').addEventListener('click', function() {
+      var backBtn = document.getElementById('btnFrLobbyBack');
+      if (backBtn) backBtn.addEventListener('click', function() {
+        self._frLobbyMode = null;
+        clearFriendCreateRotatePrompt();
+        self._render('friend', {});
+      });
+
+      // コピーしたIDをボタン1つで入れられるようにする。
+      // 6桁だけを取り出すので、前後に文字が混ざっていても貼れる。
+      var pasteBtn = document.getElementById('btnFrPaste');
+      if (pasteBtn) pasteBtn.addEventListener('click', function() {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+          errEl.textContent = 'このブラウザでは貼り付けボタンが使えません。手で入力してください';
+          return;
+        }
+        navigator.clipboard.readText().then(function(text) {
+          var m = String(text || '').match(/\d{6}/);
+          if (!m) { errEl.textContent = 'コピーした内容に6桁のIDが見つかりませんでした'; return; }
+          codeEl.value = m[0];
+          errEl.textContent = '';
+          codeEl.focus();
+        })['catch'](function() {
+          errEl.textContent = '貼り付けできませんでした。手で入力してください';
+        });
+      });
+
+      var createBtn = document.getElementById('btnFrCreate');
+      if (createBtn) createBtn.addEventListener('click', function() {
         if (isPortraitTouchDevice()) {
           showFriendCreateRotatePrompt();
           return;
@@ -2729,12 +2810,16 @@ var App = {
         if (c === null) return;
         runRoomAction(this, function() { return FriendGame.createRoom(c, 4); }, '部屋を作れませんでした', '作成中...');
       });
-      document.getElementById('btnFrJoin').addEventListener('click', function() {
+      var joinBtn = document.getElementById('btnFrJoin');
+      if (joinBtn) joinBtn.addEventListener('click', function() {
         var c = getCode(true); if (!c) return;
         runRoomAction(this, function() { return FriendGame.joinRoom(c); }, '参加できませんでした', '参加中...');
       });
       return;
     }
+
+    // 部屋に入れたので、ロビーでの選択は忘れる（退出したら最初の画面に戻す）
+    this._frLobbyMode = null;
 
     // ── 待機室 ──
     if (room.status === 'waiting') {
@@ -2769,7 +2854,7 @@ var App = {
         '<strong class="fr-room-code">' + esc(room.code) + '</strong>' +
         '<button class="fr-copy-code-btn" id="btnFrCopyCode" type="button" aria-label="ルームIDをコピー" title="ルームIDをコピー">' +
         '<span class="fr-copy-icon" aria-hidden="true"></span></button></div>' +
-        '<div>友だちにこのIDを伝えて「IDで参加」してもらおう！</div></div>' +
+        '<div>友だちにこのIDを伝えて「ルームに参加」してもらおう！</div></div>' +
         hostControls +
         '<div class="fr-panel"><div class="fr-panel-title">メンバー（' + room.players.length + '/' + room.playerCount + '）</div>' +
         room.players.map(function(p, i) {
