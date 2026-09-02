@@ -7022,3 +7022,11 @@ body.is-battle-page .jt-outer,
 body.is-battle-page .jt-table {
   touch-action: none !important;
 }
+
+/* 「次の局へ」を誰が押していないかの案内 */
+.fr-next-note {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #8ab89c;
+  text-align: center;
+}

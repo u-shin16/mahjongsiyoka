@@ -2657,11 +2657,6 @@ var App = {
         '<div class="game-instruction">友だちに<strong>6桁のルームID</strong>を伝えて同じ部屋に入れます。<br>' +
         '<span style="font-size:0.82rem;color:#8ab89c">ホストが三麻/四麻、東風/半荘、持ち時間、CPU席を設定できます。</span></div>' +
         '<input class="ai-input fr-room-input" id="frCode" type="text" inputmode="numeric" maxlength="6" placeholder="参加するID（作成時は空でもOK）" style="width:100%;margin:12px 0 10px">' +
-        '<div class="fr-row" id="frCount" style="margin-bottom:14px">' +
-          '<span style="color:#8ab89c;font-size:0.85rem">人数：</span>' +
-          '<button class="ai-level-btn" data-n="3">3人打ち</button>' +
-          '<button class="ai-level-btn active" data-n="4">4人打ち</button>' +
-        '</div>' +
         '<div class="btn-row" style="justify-content:flex-start">' +
           '<button class="btn btn-primary" id="btnFrCreate">ルームを作成</button>' +
           '<button class="btn btn-secondary" id="btnFrJoin">IDで参加</button>' +
@@ -2669,14 +2664,6 @@ var App = {
         '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px;min-height:1.3em"></div>' +
         '</div>';
 
-      var count = 4;
-      document.querySelectorAll('#frCount .ai-level-btn').forEach(function(b) {
-        b.addEventListener('click', function() {
-          document.querySelectorAll('#frCount .ai-level-btn').forEach(function(x) { x.classList.remove('active'); });
-          b.classList.add('active');
-          count = parseInt(b.dataset.n, 10);
-        });
-      });
       var errEl = document.getElementById('frErr');
       if (FriendGame.error && FriendGame.error()) {
         errEl.textContent = FriendGame.errorMessage(FriendGame.error());
@@ -2740,7 +2727,7 @@ var App = {
         clearFriendCreateRotatePrompt();
         var c = getCode(false);
         if (c === null) return;
-        runRoomAction(this, function() { return FriendGame.createRoom(c, count); }, '部屋を作れませんでした', '作成中...');
+        runRoomAction(this, function() { return FriendGame.createRoom(c, 4); }, '部屋を作れませんでした', '作成中...');
       });
       document.getElementById('btnFrJoin').addEventListener('click', function() {
         var c = getCode(true); if (!c) return;
@@ -2954,9 +2941,18 @@ var App = {
       if (seat === my) return '基準';
       return (diff > 0 ? '+' : '') + diff.toLocaleString();
     };
-    // 残り時間は自分の番のときだけ出す。他家の番でカウントが動いていても
-    // こちらは何もできないので、見えていても意味がない。
-    var timer = (g.turnTimer && g.turnTimer.seat === my) ? g.turnTimer : null;
+    // 残り時間は「自分が何かを選ぶ番」のときだけ出す。他家の番で
+    // カウントが動いていても、こちらは何もできないので意味がない。
+    // 鳴き・ロンの応答にも制限時間があるので、その待ちの間も出す。
+    var timer = null;
+    if (g.turnTimer && g.turnTimer.seat === my) {
+      timer = g.turnTimer;
+    } else if (g.callTimer && !this._frResponseSent) {
+      var waiting =
+        (g.phase === 'ron_wait'  && g.ron  && g.ron.candidates.indexOf(my) >= 0) ||
+        (g.phase === 'call_wait' && g.call && g.call.candidates.indexOf(my) >= 0);
+      if (waiting) timer = { deadlineAt: g.callTimer.deadlineAt, baseMs: g.callTimer.baseMs, reserveMs: 0 };
+    }
     var timerLeft = timer ? Math.max(0, timer.deadlineAt - Date.now()) : 0;
     var timerTotal = timer ? Math.max(1, timer.baseMs + timer.reserveMs) : 1;
     var timerPct = Math.max(0, Math.min(100, Math.round(timerLeft / timerTotal * 100)));
@@ -3063,7 +3059,12 @@ var App = {
     var actionBtns = '';
     var frCallFloatHtml = '';
     // ツモできるかどうか（右下のツモボタンの出し分けに使う）
-    var canFrTsumo = !!(myTurn && g.phase === 'turn' && Agari.isWinningHand(myHand));
+    // 役が無いとツモを受け付けてもらえない（friend.js の action 処理が
+    // hasYaku を通らないと弾く）ので、ボタンも出さない。
+    // 出していたころは、押しても何も起きないバグとして見えていた。
+    var frDrawnTile = myHand.find(function(t) { return t.id === g.drawnId; }) || null;
+    var canFrTsumo = !!(myTurn && g.phase === 'turn' && Agari.isWinningHand(myHand) &&
+                        FriendGame.hasYaku(my, 'tsumo', null, frDrawnTile));
     // CPU戦と同じく、ツモ・ロン・スルーもポン/チー/カンと同じ右下の
     // フロートパネルに置く（下部アクション行に残すのはリーチのみ）
     var canRiichi = false;
@@ -3182,6 +3183,31 @@ var App = {
       '</div>';
     }
 
+    // 「次の局へ」は全員が押すまで進まない（5秒で自動的に押したことになる）。
+    // 誰を待っているのかと、あと何秒かを出す。
+    var frNextRowHtml = function() {
+      var ready = g.handEndReady || {};
+      var iPressed = !!ready[my];
+      var waiting = [];
+      for (var wi = 0; wi < n; wi++) {
+        if (FriendGame.isCpu && FriendGame.isCpu(wi)) continue;
+        if (g.disconnected && g.disconnected[wi]) continue;
+        if (!ready[wi]) waiting.push(names[wi] || ('P' + (wi + 1)));
+      }
+      var leftMs = g.handEndTimer ? Math.max(0, g.handEndTimer.deadlineAt - Date.now()) : 0;
+      var leftSec = Math.ceil(leftMs / 1000);
+      var label = g.round >= g.roundLimit ? '最終結果へ' : '次の局へ';
+      var note = waiting.length
+        ? '<div class="fr-next-note">待っています：' + esc(waiting.join('・')) +
+            (leftSec > 0 ? '（あと' + leftSec + '秒で自動）' : '') + '</div>'
+        : '';
+      return '<div class="btn-row" style="margin-top:10px">' +
+          '<button class="btn ' + (iPressed ? 'btn-secondary' : 'btn-primary') + '" id="btnFrNext"' +
+            (iPressed ? ' disabled' : '') + '>' +
+            (iPressed ? '待っています…' : label) + '</button>' +
+        '</div>' + note;
+    };
+
     var endHtml = '';
     // 和了の演出をCPU戦と同じ順で出す。
     // ロン/ツモ → 演出（0.9秒）→ 点数の画面。演出の間は雀卓を出したままにする。
@@ -3244,7 +3270,7 @@ var App = {
           ryNagashiLabel +
           '<div class="ryu-list">' + ryRows + '</div>' +
           ryNoMoveHtml +
-          (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
+          frNextRowHtml() +
           '</div></div>';
       } else if (r) {
         // CPU戦と同じ組み立て（buildWinPanelBodyShared）を使う。ボタンだけ友人戦の分を足す。
@@ -3266,7 +3292,7 @@ var App = {
             names: names,
             deltas: r.deltas || []
           }) +
-          (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
+          frNextRowHtml() +
           '</div></div>';
       }
     }
@@ -3790,13 +3816,21 @@ var App = {
     });
     var tickFrClock = function() {
       if (self.current !== 'friend') return;
-      var timerEl = g.turnTimer ? document.querySelector('.fr-turn-timer') : null;
-      var stillTicking = g.turnTimer && Date.now() < g.turnTimer.deadlineAt;
+      // 打牌の番だけでなく、鳴き・ロンの応答待ちにも制限時間がある。
+      // どちらも同じ表示なので、今どちらが動いているかをここで選ぶ。
+      var activeTimer = null;
+      if (g.turnTimer) activeTimer = g.turnTimer;
+      else if (g.callTimer && (g.phase === 'ron_wait' || g.phase === 'call_wait')) {
+        activeTimer = { deadlineAt: g.callTimer.deadlineAt, baseMs: g.callTimer.baseMs, reserveMs: 0 };
+      }
+      if (g.phase === 'hand_end') { self._render('friend', {}); return; }
+      var timerEl = activeTimer ? document.querySelector('.fr-turn-timer') : null;
+      var stillTicking = activeTimer && Date.now() < activeTimer.deadlineAt;
       if (timerEl && stillTicking) {
         // 盤面全体は再描画せず、秒数表示だけを直接書き換える（牌のDOMには
         // 触れないため、ドラッグ中でも毎秒リアルタイムに更新して問題ない）
-        var left = Math.max(0, g.turnTimer.deadlineAt - Date.now());
-        var total = Math.max(1, g.turnTimer.baseMs + g.turnTimer.reserveMs);
+        var left = Math.max(0, activeTimer.deadlineAt - Date.now());
+        var total = Math.max(1, activeTimer.baseMs + activeTimer.reserveMs);
         var pct = Math.max(0, Math.min(100, Math.round(left / total * 100)));
         timerEl.classList.toggle('warn', left <= 5000);
         var span = timerEl.querySelector('span');
@@ -3813,7 +3847,10 @@ var App = {
         self._render('friend', {});
       }
     };
-    if (g.turnTimer || (self._frShowDiffUntil && Date.now() < self._frShowDiffUntil)) {
+    // 打牌の番だけでなく、鳴き・ロンの応答待ちと、局が終わったあとの
+    // 「あと◯秒で自動」の表示も毎秒動かす必要がある。
+    if (g.turnTimer || g.callTimer || g.handEndTimer ||
+        (self._frShowDiffUntil && Date.now() < self._frShowDiffUntil)) {
       this._frClockTimer = setTimeout(tickFrClock, 1000);
     }
   },

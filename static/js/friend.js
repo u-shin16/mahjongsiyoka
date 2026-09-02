@@ -661,6 +661,30 @@ var FriendGame = (function() {
     state.turnTimer = null;
   }
 
+  // 鳴き・ロンの応答にも制限時間を付ける。
+  // これが無いと、誰か1人が応答しないだけで対局が止まったままになる。
+  // 長さは打牌の基本秒と同じにする（持ち時間の貯金はここでは使わない。
+  // 複数人が同時に待つので、1人の貯金で全員を待たせない）。
+  function _callWaitKey(state) {
+    if (state.phase === 'ron_wait' && state.ron) {
+      return 'ron_' + (state.ron.tile ? state.ron.tile.id : '') + '_' + state.ron.from;
+    }
+    if (state.phase === 'call_wait' && state.call) {
+      return 'call_' + (state.call.tile ? state.call.tile.id : '') + '_' + state.call.from;
+    }
+    return null;
+  }
+
+  function _ensureCallTimer(state) {
+    var key = _callWaitKey(state);
+    if (!key) { state.callTimer = null; return false; }
+    if (state.callTimer && state.callTimer.key === key) return false;
+    var now = Date.now();
+    var baseMs = (state.rules && state.rules.baseSeconds ? state.rules.baseSeconds : 5) * 1000;
+    state.callTimer = { key: key, startedAt: now, baseMs: baseMs, deadlineAt: now + baseMs };
+    return true;
+  }
+
   function _consumeTurnTimer(state, seat) {
     ensureRuntimeArrays(state);
     var timer = state.turnTimer;
@@ -1404,7 +1428,38 @@ var FriendGame = (function() {
     return changed;
   }
 
+  // 「次の局へ」は全員が押してから進む。ただし5秒たったら自動で押したことにする。
+  // ホストだけが押せると、他の人が点数を見終わる前に飛ばされてしまう。
+  var HAND_END_AUTO_MS = 5000;
+
+  function _handEndSeats(state) {
+    // CPU・切断中の席は待たない（誰も押せないため）
+    var seats = [];
+    for (var i = 0; i < state.playerCount; i++) {
+      if (isCpuSeat(i) || seatDisconnected(state, i)) continue;
+      seats.push(i);
+    }
+    return seats;
+  }
+
+  function _ensureHandEndTimer(state) {
+    if (state.phase !== 'hand_end') {
+      if (state.handEndTimer) { state.handEndTimer = null; return true; }
+      return false;
+    }
+    var key = 'he_' + state.round + '_' + (state.result ? state.result.type : '') +
+              '_' + (state.result && state.result.winner != null ? state.result.winner : '');
+    if (state.handEndTimer && state.handEndTimer.key === key) return false;
+    var now = Date.now();
+    state.handEndTimer = { key: key, startedAt: now, baseMs: HAND_END_AUTO_MS,
+                           deadlineAt: now + HAND_END_AUTO_MS };
+    state.handEndReady = {};
+    return true;
+  }
+
   function _advanceRoundOrEnd(state) {
+    state.handEndReady = {};
+    state.handEndTimer = null;
     var rules = normalizeRules(state.rules, state.playerCount);
     if (state.round >= state.roundLimit) {
       if (!rules.suddenDeath) {
@@ -1443,10 +1498,25 @@ var FriendGame = (function() {
   }
 
   function _hostTick(state) {
-    if (!state || state.phase === 'hand_end' || state.phase === 'match_end') return false;
+    // hand_end は「次の局へ」の全員待ち・5秒の自動進行があるので通す。
+    // match_end は対局が終わっているので何もしない。
+    if (!state || state.phase === 'match_end') return false;
     ensureRuntimeArrays(state);
     var changed = _syncDisconnects(state);
     var now = Date.now();
+    if (_ensureCallTimer(state)) changed = true;
+    if (_ensureHandEndTimer(state)) changed = true;
+
+    if (state.phase === 'hand_end') {
+      var waitSeats = _handEndSeats(state);
+      var ready = state.handEndReady || {};
+      var allReady = waitSeats.every(function(sq) { return !!ready[sq]; });
+      if (allReady || now >= state.handEndTimer.deadlineAt) {
+        _advanceRoundOrEnd(state);
+        return true;
+      }
+      return changed;
+    }
 
     if (state.phase === 'ron_wait' && state.ron) {
       // 自分で応答（ロン/スルー）を選ぶ必要がある候補（人間かつ自動対象外）が
@@ -1466,7 +1536,20 @@ var FriendGame = (function() {
           }
         }
       }
-      if (pendingManual) return changed;
+      if (pendingManual) {
+        // 時間切れになったら、応答していない人はスルーにして先へ進める
+        if (now >= state.callTimer.deadlineAt) {
+          state.ron.candidates.forEach(function(c) {
+            if (state.ron.responses[c] == null) {
+              state.ron.responses[c] = 'pass';
+              markMissedRon(state, c);
+              changed = true;
+            }
+          });
+        } else {
+          return changed;
+        }
+      }
       state.ron.candidates.forEach(function(c) {
         if (shouldSkipRonReaction(state, c) && state.ron.responses[c] !== 'pass') {
           state.ron.responses[c] = 'pass';
@@ -1488,6 +1571,11 @@ var FriendGame = (function() {
           changed = true;
         }
       });
+      if (now >= state.callTimer.deadlineAt) {
+        state.call.candidates.forEach(function(c) {
+          if (state.call.responses[c] == null) { state.call.responses[c] = 'pass'; changed = true; }
+        });
+      }
       if (state.call.candidates.every(function(c) { return state.call.responses[c] === 'pass'; })) {
         var fromSeat = state.call.from;
         state.call = null;
@@ -1622,8 +1710,10 @@ var FriendGame = (function() {
         if (state.phase === 'call_wait') ok = _executeCall(state, seat, a.optionIdx, a.callType);
 
       } else if (a.type === 'next_round') {
-        if (state.phase === 'hand_end' && a.uid === _room.hostUid) {
-          _advanceRoundOrEnd(state);
+        // 誰でも押せる。全員が押したかどうかの判定は _hostTick が行う。
+        if (state.phase === 'hand_end') {
+          if (!state.handEndReady) state.handEndReady = {};
+          state.handEndReady[seat] = true;
           ok = true;
         }
       }
