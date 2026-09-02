@@ -1494,7 +1494,23 @@ var App = {
   init: function() {
     Progress.load();
     var self = this;
-    document.getElementById('btnBack').addEventListener('click', function() { self.goBack(); });
+    document.getElementById('btnBack').addEventListener('click', function() {
+      var room = self.current === 'friend' && window.FriendGame ? FriendGame.room() : null;
+      if (room && room.status === 'waiting') {
+        var message = FriendGame.isHost()
+          ? '戻るとルームは削除されます。それでもよろしいですか？'
+          : '戻るとルームから退出します。それでもよろしいですか？';
+        confirmDialog(message, function() {
+          FriendGame.leaveRoom().then(function() {
+            self.goBack();
+          })['catch'](function(e) {
+            showToast(FriendGame.errorMessage(e) || 'ルームから退出できませんでした');
+          });
+        });
+        return;
+      }
+      self.goBack();
+    });
     document.getElementById('btnProgress').addEventListener('click', function() { self.navigate('progress'); });
     document.getElementById('headerTitle').addEventListener('click', function() { self.navigate('home'); });
     document.getElementById('btnAccount').addEventListener('click', function() { self.navigate('login'); });
