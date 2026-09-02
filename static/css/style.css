@@ -1863,7 +1863,8 @@ button { font-family: inherit; cursor: pointer; }
   display: block;
   text-align: center;
 }
-.mg-intro-number-tiles {
+.mg-intro-number-tiles,
+.mg-intro-real-tiles {
   display: flex;
   justify-content: center;
   align-items: center;

@@ -247,7 +247,11 @@ var CH_INTROS = {
   },
   // Chapter 3
   ch3_0: {
-    icon: '🀄',
+    realTiles: [
+      { suit: 'man', num: 3 },
+      { suit: 'pin', num: 5 },
+      { suit: 'sou', num: 7 },
+    ],
     points: [
       '<strong>萬子（まんず）</strong>：「一・二・三…」の漢字が書いてある牌（赤系）',
       '<strong>筒子（ぴんず）</strong>：丸い模様の牌（青系）',
@@ -654,11 +658,18 @@ function showMgIntro(main, chapterTitle, mgTitle, intro, onStart) {
     return '<div class="mg-intro-point"><div class="mg-intro-point-dot"></div><div>' + p + '</div></div>';
   }).join('');
   var exLines = intro.example.replace(/\n/g, '<br>');
-  var introVisual = intro.tiles
-    ? '<div class="mg-intro-number-tiles">' + intro.tiles.map(function(n) {
-        return Tiles.renderTile(Tiles.makeNum(n), { noHover: true });
-      }).join('') + '</div>'
-    : '<div class="mg-intro-icon">' + intro.icon + '</div>';
+  var introVisual;
+  if (intro.realTiles) {
+    introVisual = '<div class="mg-intro-real-tiles">' + intro.realTiles.map(function(t) {
+      return Tiles.renderTile(Tiles.make(t.suit, t.num), { noHover: true });
+    }).join('') + '</div>';
+  } else if (intro.tiles) {
+    introVisual = '<div class="mg-intro-number-tiles">' + intro.tiles.map(function(n) {
+      return Tiles.renderTile(Tiles.makeNum(n), { noHover: true });
+    }).join('') + '</div>';
+  } else {
+    introVisual = '<div class="mg-intro-icon">' + intro.icon + '</div>';
+  }
 
   main.innerHTML =
     '<div class="mg-intro">' +
