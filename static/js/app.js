@@ -1056,6 +1056,30 @@ function positionMeldAreas() {
   positionForSeat(document.querySelector('.player-nuki-area.seat-opposite'), oppHand, 180, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
   positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftHand, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
   positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightHand, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
+
+  // 残り時間は、自分の抜き北の「左上」に置く。
+  // 抜き北のエリアは北を1枚も抜いていないと存在しないので、位置は
+  // 抜き北と同じ式（手牌の中心から右へ NUKI_GAP、上へ NUKI_LIFT）で
+  // 自前に出す。そこから左と上へずらして、抜き北と重ならないようにする。
+  var timerSlot = document.querySelector('.fr-turn-timer-slot');
+  if (timerSlot && handRow) {
+    var thr = handRow.getBoundingClientRect();
+    var tcx = toLocalX((thr.left + thr.right) / 2);
+    var tcy = toLocalY((thr.top  + thr.bottom) / 2);
+    var nukiLeft = tcx + SELF_HAND_HALF + NUKI_GAP;   // 抜き北の左端
+    var nukiTop  = tcy - NUKI_LIFT;                   // 抜き北の中心の高さ
+    var tw = timerSlot.offsetWidth  || 132;
+    var th = timerSlot.offsetHeight || 24;
+    var TIMER_GAP = 10;
+    var tax = nukiLeft - TIMER_GAP - tw;              // 抜き北の左
+    var tay = nukiTop  - TIMER_GAP - th;              // 抜き北の上
+    // 卓からはみ出さないようにする
+    var M = 4;
+    if (tax < localBoundsL + M) tax = localBoundsL + M;
+    if (tax + tw > localBoundsR - M) tax = localBoundsR - M - tw;
+    if (tay < localBoundsT + M) tay = localBoundsT + M;
+    set(timerSlot, Math.round(tay) + 'px', Math.round(tax) + 'px', 'auto', 'auto', 'none');
+  }
 }
 
 // ウィンドウリサイズ時も再配置
@@ -1249,7 +1273,7 @@ function fitBattleTable() {
   // 携帯の横画面（縮小率0.42）では文字が4pxまで縮んでいた。
   // 縮小の逆数を掛けて、画面上の大きさが変わらないようにする。
   // 上げすぎると雀卓の中で浮くので2.2倍で止める。
-  var timerBox = table.querySelector('.fr-diamond-timer');
+  var timerBox = table.querySelector('.fr-turn-timer-slot');
   if (timerBox) {
     var inv = scale > 0.01 ? Math.min(1 / scale, 2.2) : 1;
     timerBox.style.setProperty('--tscale', inv.toFixed(3));
@@ -1338,7 +1362,6 @@ function renderCenterDiamondShared(opts) {
       '</div>' +
       centerEdgesHtml +
     '</div>' +
-    (opts.timerHtml ? '<div class="fr-diamond-timer">' + opts.timerHtml + '</div>' : '') +
   '</div>';
 }
 
@@ -2802,9 +2825,8 @@ var App = {
     }
     if (canRiichi) actionBtns += '<button class="btn-battle btn-riichi" id="btnFrRiichi">リーチ</button>';
 
-    // 鳴きボタンと同じ縦並びの枠に入れる。flexの縦並びなので、ボタンが
-    // 何個出ても重ならず、常にボタンの真上に出る。
-    var timerSlotHtml = timerHtml ? '<div class="fr-diamond-timer">' + timerHtml + '</div>' : '';
+    // 抜き北の左上に置く。位置は positionMeldAreas が抜き北と同じ基準で決める。
+    var timerSlotHtml = timerHtml ? '<div class="fr-turn-timer-slot">' + timerHtml + '</div>' : '';
 
     if (g.phase === 'call_wait' && g.call && g.call.candidates.indexOf(my) >= 0 && !this._frResponseSent) {
       var callOpts = (g.call.optionsBySeat && g.call.optionsBySeat[my]) || [];
@@ -2818,7 +2840,6 @@ var App = {
       // バナーは表示しない）
       frCallFloatHtml =
         '<div class="hand-action-float">' +
-          timerSlotHtml +
           callBtnsHtml +
           '<button class="btn-battle btn-skip-call" id="btnFrPass">スキップ</button>' +
         '</div>';
@@ -2841,7 +2862,6 @@ var App = {
       });
       frCallFloatHtml =
         '<div class="hand-action-float">' +
-          timerSlotHtml +
           '<button class="btn-battle btn-ron" id="btnFrRon">ロン！</button>' +
           ronCallBtnsHtml +
           '<button class="btn-battle btn-skip" id="btnFrPass">スルー</button>' +
@@ -2856,8 +2876,7 @@ var App = {
       kakanCands.forEach(function(c, ci) {
         floatBtnsFr += '<button class="btn-battle btn-ankan" data-kakan-idx="' + ci + '">カン</button>';
       });
-      if (floatBtnsFr || timerSlotHtml)
-        frCallFloatHtml = '<div class="hand-action-float">' + timerSlotHtml + floatBtnsFr + '</div>';
+      if (floatBtnsFr) frCallFloatHtml = '<div class="hand-action-float">' + floatBtnsFr + '</div>';
     }
     // 待ちの印はCPU戦と同じ規則にそろえる。
     //   ツモのみ：フリテンのとき（ロンできない）
@@ -3130,6 +3149,7 @@ var App = {
           frCallFloatHtml +
           perPlayerMeldsHtml +
           perPlayerNukiHtml +
+          timerSlotHtml +
           endHtml +
           waitsBtnHtml +
         '</div>' +

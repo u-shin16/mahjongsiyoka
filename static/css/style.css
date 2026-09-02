@@ -6025,15 +6025,15 @@ body.is-battle-page .app-footer {
 .battle-main .jt-diamond-edge .pts.plus { color: #8ff0b3; }
 .battle-main .jt-diamond-edge .pts.minus { color: #ff9a8a; }
 /* 友人戦：持ち時間タイマーはダイヤモンドの下に小さく表示 */
-.fr-diamond-timer {
-  /* 鳴きボタンの枠は「横並び＋折り返し」なので、1行まるごと使って
-     必ずボタンの上の段に来るようにする。
-     雀卓の縮小の打ち消しは --tscale（fitBattleTable が入れる）で行う。
-     zoom だと幅まで広がって枠からはみ出すため、高さと文字だけに効かせる。 */
+/* 残り時間は抜き北の左上に置く（位置は positionMeldAreas が決める）。
+   雀卓の縮小の打ち消しは --tscale（fitBattleTable が入れる）で行う。
+   zoom だと幅まで広がるため、高さと文字だけに効かせる。 */
+.fr-turn-timer-slot {
   --tscale: 1;
-  width: 100%;
-  flex: 0 0 100%;
-  margin: 0 0 3px;
+  position: fixed;
+  z-index: 60;
+  width: 132px;
+  pointer-events: none;
 }
 .fr-turn-timer {
   position: relative;
