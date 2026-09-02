@@ -5937,8 +5937,7 @@ body.is-battle-page .app-footer {
   padding: 6px 14px;
   font-size: 0.88rem;
 }
-.fr-rule-panel .fr-small-input,
-.fr-rule-panel .fr-fixed-value {
+.fr-rule-panel .fr-small-input {
   min-height: 40px;
   font-size: 0.9rem;
 }
@@ -5951,19 +5950,6 @@ body.is-battle-page .app-footer {
   width: 100%;
   min-height: 34px;
   padding: 7px 9px;
-}
-.fr-fixed-value {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 34px;
-  padding: 7px 9px;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: var(--radius-sm);
-  background: rgba(0,0,0,0.16);
-  color: var(--text-mid);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
 }
 .fr-rule-note {
   margin-top: 8px;
