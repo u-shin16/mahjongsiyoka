@@ -74,74 +74,11 @@ function watchCpuCalls(state, names) {
   }
 }
 
-// 和了の演出と、和了した人の手牌を全員に見せてから点数の画面へ進む。
-// すぐ点数を出すと何が起きたのか分からないため、いったん手牌ごと見せてから移る。
-//
-// 手牌は点数の画面と同じ「手牌 ｜ ロン/ツモの牌」の形で出す。
-// 和了牌は手牌の中に入っているので、idで1枚だけ抜き出して右へ置く。
-function buildWinHandHtml(state) {
-  if (!state || state.winner < 0) return '';
-  var w = state.winner;
-  var tiles = (state.hands[w] || []).slice();
-  var winTile = null;
-  if (state.winTile) {
-    var wi = tiles.map(function(t) { return t.id; }).indexOf(state.winTile.id);
-    if (wi >= 0) winTile = tiles.splice(wi, 1)[0];
-  }
-  var tileHtml = function(t) { return Tiles.renderTile(t, { noHover: true, small: true }); };
-
-  var melds = (state.melds && state.melds[w]) || [];
-  var meldsHtml = melds.length ? '<div class="fr-melds">' + melds.map(function(m) {
-    var label = m.type === 'pon' ? 'ポン' : m.type === 'chi' ? 'チー' : m.type === 'kan' ? 'カン' : '暗カン';
-    var body = (m.tiles || []).map(function(t, ti) {
-      var hidden = m.type === 'ankan' && (ti === 0 || ti === 3);
-      if (hidden) return Tiles.renderTile({ suit: 'back', num: 0, id: 'wrv' + ti }, { faceDown: true, noHover: true, extraClass: 'xxs' });
-      var isCalled = !!(m.calledTile && t.id === m.calledTile.id);
-      return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' + (isCalled ? ' meld-called' : '') });
-    }).join('');
-    return '<div class="fr-meld-set meld-set meld-' + m.type + '"><span class="meld-type-label">' + label + '</span>' + body + '</div>';
-  }).join('') + '</div>' : '';
-
-  var nuki = (state.nuki && state.nuki[w]) || [];
-  var nukiHtml = nuki.length
-    ? '<div class="fr-nuki-row"><span>抜き北</span>' + nuki.map(function(t) {
-        return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
-      }).join('') + '</div>'
-    : '';
-
-  return '<div class="agr-hand-split">' +
-      '<div class="agr-hand-part">' +
-        '<div class="agr-part-label">手牌</div>' +
-        '<span class="agr-tile-group">' + Tiles.sortTiles(tiles).map(tileHtml).join('') + '</span>' +
-      '</div>' +
-      (winTile
-        ? '<div class="agr-hand-part agr-hand-win">' +
-            '<div class="agr-part-label">' + (state.winType === 'tsumo' ? 'ツモ' : 'ロン') + 'の牌</div>' +
-            '<span class="agr-tile-group">' + tileHtml(winTile) + '</span>' +
-          '</div>'
-        : '') +
-    '</div>' + meldsHtml + nukiHtml;
-}
-
-function showWinEffect(type, playerName, thenShowScore, state) {
-  var handHtml = buildWinHandHtml(state);
-  var old = document.querySelector('.mj-win-reveal');
-  if (old) old.remove();
-
-  var el = document.createElement('div');
-  el.className = 'mj-win-reveal mj-call-' + type;
-  el.innerHTML =
-    '<div class="mj-win-head">' +
-      '<span class="mj-call-word">' + esc(type === 'tsumo' ? 'ツモ' : 'ロン') + '</span>' +
-      (playerName ? '<span class="mj-call-who">' + esc(playerName) + '</span>' : '') +
-    '</div>' +
-    (handHtml ? '<div class="mj-win-hand">' + handHtml + '</div>' : '');
-  document.body.appendChild(el);
-
-  setTimeout(function() {
-    if (el.parentNode) el.remove();
-    thenShowScore();
-  }, 2000);
+// 和了の演出を見せてから、点数の画面へ進む。
+// すぐ点数を出すと何が起きたのか分からないため、いったん大きく出してから移る。
+function showWinEffect(type, playerName, thenShowScore) {
+  showCallEffect(type, playerName);
+  setTimeout(thenShowScore, 900);
 }
 
 function showCallEffect(type, playerName) {
@@ -4670,7 +4607,7 @@ var App = {
           var wt = ns.winType === 'tsumo' ? 'ツモ' : 'ロン';
           log(Battle.PLAYER_NAMES[ns.winner] + 'が' + wt + '！', 'ev-win');
           showWinEffect(ns.winType === 'tsumo' ? 'tsumo' : 'ron',
-                        Battle.PLAYER_NAMES[ns.winner], renderEnd, ns);
+                        Battle.PLAYER_NAMES[ns.winner], renderEnd);
         }
         else if (ns.phase === 'pending_ron')  renderGame();
         else if (ns.phase === 'pending_call') renderGame();
@@ -5091,7 +5028,7 @@ var App = {
       var btnTsumo = document.getElementById('btnTsumo');
       if (btnTsumo) btnTsumo.addEventListener('click', function() {
         Battle.playerTsumo(); log('ツモ！ あなたのアガリ！', 'ev-win');
-        showWinEffect('tsumo', 'あなた', renderEnd, Battle.getState());
+        showWinEffect('tsumo', 'あなた', renderEnd);
       });
 
       var btnNuki = document.getElementById('btnNuki');
@@ -5122,7 +5059,7 @@ var App = {
       if (btnRon) btnRon.addEventListener('click', function() {
         clearBattleAdvice();
         Battle.playerRonAccept(); log('ロン！ あなたのアガリ！', 'ev-win');
-        showWinEffect('ron', 'あなた', renderEnd, Battle.getState());
+        showWinEffect('ron', 'あなた', renderEnd);
       });
 
       var btnSkip = document.getElementById('btnSkip');
