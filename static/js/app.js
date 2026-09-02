@@ -5198,12 +5198,6 @@ var App = {
       var tierText = (sc && sc.han >= 5) ? sc.label + ' ' : '';
 
       // 上乗せの内訳（素点と実際の増減が食い違って見えないように出す）
-      var extraRows = '';
-      if (sc && sc.honba) {
-        extraRows += '<div class="fr-row"><span>'+sc.honba+'本場</span><span class="fr-score">'+
-          (s.winType === 'tsumo' ? '1人100点ずつ' : '300点')+'</span></div>';
-      }
-
       // 点数移動
       var deltaHtml = (sc && sc.deltas) ? Battle.PLAYER_NAMES.map(function(nm, i) {
         var d = sc.deltas[i];
@@ -5219,7 +5213,7 @@ var App = {
             '<div class="fr-result-hand-row" style="margin-bottom:8px">' + handHtml + '</div>' +
             meldsHtml +
             nukiResultHtml +
-            yakuHtml + extraRows +
+            yakuHtml +
             '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + hanText + ' ' + tierText + ptsText + '</div>' +
             doraRowHtml +
             uraRowHtml +
