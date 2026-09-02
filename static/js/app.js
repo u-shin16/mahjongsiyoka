@@ -59,7 +59,8 @@ function watchCpuCalls(state, names) {
 }
 
 function showCallEffect(type, playerName) {
-  var labels = { pon: 'ポン', chi: 'チー', kan: 'カン', ankan: '暗カン', kakan: '加カン' };
+  // カンは暗カン・加カンも含めて、表示はすべて「カン」に統一する
+  var labels = { pon: 'ポン', chi: 'チー', kan: 'カン', ankan: 'カン', kakan: 'カン' };
   var label = labels[type] || type;
   var old = document.querySelector('.mj-call-effect');
   if (old) old.remove();
