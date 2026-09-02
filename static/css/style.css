@@ -5855,6 +5855,30 @@ body.is-battle-page .app-footer {
   font-size: 0.78rem;
   font-weight: 800;
 }
+.fr-rule-panel {
+  padding: 14px 16px;
+}
+.fr-rule-panel .fr-panel-title {
+  margin-bottom: 12px;
+  font-size: 0.96rem;
+}
+.fr-rule-panel .fr-rule-grid {
+  gap: 14px 16px;
+}
+.fr-rule-panel .fr-rule-grid label {
+  gap: 7px;
+  font-size: 0.88rem;
+}
+.fr-rule-panel .ai-level-btn {
+  min-height: 38px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+}
+.fr-rule-panel .fr-small-input,
+.fr-rule-panel .fr-fixed-value {
+  min-height: 40px;
+  font-size: 0.9rem;
+}
 .fr-segment {
   display: flex;
   gap: 5px;
