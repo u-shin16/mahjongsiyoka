@@ -195,7 +195,7 @@ function chMgTitles(id) {
 var CH_INTROS = {
   // Chapter 1
   ch1_0: {
-    icon: '🃏',
+    tiles: [1, 2, 3],
     points: [
       '<strong>同じ数字3枚</strong> → セット（<strong>刻子</strong>・コーツ）',
       '<strong>連続した数字3枚</strong> → セット（<strong>順子</strong>・シュンツ）',
@@ -654,13 +654,18 @@ function showMgIntro(main, chapterTitle, mgTitle, intro, onStart) {
     return '<div class="mg-intro-point"><div class="mg-intro-point-dot"></div><div>' + p + '</div></div>';
   }).join('');
   var exLines = intro.example.replace(/\n/g, '<br>');
+  var introVisual = intro.tiles
+    ? '<div class="mg-intro-number-tiles">' + intro.tiles.map(function(n) {
+        return Tiles.renderTile(Tiles.makeNum(n), { noHover: true });
+      }).join('') + '</div>'
+    : '<div class="mg-intro-icon">' + intro.icon + '</div>';
 
   main.innerHTML =
     '<div class="mg-intro">' +
       '<div class="mg-intro-nav">' + esc(chapterTitle) + '<span class="mg-intro-nav-sep">›</span>' + esc(mgTitle) + '</div>' +
       '<div class="mg-intro-title">' + esc(mgTitle) + '</div>' +
       '<div class="mg-intro-card">' +
-        '<span class="mg-intro-icon">' + intro.icon + '</span>' +
+        introVisual +
         '<div class="mg-intro-points">' + pts + '</div>' +
         '<div class="mg-intro-example">' + exLines + '</div>' +
         '<div class="mg-intro-tip">' + intro.tip + '</div>' +

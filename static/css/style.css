@@ -1863,6 +1863,13 @@ button { font-family: inherit; cursor: pointer; }
   display: block;
   text-align: center;
 }
+.mg-intro-number-tiles {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
 .mg-intro-points { margin-bottom: 14px; }
 .mg-intro-point {
   display: flex;
