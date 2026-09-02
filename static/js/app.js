@@ -2555,7 +2555,6 @@ var App = {
               '<button class="ai-level-btn ' + (rules.gameType === 'hanchan' ? 'active' : '') + '" data-rule-game-type="hanchan">半荘</button>' +
             '</div></label>' +
             '<label>持ち点<div class="fr-fixed-value">' + rules.startScore.toLocaleString('ja-JP') + '点</div></label>' +
-            '<label>基本秒<div class="fr-fixed-value">5秒</div></label>' +
             '<label>持ち時間<input class="ai-input fr-small-input" id="frReserveSec" type="number" min="0" max="120" step="5" value="' + rules.reserveSeconds + '"></label>' +
           '</div>' +
           '<div class="fr-rule-note">変更するとReadyは解除されます。</div>' +
