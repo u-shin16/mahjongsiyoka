@@ -261,6 +261,10 @@ var Battle = (function() {
     var replacement = drawReplacement(0);
     state.drewTile = replacement ? replacement.id : null;
     state.selectedIdx = -1;
+    // 北抜きの補充は嶺上牌からの補充なので、その牌で和了れば嶺上開花になる。
+    // カン（drawRinshanForPlayer）では立てていたが、北抜きでは立てておらず
+    // 嶺上開花が付かなかった。
+    if (replacement) state.rinshanPending = true;
     return { tile: tile, replacement: replacement };
   }
 
