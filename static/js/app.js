@@ -1678,6 +1678,14 @@ var App = {
     var self = this;
     document.getElementById('btnBack').addEventListener('click', function() {
       var room = self.current === 'friend' && window.FriendGame ? FriendGame.room() : null;
+      // 友人戦のロビーは1つのページの中で画面が入れ替わるので、履歴に残らない。
+      // 作成/参加の画面から押したときは、ホームではなく最初の2択へ戻す。
+      if (self.current === 'friend' && !room && self._frLobbyMode) {
+        self._frLobbyMode = null;
+        clearFriendCreateRotatePrompt();
+        self._render('friend', {});
+        return;
+      }
       if (room && room.status === 'waiting') {
         var message = FriendGame.isHost()
           ? '戻るとルームは削除されます。それでもよろしいですか？'
@@ -2696,8 +2704,7 @@ var App = {
           '<div class="game-instruction">部屋を作ると<strong>6桁のルームID</strong>が出ます。<br>' +
           '<span style="font-size:0.82rem;color:#8ab89c">次の画面で三麻/四麻、東風/半荘、持ち時間、CPU席を決められます。</span></div>' +
           '<div class="btn-row" style="justify-content:flex-start;margin-top:14px">' +
-            '<button class="btn btn-primary" id="btnFrCreate">この設定で作成</button>' +
-            '<button class="btn btn-secondary" id="btnFrLobbyBack">もどる</button>' +
+            '<button class="btn btn-primary" id="btnFrCreate">作成</button>' +
           '</div>' +
           '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px;min-height:1.3em"></div>' +
           '</div>';
@@ -2710,8 +2717,7 @@ var App = {
             '<button class="btn btn-secondary" id="btnFrPaste">貼り付け</button>' +
           '</div>' +
           '<div class="btn-row" style="justify-content:flex-start;margin-top:12px">' +
-            '<button class="btn btn-primary" id="btnFrJoin">参加する</button>' +
-            '<button class="btn btn-secondary" id="btnFrLobbyBack">もどる</button>' +
+            '<button class="btn btn-primary" id="btnFrJoin">参加</button>' +
           '</div>' +
           '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px;min-height:1.3em"></div>' +
           '</div>';
@@ -2773,13 +2779,6 @@ var App = {
           return Promise.resolve();
         }
       };
-      var backBtn = document.getElementById('btnFrLobbyBack');
-      if (backBtn) backBtn.addEventListener('click', function() {
-        self._frLobbyMode = null;
-        clearFriendCreateRotatePrompt();
-        self._render('friend', {});
-      });
-
       // コピーしたIDをボタン1つで入れられるようにする。
       // 6桁だけを取り出すので、前後に文字が混ざっていても貼れる。
       var pasteBtn = document.getElementById('btnFrPaste');
