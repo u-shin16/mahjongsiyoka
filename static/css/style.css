@@ -7060,6 +7060,11 @@ body.is-battle-page .jt-table {
   background: rgba(14, 46, 28, 0.9);
 }
 .fr-choice-card:active { transform: translateY(1px); }
+.fr-choice-card[disabled] { opacity: 0.55; cursor: default; }
+.fr-choice-card[disabled]:hover {
+  border-color: rgba(232,184,75,0.45);
+  background: rgba(8, 30, 18, 0.75);
+}
 .fr-choice-emoji { font-size: 2.2rem; line-height: 1; }
 .fr-choice-title { font-size: 1.15rem; font-weight: 900; color: var(--gold); }
 .fr-choice-sub { font-size: 0.8rem; color: #8ab89c; line-height: 1.5; }

@@ -2662,15 +2662,17 @@ var App = {
       setBattleZoomLock(false);
       // 「作る人」と「入る人」で必要なものが違うので、まず選んでもらう。
       // 1枚に両方を並べていたころは、入る人にも作成ボタンが見えていて迷いやすかった。
-      var mode = this._frLobbyMode || null;   // null=選ぶ / 'create' / 'join'
+      // 作成は決めることが無いので、押したらそのまま部屋を作って待機室へ進む
+      // （ルールは待機室で決められるので、手前にもう1枚置くと二度手間になる）。
+      var joining = this._frLobbyMode === 'join';
 
-      if (!mode) {
+      if (!joining) {
         main.innerHTML = '<div class="page-title">友人戦</div>' +
           '<div class="fr-wrap">' +
           '<div class="game-instruction">友だちと同じ部屋に入って対局します。<br>' +
           '<span style="font-size:0.82rem;color:#8ab89c">部屋を作る人が1人、あとの人はそのIDで参加します。</span></div>' +
           '<div class="fr-choice-row">' +
-            '<button class="fr-choice-card" id="btnFrModeCreate">' +
+            '<button class="fr-choice-card" id="btnFrCreate">' +
               '<span class="fr-choice-emoji" aria-hidden="true">🏠</span>' +
               '<span class="fr-choice-title">ルームを作成</span>' +
               '<span class="fr-choice-sub">人数やルールを決めて、IDを友だちに伝える</span>' +
@@ -2680,31 +2682,6 @@ var App = {
               '<span class="fr-choice-title">ルームに参加</span>' +
               '<span class="fr-choice-sub">友だちに教えてもらった6桁のIDで入る</span>' +
             '</button>' +
-          '</div>' +
-          '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px;min-height:1.3em"></div>' +
-          '</div>';
-        var errEl0 = document.getElementById('frErr');
-        if (FriendGame.error && FriendGame.error()) {
-          errEl0.textContent = FriendGame.errorMessage(FriendGame.error());
-        }
-        document.getElementById('btnFrModeCreate').addEventListener('click', function() {
-          self._frLobbyMode = 'create';
-          self._render('friend', {});
-        });
-        document.getElementById('btnFrModeJoin').addEventListener('click', function() {
-          self._frLobbyMode = 'join';
-          self._render('friend', {});
-        });
-        return;
-      }
-
-      if (mode === 'create') {
-        main.innerHTML = '<div class="page-title">ルームを作成</div>' +
-          '<div class="fr-wrap">' +
-          '<div class="game-instruction">部屋を作ると<strong>6桁のルームID</strong>が出ます。<br>' +
-          '<span style="font-size:0.82rem;color:#8ab89c">次の画面で三麻/四麻、東風/半荘、持ち時間、CPU席を決められます。</span></div>' +
-          '<div class="btn-row" style="justify-content:flex-start;margin-top:14px">' +
-            '<button class="btn btn-primary" id="btnFrCreate">作成</button>' +
           '</div>' +
           '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px;min-height:1.3em"></div>' +
           '</div>';
@@ -2739,16 +2716,19 @@ var App = {
       };
       var runRoomAction = function(btn, action, fallbackMessage, pendingLabel) {
         errEl.textContent = '';
+        // 大きい選択カードは中に見出しと説明が入れ子で入っているので、
+        // 文字を差し替えると中身ごと消えてしまう。カードのときは触らない。
+        var isCard = !!(btn && btn.classList && btn.classList.contains('fr-choice-card'));
         var originalLabel = btn ? btn.textContent : '';
         if (btn) {
           btn.disabled = true;
-          if (pendingLabel) btn.textContent = pendingLabel;
+          if (pendingLabel && !isCard) btn.textContent = pendingLabel;
         }
         var timeout = null;
         var restore = function() {
           if (!btn) return;
           btn.disabled = false;
-          btn.textContent = originalLabel;
+          if (!isCard) btn.textContent = originalLabel;
         };
         var done = function() {
           if (timeout) clearTimeout(timeout);
@@ -2796,6 +2776,12 @@ var App = {
         })['catch'](function() {
           errEl.textContent = '貼り付けできませんでした。手で入力してください';
         });
+      });
+
+      var modeJoinBtn = document.getElementById('btnFrModeJoin');
+      if (modeJoinBtn) modeJoinBtn.addEventListener('click', function() {
+        self._frLobbyMode = 'join';
+        self._render('friend', {});
       });
 
       var createBtn = document.getElementById('btnFrCreate');
