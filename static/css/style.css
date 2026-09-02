@@ -6888,3 +6888,19 @@ body.is-battle-page .app-footer {
 @media (max-width: 860px) {
   .mj-call-riichi .mj-call-word { font-size: 2.2rem; }
 }
+
+/* ─────────────────────────────────
+   点数確認の画面の牌の大きさ
+   手牌・副露・抜き北をすべて small（40x55）で描いたうえで、
+   対局中の手牌と同じ44x60に見えるようそろえる。
+   副露には `.meld-set .tile { zoom:0.55 !important }`（5098行）が
+   かかってしまうので、この画面だけ打ち消す。
+───────────────────────────────── */
+.fr-result-float .agr-hand-split .tile.sm,
+.fr-result-float .fr-melds .meld-set .tile,
+.fr-result-float .fr-nuki-row .tile.sm {
+  zoom: 1.1 !important;
+}
+.fr-result-float .fr-melds {
+  gap: 10px;
+}

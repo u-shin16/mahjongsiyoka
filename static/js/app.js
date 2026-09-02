@@ -45,12 +45,22 @@ var __meldCounts = null;
 var __nukiCounts = null;
 var __riichiFlags = null;
 function resetCallWatch() { __meldCounts = null; __nukiCounts = null; __riichiFlags = null; }
-function watchCpuCalls(state, names) {
+function watchOtherCalls(state, names, selfIdx) {
   if (!state || !state.melds) return;
-  var now = state.melds.map(function(m) { return (m || []).length; });
+  // 友人戦は自分の席が0とは限らない。Firestoreから戻ると配列が
+  // オブジェクトの形になることがあるので、長さの配列に直してから見る。
+  var me = (selfIdx == null) ? 0 : selfIdx;
+  var lenOf = function(src, n) {
+    var out = [];
+    for (var q = 0; q < n; q++) out.push(((src && src[q]) || []).length);
+    return out;
+  };
+  var seats = state.playerCount || (state.melds.length || 4);
+  var now = lenOf(state.melds, seats);
   var shown = false;
   if (__meldCounts && __meldCounts.length === now.length) {
-    for (var i = 1; i < now.length; i++) {          // 0は自分なので除く
+    for (var i = 0; i < now.length; i++) {
+      if (i === me) continue;                        // 自分の鳴きは押した時に出している
       if (now[i] > __meldCounts[i]) {
         var last = state.melds[i][state.melds[i].length - 1];
         if (last) { showCallEffect(last.type, (names && names[i]) || ''); shown = true; }
@@ -62,9 +72,10 @@ function watchCpuCalls(state, names) {
 
   // 三麻の北抜きも同じように、抜いた枚数が増えたことで気づく
   if (state.nuki) {
-    var nk = state.nuki.map(function(n) { return (n || []).length; });
+    var nk = lenOf(state.nuki, seats);
     if (!shown && __nukiCounts && __nukiCounts.length === nk.length) {
-      for (var j = 1; j < nk.length; j++) {
+      for (var j = 0; j < nk.length; j++) {
+        if (j === me) continue;
         if (nk[j] > __nukiCounts[j]) {
           showCallEffect('nuki', (names && names[j]) || '');
           break;
@@ -76,9 +87,11 @@ function watchCpuCalls(state, names) {
 
   // 立直も、宣言した瞬間にフラグが立つので、それで気づく
   if (state.riichi) {
-    var rc = state.riichi.map(function(r) { return !!r; });
+    var rc = [];
+    for (var p = 0; p < seats; p++) rc.push(!!state.riichi[p]);
     if (!shown && __riichiFlags && __riichiFlags.length === rc.length) {
-      for (var k = 1; k < rc.length; k++) {          // 0は自分なので除く
+      for (var k = 0; k < rc.length; k++) {
+        if (k === me) continue;                      // 自分の立直は押した時に出している
         if (rc[k] && !__riichiFlags[k]) {
           showCallEffect('riichi', (names && names[k]) || '');
           break;
@@ -1288,12 +1301,90 @@ function renderCenterDiamondShared(opts) {
 
 // melds/nuki: seatIdx -> array。seatClsMap: seatIdx -> 'seat-self'等。
 // 戻り値: { melds: html, nuki: html }
+// 和了結果パネルの中身（下のボタン以外）を組み立てる。
+// CPU戦と友人戦で同じものを別々に書いていたため、副露の牌だけ大きさが食い違っていた
+// （CPU戦は xxs にさらに .meld-set の zoom:0.55 が乗って12pxまで縮んでいた）。
+// 1か所にまとめて、手牌・副露・抜き北をすべて同じ small サイズでそろえる。
+// 点数の画面では「ポン」「チー」「カン」の札は出さない（牌を見れば分かるため）。
+function buildWinPanelBodyShared(o) {
+  var handTiles = (o.hand || []).slice();
+  var winTile = null;
+  if (o.winTileId) {
+    var wi = handTiles.findIndex(function(t) { return t.id === o.winTileId; });
+    if (wi >= 0) winTile = handTiles.splice(wi, 1)[0];
+  }
+
+  var handHtml =
+    '<div class="agr-hand-split">' +
+      '<div class="agr-hand-part">' +
+        '<div class="agr-part-label">手牌</div>' +
+        '<span class="agr-tile-group">' + Tiles.sortTiles(handTiles).map(function(t) {
+          return Tiles.renderTile(t, { noHover: true, small: true });
+        }).join('') + '</span>' +
+      '</div>' +
+      (winTile
+        ? '<div class="agr-hand-part agr-hand-win">' +
+            '<div class="agr-part-label">' + o.winTypeLabel + 'の牌</div>' +
+            '<span class="agr-tile-group">' + Tiles.renderTile(winTile, { noHover: true, small: true }) + '</span>' +
+          '</div>'
+        : '') +
+    '</div>';
+
+  var melds = o.melds || [];
+  var meldsHtml = melds.length ? '<div class="fr-melds">' + melds.map(function(m, mi) {
+    var mTiles = (m.tiles || []).map(function(t, ti) {
+      // 鳴いた牌の判定は牌の種類ではなくidで行う。種類で見るとポンの3枚すべてが該当する。
+      var isCalled = !!(m.calledTile && t.id === m.calledTile.id);
+      var isHidden = m.type === 'ankan' && (ti === 0 || ti === 3);
+      if (isHidden) return Tiles.renderTile({ suit: 'back', num: 0, id: 'agrh_' + mi + '_' + ti },
+        { faceDown: true, noHover: true, small: true });
+      return Tiles.renderTile(t, { noHover: true, small: true, extraClass: (isCalled ? 'meld-called' : '') });
+    }).join('');
+    return '<div class="fr-meld-set meld-set meld-' + esc(m.type) + '">' + mTiles + '</div>';
+  }).join('') + '</div>' : '';
+
+  var nuki = o.nuki || [];
+  var nukiHtml = nuki.length ? '<div class="fr-nuki-row"><span>抜き北</span>' + nuki.map(function(t) {
+    return Tiles.renderTile(t, { noHover: true, small: true });
+  }).join('') + '</div>' : '';
+
+  var yakuHtml = (o.yaku || []).map(function(y) {
+    return '<div class="fr-row"><span>' + esc(y.name) + '</span><span class="fr-score">' + y.han + '翻</span></div>';
+  }).join('');
+
+  var tierText = (o.han >= 5 && o.tierLabel) ? o.tierLabel + ' ' : '';
+  var scoreLine = '<div style="font-weight:900;color:var(--gold);margin:6px 0">' +
+    o.han + '翻 ' + tierText + o.pts.toLocaleString() + '点</div>';
+
+  var doraRowHtml = o.doraInd
+    ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">ドラ表示牌</span>' +
+        Tiles.renderTile(o.doraInd, { noHover: true, extraClass: 'xxs' }) +
+        (o.kanDoraInds || []).map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') +
+      '</div>'
+    : '';
+  var uraRowHtml = o.uraInd
+    ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">裏ドラ表示牌</span>' +
+        Tiles.renderTile(o.uraInd, { noHover: true, extraClass: 'xxs' }) + '</div>'
+    : '';
+
+  var deltaHtml = (o.deltas || []).map(function(d, i) {
+    if (!d) return '';
+    return '<div class="fr-row"><span>' + esc(o.names[i]) + '</span><span style="color:' +
+      (d > 0 ? 'var(--gold)' : '#ff9a8a') + '">' + (d > 0 ? '+' : '') + d.toLocaleString() + '</span></div>';
+  }).join('');
+
+  return '<div style="font-size:1.1rem;font-weight:900;color:var(--gold);margin-bottom:6px">' +
+      esc(o.winnerName) + ' の' + o.winTypeLabel + '！</div>' +
+    '<div class="fr-result-hand-row" style="margin-bottom:8px">' + handHtml + '</div>' +
+    meldsHtml + nukiHtml + yakuHtml + scoreLine + doraRowHtml + uraRowHtml + deltaHtml;
+}
+
 function renderMeldAndNukiAreasShared(melds, nuki, playerCount, seatClsMap, isSanma) {
   var perPlayerMeldsHtml = '';
   var perPlayerNukiHtml = '';
   var buildMeldSets = function(pi) {
     return (melds[pi] || []).map(function(meld) {
-      var typeLabel = meld.type === 'pon' ? 'ポン' : meld.type === 'chi' ? 'チー' : meld.type === 'kan' ? 'カン' : '暗カン';
+      var typeLabel = meld.type === 'pon' ? 'ポン' : meld.type === 'chi' ? 'チー' : 'カン';
       var meldTiles = meld.tiles.map(function(t, ti) {
         // 鳴いた牌は横向きにして、どこから来たかが分かるようにする。
         // チーは数字順に並べ替えるため鳴いた牌が最後に来るとは限らない。
@@ -2487,6 +2578,21 @@ var App = {
       this._frResponseSent = false;
       this._frSelectedIdx = -1;
     }
+
+    // ロン待ちの画面で鳴きを選んでいた場合、鳴き待ちへ進んだ時点でこちらから送る。
+    // ロン待ちの間は鳴きを受け付けてもらえないため、いったんスルーを送って
+    // ここまで待っている。局面が変わって鳴けなくなっていたら捨てる。
+    // 実際に送るのは sendFrAction を作ったあと（この時点ではまだ無い）。
+    var frAutoCall = null;
+    if (this._frPendingCall) {
+      if (g.phase === 'call_wait' && g.call && g.call.candidates.indexOf(my) >= 0) {
+        frAutoCall = this._frPendingCall;
+        this._frPendingCall = null;
+        this._frResponseSent = true;
+      } else if (g.phase !== 'ron_wait') {
+        this._frPendingCall = null;
+      }
+    }
     main.classList.add('battle-main');
     // 対局画面に入る瞬間、スクロールを完全ロックする前に少しだけ
     // スクロールさせておく。実機Safariはタブバー等のUIをスクロール
@@ -2528,7 +2634,7 @@ var App = {
       '<span>' + (Math.ceil(timerLeft / 1000)) + 's</span><i style="width:' + timerPct + '%"></i></div>' : '';
     var meldSetHtml = function(melds) {
       return (melds || []).map(function(m, mi) {
-        var typeLabel = m.type === 'pon' ? 'ポン' : m.type === 'chi' ? 'チー' : m.type === 'kan' ? 'カン' : '暗カン';
+        var typeLabel = m.type === 'pon' ? 'ポン' : m.type === 'chi' ? 'チー' : 'カン';
         var tiles = (m.tiles || []).map(function(t, ti) {
           var isCalled = m.calledTile && t.id === m.calledTile.id;
           var isHidden = m.type === 'ankan' && (ti === 0 || ti === 3);
@@ -2658,16 +2764,27 @@ var App = {
           '<button class="btn-battle btn-skip-call" id="btnFrPass">スキップ</button>' +
         '</div>';
     } else if (g.phase === 'ron_wait' && g.ron && g.ron.candidates.indexOf(my) >= 0 && !this._frResponseSent) {
-      // 友人戦は他家のロンが鳴きより優先されるため、全員のロン判定が済むまで
-      // 鳴きを受け付けられない（_executeCall は state.call が無いと弾く）。
-      // スルーを押せば _resolveRonPasses が鳴きの選択へ進めてくれるので、
-      // ここではロンとスルーだけを出す。
-      var ronHasCall = !!((g.ron.callOptionsBySeat || {})[my] || []).length;
+      // 友人戦は他家のロンが鳴きより優先されるため、ロン待ちの間は鳴きを
+      // 受け付けられない（_executeCall は state.call が無いと弾く）。
+      // ただし「スルー（鳴きへ）」を押してから鳴き直すのは分かりにくいので、
+      // ロンと一緒に鳴きのボタンも並べ、押されたら覚えておいてスルーを送り、
+      // 鳴き待ちへ進んだ時点でこちらから鳴きを送る（_frPendingCall）。
+      // ロン待ちと鳴き待ちで選択肢は同じものが使われる（friend.js の
+      // _resolveRonPasses が callOptionsBySeat をそのまま渡すため）ので、
+      // 番号はずれない。
+      var ronCallOpts = (g.ron.callOptionsBySeat || {})[my] || [];
+      var ronCallBtnsHtml = '';
+      ronCallOpts.forEach(function(opt, oi) {
+        var label = opt.type === 'pon' ? 'ポン' : opt.type === 'chi' ? 'チー' : 'カン';
+        var callClass = opt.type === 'pon' ? 'btn-pon' : opt.type === 'chi' ? 'btn-chi' : 'btn-kan';
+        ronCallBtnsHtml += '<button class="btn-battle btn-call ' + callClass +
+          '" data-ron-call-idx="' + oi + '" data-call-type="' + esc(opt.type) + '">' + label + '</button>';
+      });
       frCallFloatHtml =
         '<div class="hand-action-float">' +
           '<button class="btn-battle btn-ron" id="btnFrRon">ロン！</button>' +
-          '<button class="btn-battle btn-skip" id="btnFrPass">' +
-            (ronHasCall ? 'スルー（鳴きへ）' : 'スルー') + '</button>' +
+          ronCallBtnsHtml +
+          '<button class="btn-battle btn-skip" id="btnFrPass">スルー</button>' +
         '</div>';
     } else {
       var floatBtnsFr = '';
@@ -2733,7 +2850,21 @@ var App = {
     }
 
     var endHtml = '';
-    if (g.phase === 'hand_end' || g.phase === 'match_end') {
+    // 和了の演出をCPU戦と同じ順で出す。
+    // ロン/ツモ → 演出（0.9秒）→ 点数の画面。演出の間は雀卓を出したままにする。
+    // 局が終わっていない間は必ずここを通るので、次の局で自然に出し直せる。
+    // 局ごとに変わる番号（本場など）を鍵に使うと、連荘で同じ値になり出なくなる。
+    var frIsWinEnd = (g.phase === 'hand_end' && g.result && g.result.type !== 'ryukyoku');
+    if (!frIsWinEnd) { self._frWinShown = false; self._frWinEffectUntil = 0; }
+    else if (!self._frWinShown) {
+      self._frWinShown = true;
+      self._frWinEffectUntil = Date.now() + 900;
+      showCallEffect(g.result.type === 'tsumo' ? 'tsumo' : 'ron', names[g.result.winner] || '');
+      setTimeout(function() { self._render('friend', {}); }, 950);
+    }
+    var frHoldingWinEffect = !!(frIsWinEnd && self._frWinEffectUntil > Date.now());
+
+    if ((g.phase === 'hand_end' || g.phase === 'match_end') && !frHoldingWinEffect) {
       var r = g.result;
       if (g.phase === 'match_end') {
         var rank = names.map(function(nm, i) { return { nm: nm, sc: g.scores[i] }; })
@@ -2783,48 +2914,25 @@ var App = {
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
       } else if (r) {
-        // 手牌は自分の生手牌と同じ「フラットに理牌」した表示にする（面子ごとのグループ化はしない）。
-        // 和了牌だけは手牌から抜き出して、「手牌 ｜ ロン/ツモの牌」の並びで分けて出す。
-        var frResultTiles = (r.hand || []).slice();
-        var frWinTile = null;
-        if (r.winTileId) {
-          var fwi = frResultTiles.findIndex(function(t) { return t.id === r.winTileId; });
-          if (fwi >= 0) frWinTile = frResultTiles.splice(fwi, 1)[0];
-        }
-        var resultHandHtml =
-          '<div class="agr-hand-split">' +
-            '<div class="agr-hand-part">' +
-              '<div class="agr-part-label">手牌</div>' +
-              '<span class="agr-tile-group">' + Tiles.sortTiles(frResultTiles).map(function(t) {
-                return Tiles.renderTile(t, { noHover: true, small: true });
-              }).join('') + '</span>' +
-            '</div>' +
-            (frWinTile
-              ? '<div class="agr-hand-part agr-hand-win">' +
-                  '<div class="agr-part-label">' + (r.type === 'tsumo' ? 'ツモ' : 'ロン') + 'の牌</div>' +
-                  '<span class="agr-tile-group">' + Tiles.renderTile(frWinTile, { noHover: true, small: true }) + '</span>' +
-                '</div>'
-              : '') +
-          '</div>';
-        // ドラ・裏ドラ表示牌（カンドラはドラ表示牌の行にまとめて表示する）
-        var resultKanDoraInds = r.kanDoraInds || [];
-        var resultDoraRowHtml = g.doraInd
-          ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">ドラ表示牌</span>' +
-              Tiles.renderTile(g.doraInd, { noHover: true, extraClass: 'xxs' }) +
-              resultKanDoraInds.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') +
-            '</div>'
-          : '';
+        // CPU戦と同じ組み立て（buildWinPanelBodyShared）を使う。ボタンだけ友人戦の分を足す。
         endHtml = '<div class="fr-result-float fr-result-float-win"><div class="fr-panel" style="border-color:var(--gold)">' +
-          '<div style="font-size:1.1rem;font-weight:900;color:var(--gold);margin-bottom:6px">' +
-            esc(names[r.winner]) + ' の' + (r.type === 'tsumo' ? 'ツモ' : 'ロン') + '！</div>' +
-          '<div class="fr-result-hand-row" style="margin-bottom:8px">' + resultHandHtml + '</div>' +
-          (r.melds && r.melds.length ? '<div class="fr-melds">' + meldSetHtml(r.melds) + '</div>' : '') +
-          (r.nuki && r.nuki.length ? '<div class="fr-nuki-row"><span>抜き北</span>' + r.nuki.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') + '</div>' : '') +
-          r.yaku.map(function(y) { return '<div class="fr-row"><span>' + esc(y.name) + '</span><span class="fr-score">' + y.han + '翻</span></div>'; }).join('') +
-          '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + r.han + '翻 ' + (r.han >= 5 && r.label ? r.label + ' ' : '') + r.pts.toLocaleString() + '点</div>' +
-          resultDoraRowHtml +
-          (r.uraInd ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">裏ドラ表示牌</span>' + Tiles.renderTile(r.uraInd, { noHover: true, extraClass: 'xxs' }) + '</div>' : '') +
-          r.deltas.map(function(d, i) { return d !== 0 ? '<div class="fr-row"><span>' + esc(names[i]) + '</span><span style="color:' + (d > 0 ? 'var(--gold)' : '#ff9a8a') + '">' + (d > 0 ? '+' : '') + d.toLocaleString() + '</span></div>' : ''; }).join('') +
+          buildWinPanelBodyShared({
+            winnerName: names[r.winner],
+            winTypeLabel: r.type === 'tsumo' ? 'ツモ' : 'ロン',
+            hand: r.hand || [],
+            winTileId: r.winTileId,
+            melds: r.melds || [],
+            nuki: r.nuki || [],
+            yaku: r.yaku || [],
+            han: r.han,
+            tierLabel: r.label,
+            pts: r.pts,
+            doraInd: g.doraInd,
+            kanDoraInds: r.kanDoraInds || [],
+            uraInd: r.uraInd,
+            names: names,
+            deltas: r.deltas || []
+          }) +
           (FriendGame.isHost() ? '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" id="btnFrNext">' + (g.round >= g.roundLimit ? '最終結果へ' : '次の局へ') + '</button></div>' : '<div style="font-size:0.8rem;color:#8ab89c;margin-top:8px">ホストの操作を待っています…</div>') +
           '</div></div>';
       }
@@ -2912,6 +3020,12 @@ var App = {
     seatCls[topSeat] = 'seat-opposite';
     seatCls[rightSeat] = 'seat-right';
     if (leftSeat >= 0) seatCls[leftSeat] = 'seat-left';
+    // 他家のポン・チー・カン・北抜き・立直の演出（CPU戦と同じ仕組み）。
+    // 友人戦は自分の席が0とは限らないので、自分の席を渡して除く。
+    // 見張りの数はCPU戦と共用しているため、局が変わったら取り直す。
+    // 取り直さないと、前の局やCPU戦の枚数と比べてしまう。
+    if (self._frLastRound !== g.round) { self._frLastRound = g.round; resetCallWatch(); }
+    watchOtherCalls(g, names, my);
     var meldAreasFr = renderMeldAndNukiAreasShared(g.melds || {}, g.nuki, n, seatCls, isSanma);
     var perPlayerMeldsHtml = meldAreasFr.melds;
     var perPlayerNukiHtml = meldAreasFr.nuki;
@@ -2971,6 +3085,12 @@ var App = {
         showToast(FriendGame.errorMessage(e), 4200);
       });
     };
+
+    // ロン待ちで選んでおいた鳴きを、ここで送る（上の frAutoCall を参照）
+    if (frAutoCall) {
+      showCallEffect(frAutoCall.callType || 'pon', 'あなた');
+      sendFrAction('call', { optionIdx: frAutoCall.optionIdx, callType: frAutoCall.callType });
+    }
 
     // ── イベント ──
     var scoreToggle = document.getElementById('frScoreToggle');
@@ -3265,6 +3385,7 @@ var App = {
       btn.addEventListener('click', function() {
         var cand = ankanCands[parseInt(btn.dataset.ankanIdx, 10)];
         if (cand && cand.tiles && cand.tiles[0]) {
+          showCallEffect('kan', 'あなた');
           sendFrAction('ankan', { tile: { suit: cand.tiles[0].suit, num: cand.tiles[0].num } });
         }
       });
@@ -3273,6 +3394,7 @@ var App = {
       btn.addEventListener('click', function() {
         var cand = kakanCands[parseInt(btn.dataset.kakanIdx, 10)];
         if (cand && cand.tiles && cand.tiles[0]) {
+          showCallEffect('kan', 'あなた');
           sendFrAction('kakan', { tile: { suit: cand.tiles[0].suit, num: cand.tiles[0].num } });
         }
       });
@@ -3292,6 +3414,7 @@ var App = {
     document.querySelectorAll('[data-call-idx]').forEach(function(btn) {
       btn.addEventListener('click', function() {
         self._frResponseSent = true;
+        showCallEffect(btn.dataset.callType || 'pon', 'あなた');
         sendFrAction('call', {
           optionIdx: parseInt(btn.dataset.callIdx, 10),
           callType: btn.dataset.callType,
@@ -3299,15 +3422,30 @@ var App = {
         self._render('friend', {});
       });
     });
+    document.querySelectorAll('[data-ron-call-idx]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        // ロン待ちの間は鳴きを送れないので、選んだ鳴きを覚えてスルーを送る。
+        // 鳴き待ちへ進んだ時点で、下の自動送信がこの鳴きを送る。
+        self._frPendingCall = {
+          optionIdx: parseInt(btn.dataset.ronCallIdx, 10),
+          callType: btn.dataset.callType,
+        };
+        self._frResponseSent = true;
+        self._frRonSent = true;
+        sendFrAction('pass');
+        self._render('friend', {});
+      });
+    });
     var passBtn = document.getElementById('btnFrPass');
     if (passBtn) passBtn.addEventListener('click', function() {
+      self._frPendingCall = null;      // スルーは鳴きもしない
       self._frResponseSent = true;
       self._frRonSent = true;
       sendFrAction('pass');
       self._render('friend', {});
     });
     var nextBtn = document.getElementById('btnFrNext');
-    if (nextBtn) nextBtn.addEventListener('click', function() { sendFrAction('next_round'); });
+    if (nextBtn) nextBtn.addEventListener('click', function() { resetCallWatch(); sendFrAction('next_round'); });
     var exitBtn = document.getElementById('btnFrExit');
     if (exitBtn) exitBtn.addEventListener('click', function() { FriendGame.leaveRoom().then(function() { self._render('friend', {}); }); });
     document.getElementById('btnFrLeave2').addEventListener('click', function() {
@@ -4605,7 +4743,7 @@ var App = {
         logHtml + '<div id="aiAdvArea">' + renderBattleAdvicePanel() + '</div>' +
       '</div>';
       // innerHTML 更新直後に同期配置（初回描画でも正しい位置に表示）
-      watchCpuCalls(s, Battle.PLAYER_NAMES);
+      watchOtherCalls(s, Battle.PLAYER_NAMES, 0);
       fitBattleTable();
       positionDiscardRivers();
       positionMeldAreas();
@@ -5142,99 +5280,28 @@ var App = {
         loserLine = '<div class="agr-loser">← '+esc(loserName)+' の捨て牌</div>';
       }
 
-      // 手牌 HTML（面子・雀頭ごとに分けると一盃口などが分かりにくいとの指摘のため、
-      // 自分の手牌表示と同じ理牌方法（Tiles.sortTiles：スート→数字順）で1グループに並べる）
-      // 手牌と和了牌を分けて出す（「手牌 ｜ ロン/ツモの牌」の並び）。
-      // 和了牌は手牌の中に入っているので、idで1枚だけ抜き出す。
-      var resultHandTiles = (s.hands[winner] || []).slice();
-      var winTileObj = null;
-      if (s.winTile) {
-        var wi = resultHandTiles.findIndex(function(t) { return t.id === s.winTile.id; });
-        if (wi >= 0) winTileObj = resultHandTiles.splice(wi, 1)[0];
-      }
-      var handHtml =
-        '<div class="agr-hand-split">' +
-          '<div class="agr-hand-part">' +
-            '<div class="agr-part-label">手牌</div>' +
-            '<span class="agr-tile-group">' + Tiles.sortTiles(resultHandTiles).map(function(t) {
-              return Tiles.renderTile(t, { noHover: true, small: true });
-            }).join('') + '</span>' +
-          '</div>' +
-          (winTileObj
-            ? '<div class="agr-hand-part agr-hand-win">' +
-                '<div class="agr-part-label">' + (s.winType === 'tsumo' ? 'ツモ' : 'ロン') + 'の牌</div>' +
-                '<span class="agr-tile-group">' + Tiles.renderTile(winTileObj, { noHover: true, small: true }) + '</span>' +
-              '</div>'
-            : '') +
-        '</div>';
-
-      // 副露（鳴き牌）
-      var winnerMelds = (s.melds && s.melds[winner]) || [];
-      var meldsHtml = winnerMelds.length ? '<div class="fr-melds">' + winnerMelds.map(function(m) {
-        var typeLabel = m.type === 'pon' ? 'ポン' : m.type === 'chi' ? 'チー' : m.type === 'kan' ? 'カン' : '暗カン';
-        var mTiles = (m.tiles || []).map(function(t, ti) {
-          // 鳴いた牌の判定は牌の種類ではなくidで行う。
-          // 種類で見るとポンの3枚すべてが該当してしまう。
-          var isCalled = !!(m.calledTile && t.id === m.calledTile.id);
-          var isHidden = m.type === 'ankan' && (ti === 0 || ti === 3);
-          if (isHidden) return Tiles.renderTile({suit:'back',num:0,id:'agrh_'+ti}, {faceDown:true, noHover:true, extraClass:'xxs'});
-          return Tiles.renderTile(t, {noHover:true, extraClass:'xxs'+(isCalled?' meld-called':'')});
-        }).join('');
-        return '<div class="fr-meld-set meld-set meld-'+m.type+'"><span class="meld-type-label">'+typeLabel+'</span>'+mTiles+'</div>';
-      }).join('') + '</div>' : '';
-
-      // 抜き北
-      var winnerNuki = (s.nuki && s.nuki[winner]) || [];
-      var nukiResultHtml = winnerNuki.length ? '<div class="fr-nuki-row"><span>抜き北</span>' + winnerNuki.map(function(t) {
-        return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' });
-      }).join('') + '</div>' : '';
-
-      // ドラ・裏ドラ表示牌（リーチ時の裏ドラは和了時のみめくって見せる）
-      // カンドラ表示牌は別枠にせず、ドラ表示牌の横にそのまま追加していく
-      var doraInd = s.doraIndicator;
-      var kanDoraInds = s.kanDoraIndicators || [];
-      var doraRowHtml = doraInd
-        ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">ドラ表示牌</span>' +
-            Tiles.renderTile(doraInd, { noHover: true, extraClass: 'xxs' }) +
-            kanDoraInds.map(function(t) { return Tiles.renderTile(t, { noHover: true, extraClass: 'xxs' }); }).join('') +
-          '</div>'
-        : '';
-      var uraInd = s.uraDoraIndicator;
-      var uraRowHtml = (uraInd && s.riichi && s.riichi[winner])
-        ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">裏ドラ表示牌</span>' + Tiles.renderTile(uraInd, { noHover: true, extraClass: 'xxs' }) + '</div>'
-        : '';
-
-      // 役一覧 HTML
-      var yakuHtml = yakuList.map(function(y) {
-        return '<div class="fr-row"><span>'+esc(y.name)+'</span><span class="fr-score">'+y.han+'翻</span></div>';
-      }).join('');
-
-      // 点数ラベル（満貫以上は役満/三倍満/倍満/跳満/満貫の名前も表示する）
-      var ptsText = sc ? sc.pts.toLocaleString() + '点' : '—';
-      var hanText = sc ? sc.han + '翻' : '—';
-      var tierText = (sc && sc.han >= 5) ? sc.label + ' ' : '';
-
-      // 上乗せの内訳（素点と実際の増減が食い違って見えないように出す）
-      // 点数移動
-      var deltaHtml = (sc && sc.deltas) ? Battle.PLAYER_NAMES.map(function(nm, i) {
-        var d = sc.deltas[i];
-        return d !== 0 ? '<div class="fr-row"><span>'+esc(nm)+'</span><span style="color:'+(d > 0 ? 'var(--gold)' : '#ff9a8a')+'">'+(d > 0 ? '+' : '')+d.toLocaleString()+'</span></div>' : '';
-      }).join('') : '';
-
-      // 組み立て（友人戦の和了結果パネルと同じ構成・デザインに統一）
+      // 中身は友人戦と共通（buildWinPanelBodyShared）。ボタンだけCPU戦の分を足す。
+      var uraInd = (s.riichi && s.riichi[winner]) ? s.uraDoraIndicator : null;
       main.innerHTML =
         '<div class="fr-result-float fr-result-float-win">' +
           '<div class="fr-panel" style="border-color:var(--gold)">' +
-            '<div style="font-size:1.1rem;font-weight:900;color:var(--gold);margin-bottom:6px">' +
-              esc(winnerName) + ' の' + winTypeLabel + '！</div>' +
-            '<div class="fr-result-hand-row" style="margin-bottom:8px">' + handHtml + '</div>' +
-            meldsHtml +
-            nukiResultHtml +
-            yakuHtml +
-            '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + hanText + ' ' + tierText + ptsText + '</div>' +
-            doraRowHtml +
-            uraRowHtml +
-            deltaHtml +
+            buildWinPanelBodyShared({
+              winnerName: winnerName,
+              winTypeLabel: winTypeLabel,
+              hand: s.hands[winner] || [],
+              winTileId: s.winTile ? s.winTile.id : null,
+              melds: (s.melds && s.melds[winner]) || [],
+              nuki: (s.nuki && s.nuki[winner]) || [],
+              yaku: yakuList,
+              han: sc ? sc.han : 0,
+              tierLabel: sc ? sc.label : '',
+              pts: sc ? sc.pts : 0,
+              doraInd: s.doraIndicator,
+              kanDoraInds: s.kanDoraIndicators || [],
+              uraInd: uraInd,
+              names: Battle.PLAYER_NAMES,
+              deltas: (sc && sc.deltas) || []
+            }) +
             '<div class="btn-row" style="margin-top:10px">' +
               (matchOver
                 ? '<button class="btn btn-primary" id="btnPlayAgain">再戦</button>'
