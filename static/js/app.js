@@ -272,7 +272,15 @@ var CH_INTROS = {
   },
   // Chapter 4
   ch4_0: {
-    icon: '🀄',
+    realTiles: [
+      { suit: 'wind', num: 1 },
+      { suit: 'wind', num: 2 },
+      { suit: 'wind', num: 3 },
+      { suit: 'wind', num: 4 },
+      { suit: 'dragon', num: 1 },
+      { suit: 'dragon', num: 2 },
+      { suit: 'dragon', num: 3 },
+    ],
     points: [
       '字牌（じはい）は<strong>東・南・西・北・白・發・中</strong>の7種類',
       '東・南・西・北には方角以外に「<strong>場風（ばかぜ）</strong>」「<strong>自風（じかぜ）</strong>」という役割もある',
