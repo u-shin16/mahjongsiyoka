@@ -4331,9 +4331,11 @@ body.is-battle-page .app-main.battle-main {
    代わりに pointer-events:none で hover 自体を発火させない（末尾のブロックで設定） */
 
 /* リーチ宣言牌：横向きに倒す。
-   横にすると幅が26px→35pxになり列からはみ出すので、0.94倍にして収める。 */
+   横にすると幅が26px→35pxになり、26pxの列からはみ出して両隣に5pxずつ
+   食い込む。列を広げると通常の牌の間にすき間ができてしまうため、
+   横向きの牌のほうを0.74倍（26÷35）に縮めて収める。 */
 .disc-river .river-tile.river-riichi {
-  transform: rotate(90deg) scale(0.94) !important;
+  transform: rotate(90deg) !important;
 }
 
 /* 鳴き・ロンの選択中：対象の捨て牌をライトアップして一目でわかるようにする */
@@ -4369,7 +4371,7 @@ body.is-battle-page .app-main.battle-main {
 }
 /* リーチ宣言牌は 180°+90° = 270° */
 .disc-river-opposite .river-tile.river-riichi {
-  transform: rotate(270deg) scale(0.94) !important;
+  transform: rotate(270deg) !important;
 }
 
 /* ─────────────────────────────────
@@ -4387,7 +4389,7 @@ body.is-battle-page .app-main.battle-main {
 .disc-river-left .river-tile { zoom: 0.48; }
 /* リーチ牌はコンテナ回転済みなので元方向に戻す + 倒す */
 .disc-river-left .river-tile.river-riichi {
-  transform: rotate(-90deg) scale(0.94) !important;
+  transform: rotate(-90deg) !important;
 }
 
 /* ─────────────────────────────────
@@ -4402,7 +4404,7 @@ body.is-battle-page .app-main.battle-main {
 }
 .disc-river-right .river-tile { zoom: 0.48; }
 .disc-river-right .river-tile.river-riichi {
-  transform: rotate(90deg) scale(0.94) !important;
+  transform: rotate(90deg) !important;
 }
 
 @media (max-width: 760px) {
@@ -4674,12 +4676,12 @@ body.is-battle-page .app-main.battle-main {
 .disc-river {
   position: absolute !important;
   display: grid !important;
-  /* 全員同一グリッド: 33px列×6 + 36px行×4 + gap 0px
-     牌は26px幅だが、リーチ宣言牌は横向きになり35px幅になる。26px列のままだと
-     両隣に5pxずつ食い込んでいたため、列を33pxに広げた（35pxまで広げると
-     今度は自分の河と下家の河がぶつかるので、ぶつからない最大が33px）。
-     残る2pxぶんは横向きの牌を0.94倍にして吸収する。 */
-  grid-template-columns: repeat(6, 33px) !important;
+  /* 全員同一グリッド: 26px列×6 + 36px行×4 + gap 0px（牌を隙間なく隣接）
+     2026-09-03：リーチ宣言牌は横向きで35px幅になり、26pxの列からはみ出す。
+     列を33pxに広げると通常の牌の間にすき間ができ、牌を縮めると1枚だけ
+     小さくなって不自然だった。本物の麻雀と同じく、その行の後ろの牌を
+     9pxずらして場所を作る（renderDiscardRiverShared）。 */
+  grid-template-columns: repeat(6, 26px) !important;
   grid-template-rows:    repeat(4, 36px) !important;
   gap: 0px 0px !important;
   column-gap: 0px !important;
@@ -4692,7 +4694,7 @@ body.is-battle-page .app-main.battle-main {
   justify-items:   start !important;
   align-items:     start !important;
   /* 固定サイズ */
-  width:   198px !important;   /* 33×6 + 0×5 */
+  width:   156px !important;   /* 26×6 + 0×5 */
   height:  144px !important;   /* 36×4 + 0×3 */
   overflow: visible !important;
   z-index:  4 !important;
@@ -4721,7 +4723,7 @@ body.is-battle-page .app-main.battle-main {
 /* ── self: デフォルト向き（追加回転なし） ── */
 /* .disc-river-self .river-tile → zoom:0.50, transform:none (デフォルト) */
 .disc-river-self .river-tile.river-riichi {
-  transform: rotate(90deg) scale(0.94) !important;
+  transform: rotate(90deg) !important;
 }
 
 /* ── opposite: 180°回転 ── */
@@ -4729,19 +4731,19 @@ body.is-battle-page .app-main.battle-main {
   transform: rotate(180deg) !important;
 }
 .disc-river-opposite .river-tile.river-riichi {
-  transform: rotate(270deg) scale(0.94) !important;  /* 180°+90° */
+  transform: rotate(270deg) !important;  /* 180°+90° */
 }
 
 /* ── left: コンテナが90°CW回転済み → 牌の追加回転なし ── */
 /* .disc-river-left .river-tile → zoom:0.50, transform:none */
 .disc-river-left .river-tile.river-riichi {
-  transform: rotate(-90deg) scale(0.94) !important;  /* コンテナ回転を打ち消し+倒す */
+  transform: rotate(-90deg) !important;  /* コンテナ回転を打ち消し+倒す */
 }
 
 /* ── right: コンテナが-90°CCW回転済み → 牌の追加回転なし ── */
 /* .disc-river-right .river-tile → zoom:0.50, transform:none */
 .disc-river-right .river-tile.river-riichi {
-  transform: rotate(90deg) scale(0.94) !important;   /* コンテナ回転を打ち消し+倒す */
+  transform: rotate(90deg) !important;   /* コンテナ回転を打ち消し+倒す */
 }
 
 /* ── opposite: 横方向は必ず左→右（direction:ltr, column:1=左端） ── */

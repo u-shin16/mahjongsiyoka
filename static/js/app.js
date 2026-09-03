@@ -1561,8 +1561,25 @@ function renderHiddenHand(prefix, count, max) {
   return html;
 }
 
+// リーチ宣言牌は横向きに倒すので、幅が26px→35pxになる。
+// 列は26pxのままなので、そのままだと両隣に5pxずつ食い込む。
+// 本物の麻雀と同じように、その行の後ろの牌を9pxずらして場所を作る
+// （列を広げると通常の牌の間にすき間ができ、牌を縮めると1枚だけ小さくなる）。
+var RIICHI_OVERHANG = 9;   // 35 - 26
 function renderDiscardRiverShared(discards, seat, riichiIdx, callTargetTileId) {
-  var tiles = (discards || []).slice(0, RIVER_COLS * RIVER_ROWS).map(function(d, i) {
+  var list = (discards || []).slice(0, RIVER_COLS * RIVER_ROWS);
+  // 行ごとに「何列目にリーチ牌があったか」を先に調べる
+  var riichiColOfRow = {};
+  list.forEach(function(d, i) {
+    var tile = (d && d.tile) ? d.tile : d;
+    var isRiichi = (d && d.isRiichiDiscard) || (tile && tile.riichiDiscard) || (riichiIdx != null && i === riichiIdx);
+    var rowIdx = Math.floor(i / RIVER_COLS);
+    if (isRiichi && riichiColOfRow[rowIdx] == null) riichiColOfRow[rowIdx] = i % RIVER_COLS;
+  });
+  // 対面は列の並びが逆（gridColumn = RIVER_COLS - col）なので、ずらす向きも逆
+  var dir = (seat === 'opposite') ? -1 : 1;
+
+  var tiles = list.map(function(d, i) {
     var tile = (d && d.tile) ? d.tile : d;
     var isRiichi = (d && d.isRiichiDiscard) || (tile && tile.riichiDiscard) || (riichiIdx != null && i === riichiIdx);
     var isCallTarget = callTargetTileId && tile && tile.id === callTargetTileId;
@@ -1572,7 +1589,17 @@ function renderDiscardRiverShared(discards, seat, riichiIdx, callTargetTileId) {
     var rowIdx = Math.floor(i / RIVER_COLS);
     var gridColumn = (seat === 'opposite') ? (RIVER_COLS - col) : (col + 1);
     var gridRow = (seat === 'opposite') ? (RIVER_ROWS - rowIdx) : (rowIdx + 1);
-    return '<div class="rtile-wrap" style="grid-column:' + gridColumn + ';grid-row:' + gridRow + '">' + tileHtml + '</div>';
+
+    // リーチ牌自身は半分（4.5px）だけずらして、手前の牌と重ならないようにする。
+    // そのうしろの牌は9pxずらして、倒した牌のぶんの場所を空ける。
+    var shift = 0;
+    var rc = riichiColOfRow[rowIdx];
+    if (rc != null) {
+      if (col === rc) shift = RIICHI_OVERHANG / 2;
+      else if (col > rc) shift = RIICHI_OVERHANG;
+    }
+    var shiftStyle = shift ? ';transform:translateX(' + (shift * dir) + 'px)' : '';
+    return '<div class="rtile-wrap" style="grid-column:' + gridColumn + ';grid-row:' + gridRow + shiftStyle + '">' + tileHtml + '</div>';
   }).join('');
   return '<div class="disc-river disc-river-' + seat + '">' + tiles + '</div>';
 }
