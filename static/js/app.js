@@ -93,7 +93,7 @@ function watchOtherCalls(state, names, selfIdx) {
       if (i === me) continue;                        // 自分の鳴きは押した時に出している
       if (now[i] > __meldCounts[i]) {
         var last = state.melds[i][state.melds[i].length - 1];
-        if (last) { showCallEffect(last.type, (names && names[i]) || ''); shown = true; }
+        if (last) { showCallEffect(last.type, (names && names[i]) || '', seatEffectPos(i, me, seats)); shown = true; }
         break;                                       // 同時に増えることは無い
       }
     }
@@ -107,7 +107,7 @@ function watchOtherCalls(state, names, selfIdx) {
       for (var j = 0; j < nk.length; j++) {
         if (j === me) continue;
         if (nk[j] > __nukiCounts[j]) {
-          showCallEffect('nuki', (names && names[j]) || '');
+          showCallEffect('nuki', (names && names[j]) || '', seatEffectPos(j, me, seats));
           break;
         }
       }
@@ -123,7 +123,7 @@ function watchOtherCalls(state, names, selfIdx) {
       for (var k = 0; k < rc.length; k++) {
         if (k === me) continue;                      // 自分の立直は押した時に出している
         if (rc[k] && !__riichiFlags[k]) {
-          showCallEffect('riichi', (names && names[k]) || '');
+          showCallEffect('riichi', (names && names[k]) || '', seatEffectPos(k, me, seats));
           break;
         }
       }
@@ -134,12 +134,76 @@ function watchOtherCalls(state, names, selfIdx) {
 
 // 和了の演出を見せてから、点数の画面へ進む。
 // すぐ点数を出すと何が起きたのか分からないため、いったん大きく出してから移る。
-function showWinEffect(type, playerName, thenShowScore) {
-  showCallEffect(type, playerName);
+function showWinEffect(type, playerName, thenShowScore, pos) {
+  showCallEffect(type, playerName, pos);
   setTimeout(thenShowScore, 900);
 }
 
-function showCallEffect(type, playerName) {
+// 席番号から、演出を出す向きを決める。
+// 見た目の並びは自分=下・下家=右・対面=上・上家=左で、CPU戦も友人戦も同じ。
+function seatEffectPos(seat, selfIdx, playerCount) {
+  var n = playerCount || 4;
+  if (seat == null || selfIdx == null) return 'self';
+  var d = (seat - selfIdx + n) % n;
+  if (d === 0) return 'self';
+  if (d === 1) return 'right';
+  if (n === 3) return 'opposite';        // 三麻は上家がいない
+  return d === 2 ? 'opposite' : 'left';
+}
+
+// 鳴いた人の河のとなりへ演出を置く。
+// 全員を同じ場所に出していたころは、誰が鳴いたのか分からなかった。
+// 河は4方向にきれいに並んでいるので、その人の河を基準にして、
+// 盤面の中心から外へずらす（河の上に重ねない）。
+// 自分だけは真下が手牌でふさがっているため、河の左へ置く。
+function positionCallEffect(el, pos) {
+  var sel = {
+    self:     '.disc-river-self',
+    opposite: '.disc-river-opposite',
+    left:     '.disc-river-left',
+    right:    '.disc-river-right',
+  }[pos];
+  var river = sel ? document.querySelector(sel) : null;
+  var table = document.querySelector('.jt-table');
+  if (!river || !table) return false;                 // 測れないときは既定の位置のまま
+  var r = river.getBoundingClientRect();
+  var t = table.getBoundingClientRect();
+  // 札は出るときに1.15倍まで広がる（mjCallPopの18%の位置）。
+  // 素の大きさで詰めると、広がった一瞬だけ河に掛かる。広がった大きさで見込む。
+  var POP = 1.15;
+  var w = el.offsetWidth * POP, h = el.offsetHeight * POP;
+  if (!el.offsetWidth || !el.offsetHeight) return false;
+  var GAP = 10;
+  var cx, cy;
+  if (pos === 'opposite')   { cx = (r.left + r.right) / 2; cy = r.top - GAP - h / 2; }
+  else if (pos === 'left')  { cx = r.left - GAP - w / 2;   cy = (r.top + r.bottom) / 2; }
+  else if (pos === 'right') { cx = r.right + GAP + w / 2;  cy = (r.top + r.bottom) / 2; }
+  else                      { cx = r.left - GAP - w / 2;   cy = (r.top + r.bottom) / 2; }
+  // どれかに重ならざるを得ないときは、隠してよいものを選ぶ。
+  // 河は「誰が何を捨てたか」の情報なので絶対に隠さない。
+  // 対面の手牌は伏せ牌で情報が無いので、重なってよい。
+  if (pos === 'opposite') {
+    var maxBottom = r.top - 2;                       // 対面の河には絶対に掛けない
+    if (cy + h / 2 > maxBottom) cy = maxBottom - h / 2;
+  }
+  if (pos === 'self') {
+    var myHand = document.querySelector('.jt-hand-tiles-row');
+    if (myHand) {
+      var hb = myHand.getBoundingClientRect().top - 4;   // 自分の手牌にも掛けない
+      if (cy + h / 2 > hb) cy = hb - h / 2;
+    }
+  }
+  // 卓の端の余白。上だけ詰める。対面は「対面の河の上」に置くが、画面が
+  // 小さいと余白に押し戻されて河に掛かってしまうため（実測で3px掛かった）。
+  var M = 6, MT = 2;
+  cx = Math.max(t.left + M  + w / 2, Math.min(t.right  - M - w / 2, cx));
+  cy = Math.max(t.top  + MT + h / 2, Math.min(t.bottom - M - h / 2, cy));
+  el.style.setProperty('left', Math.round(cx) + 'px', 'important');
+  el.style.setProperty('top',  Math.round(cy) + 'px', 'important');
+  return true;
+}
+
+function showCallEffect(type, playerName, pos) {
   // カンは暗カン・加カンも含めて、表示はすべて「カン」に統一する
   var labels = { pon: 'ポン', chi: 'チー', kan: 'カン', ankan: 'カン', kakan: 'カン', nuki: '北抜き',
                  ron: 'ロン', tsumo: 'ツモ', riichi: 'リーチ' };
@@ -147,11 +211,13 @@ function showCallEffect(type, playerName) {
   var old = document.querySelector('.mj-call-effect');
   if (old) old.remove();
   var el = document.createElement('div');
-  el.className = 'mj-call-effect mj-call-' + type;
+  el.className = 'mj-call-effect mj-call-' + type + (pos ? ' mj-call-at-' + pos : '');
   el.innerHTML =
     '<span class="mj-call-word">' + esc(label) + '</span>' +
     (playerName ? '<span class="mj-call-who">' + esc(playerName) + '</span>' : '');
   document.body.appendChild(el);
+  // 大きさが決まってからでないと置き場所を計算できないので、足したあとに動かす
+  if (pos) positionCallEffect(el, pos);
   // 再生し終わったら自分で消える。次の鳴きが来たら上で消してから出し直す
   setTimeout(function() { if (el.parentNode) el.remove(); }, 1100);
 }
@@ -3293,7 +3359,7 @@ var App = {
     else if (!self._frWinShown) {
       self._frWinShown = true;
       self._frWinEffectUntil = Date.now() + 900;
-      showCallEffect(g.result.type === 'tsumo' ? 'tsumo' : 'ron', names[g.result.winner] || '');
+      showCallEffect(g.result.type === 'tsumo' ? 'tsumo' : 'ron', names[g.result.winner] || '', seatEffectPos(g.result.winner, my, n));
       setTimeout(function() { self._render('friend', {}); }, 950);
     }
     var frHoldingWinEffect = !!(frIsWinEnd && self._frWinEffectUntil > Date.now());
@@ -3523,7 +3589,7 @@ var App = {
 
     // ロン待ちで選んでおいた鳴きを、ここで送る（上の frAutoCall を参照）
     if (frAutoCall) {
-      showCallEffect(frAutoCall.callType || 'pon', 'あなた');
+      showCallEffect(frAutoCall.callType || 'pon', 'あなた', 'self');
       sendFrAction('call', { optionIdx: frAutoCall.optionIdx, callType: frAutoCall.callType });
     }
 
@@ -3541,7 +3607,7 @@ var App = {
       if (self._frRiichiSel) {
         var rest = myHand.filter(function(_, i) { return i !== idx; });
         if (!FriendGame.isTenpai13(rest)) { showToast('その牌を捨てるとテンパイが崩れちゃう！'); return; }
-        showCallEffect('riichi', 'あなた');
+        showCallEffect('riichi', 'あなた', 'self');
         sendFrAction('riichi', { idx: idx });
       } else {
         sendFrAction('discard', { idx: idx });
@@ -3814,13 +3880,13 @@ var App = {
     var nukiBtn = document.getElementById('btnFrNuki');
     if (nukiBtn) nukiBtn.addEventListener('click', function() {
       var north = myHand.find(function(t) { return FriendGame.isNukiTile(t); });
-      if (north) { showCallEffect('nuki', 'あなた'); sendFrAction('nuki', { tileId: north.id }); }
+      if (north) { showCallEffect('nuki', 'あなた', 'self'); sendFrAction('nuki', { tileId: north.id }); }
     });
     document.querySelectorAll('[data-ankan-idx]').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var cand = ankanCands[parseInt(btn.dataset.ankanIdx, 10)];
         if (cand && cand.tiles && cand.tiles[0]) {
-          showCallEffect('kan', 'あなた');
+          showCallEffect('kan', 'あなた', 'self');
           sendFrAction('ankan', { tile: { suit: cand.tiles[0].suit, num: cand.tiles[0].num } });
         }
       });
@@ -3829,7 +3895,7 @@ var App = {
       btn.addEventListener('click', function() {
         var cand = kakanCands[parseInt(btn.dataset.kakanIdx, 10)];
         if (cand && cand.tiles && cand.tiles[0]) {
-          showCallEffect('kan', 'あなた');
+          showCallEffect('kan', 'あなた', 'self');
           sendFrAction('kakan', { tile: { suit: cand.tiles[0].suit, num: cand.tiles[0].num } });
         }
       });
@@ -3849,7 +3915,7 @@ var App = {
     document.querySelectorAll('[data-call-idx]').forEach(function(btn) {
       btn.addEventListener('click', function() {
         self._frResponseSent = true;
-        showCallEffect(btn.dataset.callType || 'pon', 'あなた');
+        showCallEffect(btn.dataset.callType || 'pon', 'あなた', 'self');
         sendFrAction('call', {
           optionIdx: parseInt(btn.dataset.callIdx, 10),
           callType: btn.dataset.callType,
@@ -5207,7 +5273,8 @@ var App = {
           var wt = ns.winType === 'tsumo' ? 'ツモ' : 'ロン';
           log(Battle.PLAYER_NAMES[ns.winner] + 'が' + wt + '！', 'ev-win');
           showWinEffect(ns.winType === 'tsumo' ? 'tsumo' : 'ron',
-                        Battle.PLAYER_NAMES[ns.winner], renderEnd);
+                        Battle.PLAYER_NAMES[ns.winner], renderEnd,
+                        seatEffectPos(ns.winner, 0, ns.playerCount));
         }
         else if (ns.phase === 'pending_ron')  renderGame();
         else if (ns.phase === 'pending_call') renderGame();
@@ -5240,7 +5307,7 @@ var App = {
         clearBattleAdvice();
         riichiArmed = false;
         Battle.playerRiichi(ai);
-        showCallEffect('riichi', 'あなた');
+        showCallEffect('riichi', 'あなた', 'self');
         afterDiscard();
       };
 
@@ -5571,17 +5638,17 @@ var App = {
           if (opt.type === 'pon') {
             clearBattleAdvice();
             Battle.playerPon(tile, from);
-            showCallEffect('pon', 'あなた');
+            showCallEffect('pon', 'あなた', 'self');
             log('ポン！', 'ev-discard');
           } else if (opt.type === 'kan') {
             clearBattleAdvice();
             Battle.playerKan(tile, from);
-            showCallEffect('kan', 'あなた');
+            showCallEffect('kan', 'あなた', 'self');
             log('カン！', 'ev-discard');
           } else if (opt.type === 'chi') {
             clearBattleAdvice();
             Battle.playerChi(tile, from, opt.tiles);
-            showCallEffect('chi', 'あなた');
+            showCallEffect('chi', 'あなた', 'self');
             log('チー！', 'ev-discard');
           }
           afterDiscard();
@@ -5609,7 +5676,7 @@ var App = {
           if (!cand) return;
           var ok = Battle.playerAnkan(cand.tiles[0]);
           if (ok) clearBattleAdvice();
-          if (ok) { showCallEffect('ankan', 'あなた'); log('暗カン！', 'ev-discard'); afterDiscard(); }
+          if (ok) { showCallEffect('ankan', 'あなた', 'self'); log('暗カン！', 'ev-discard'); afterDiscard(); }
         });
       });
 
@@ -5621,7 +5688,7 @@ var App = {
           if (!cand) return;
           var ok = Battle.playerKakan(cand.tiles[0]);
           if (ok) clearBattleAdvice();
-          if (ok) { showCallEffect('kakan', 'あなた'); log('加カン！', 'ev-discard'); afterDiscard(); }
+          if (ok) { showCallEffect('kakan', 'あなた', 'self'); log('加カン！', 'ev-discard'); afterDiscard(); }
         });
       });
 
@@ -5629,7 +5696,7 @@ var App = {
       var btnTsumo = document.getElementById('btnTsumo');
       if (btnTsumo) btnTsumo.addEventListener('click', function() {
         Battle.playerTsumo(); log('ツモ！ あなたのアガリ！', 'ev-win');
-        showWinEffect('tsumo', 'あなた', renderEnd);
+        showWinEffect('tsumo', 'あなた', renderEnd, 'self');
       });
 
       var btnNuki = document.getElementById('btnNuki');
@@ -5641,7 +5708,7 @@ var App = {
         var res = Battle.playerNuki(ai);
         if (res) clearBattleAdvice();
         selectedIdx = -1;
-        if (res) { showCallEffect('nuki', 'あなた'); log('北抜き！ 抜き北 '+nukiCount(0)+'枚', 'ev-nuki'); }
+        if (res) { showCallEffect('nuki', 'あなた', 'self'); log('北抜き！ 抜き北 '+nukiCount(0)+'枚', 'ev-nuki'); }
         var ns = Battle.getState();
         if (ns.phase === 'ryukyoku') renderRyukyoku();
         else renderGame();
@@ -5660,7 +5727,7 @@ var App = {
       if (btnRon) btnRon.addEventListener('click', function() {
         clearBattleAdvice();
         Battle.playerRonAccept(); log('ロン！ あなたのアガリ！', 'ev-win');
-        showWinEffect('ron', 'あなた', renderEnd);
+        showWinEffect('ron', 'あなた', renderEnd, 'self');
       });
 
       var btnSkip = document.getElementById('btnSkip');
