@@ -1330,9 +1330,15 @@ var FriendGame = (function() {
 
   function _executeNuki(state, seat, tileId) {
     if (!state.isSanma || state.phase !== 'turn' || seat !== state.turn) return false;
-    _consumeTurnTimer(state, seat);
     var idx = findNukiIdx(state, seat, tileId);
     if (idx < 0) return false;
+    // リーチ中は手が変わる操作をしてはいけない。手牌にもとからある北を
+    // 抜くと待ちが変わってしまうので、ツモってきた北だけ抜ける。
+    if (state.riichi[seat]) {
+      var drawn = (state.hands[seat] || [])[idx];
+      if (!drawn || !state.drawnId || drawn.id !== state.drawnId) return false;
+    }
+    _consumeTurnTimer(state, seat);
     var tile = state.hands[seat].splice(idx, 1)[0];
     state.nuki[seat].push(tile);
 
@@ -1614,9 +1620,16 @@ var FriendGame = (function() {
       // 自動打牌（リーチ中のツモ切り含む）が発火するタイミングでは、
       // ツモった牌が北なら勝手に切らず先に北抜きを行う（人間・CPU共通）
       if (state.phase === 'turn' && state.isSanma && (dueAuto || dueTimeout)) {
-        var nukiIdx = findNukiIdx(state, seat, null);
-        if (nukiIdx >= 0) {
-          _executeNuki(state, seat, (state.hands[seat] || [])[nukiIdx].id);
+        // リーチ中は手牌の北に触れないので、ツモってきた牌が北のときだけ抜く。
+        // それ以外はツモ切りに任せる。
+        var nukiIdx = state.riichi[seat]
+          ? findNukiIdx(state, seat, state.drawnId)
+          : findNukiIdx(state, seat, null);
+        var nukiTile = nukiIdx >= 0 ? (state.hands[seat] || [])[nukiIdx] : null;
+        var nukiOk = nukiIdx >= 0 &&
+          (!state.riichi[seat] || (nukiTile && state.drawnId && nukiTile.id === state.drawnId));
+        if (nukiOk) {
+          _executeNuki(state, seat, nukiTile.id);
           return true;
         }
       }

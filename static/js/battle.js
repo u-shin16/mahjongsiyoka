@@ -255,6 +255,15 @@ var Battle = (function() {
     if (!state || !state.isSanma || state.phase !== 'player_turn') return null;
     var idx = typeof tileIdx === 'number' && tileIdx >= 0 ? tileIdx : findNukiIdx(0);
     if (idx < 0 || !isNukiTile(state.hands[0][idx])) return null;
+    // リーチ中は、もとから手牌にある北を抜くと待ちが変わってしまう。
+    // ツモってきた北だけ抜ける。どの牌を選んでいてもツモ牌に決め打つ
+    // （選び方で無反応になると、押しても何も起きないバグに見えるため）。
+    if (state.riichi[0]) {
+      if (!state.drewTile) return null;
+      var di = state.hands[0].findIndex(function(t) { return t.id === state.drewTile; });
+      if (di < 0 || !isNukiTile(state.hands[0][di])) return null;
+      idx = di;
+    }
 
     var tile = state.hands[0].splice(idx, 1)[0];
     state.nuki[0].push(tile);
@@ -1256,7 +1265,16 @@ var Battle = (function() {
       return yaku.length > 0;
     },
     playerNuki: playerNuki,
-    canNuki: function() { return !!(state && state.isSanma && state.phase === 'player_turn' && findNukiIdx(0) >= 0); },
+    // リーチ中は手が変わる操作をしてはいけないので、ツモってきた北だけ抜ける。
+    canNuki: function() {
+      if (!state || !state.isSanma || state.phase !== 'player_turn') return false;
+      if (!state.riichi[0]) return findNukiIdx(0) >= 0;
+      // リーチ中はツモ牌そのものを見る。findNukiIdx は手牌の先頭の北を返すので、
+      // それで判定すると「ツモ牌が北なのにボタンが出ない」ことになる。
+      if (!state.drewTile) return false;
+      var t = state.hands[0].find(function(x) { return x.id === state.drewTile; });
+      return !!(t && isNukiTile(t));
+    },
     isNukiTile: isNukiTile,
     canTsumo: function() {
       if (!state) return false;

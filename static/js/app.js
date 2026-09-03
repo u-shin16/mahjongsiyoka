@@ -3196,7 +3196,18 @@ var App = {
     var isClosed = myMelds.every(function(m) { return m.type === 'ankan'; });
     var ankanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkAnkan(my) : [];
     var kakanCands = (myTurn && g.phase === 'turn') ? FriendGame.checkKakan(my) : [];
-    var canNuki = g.isSanma && myTurn && g.phase === 'turn' && myHand.some(function(t) { return FriendGame.isNukiTile(t); });
+    // リーチ中は手牌の北に触れない（待ちが変わるため）。ツモってきた牌が
+    // 北のときだけ抜ける。抜かずにそのまま切る（スルー）も選べる。
+    var frNukiTile = null;
+    if (g.isSanma && myTurn && g.phase === 'turn') {
+      if (g.riichi[my]) {
+        var dt = myHand.find(function(t) { return t.id === g.drawnId; });
+        if (dt && FriendGame.isNukiTile(dt)) frNukiTile = dt;
+      } else {
+        frNukiTile = myHand.find(function(t) { return FriendGame.isNukiTile(t); }) || null;
+      }
+    }
+    var canNuki = !!frNukiTile;
     var actionBtns = '';
     var frCallFloatHtml = '';
     // ツモできるかどうか（右下のツモボタンの出し分けに使う）
@@ -3879,7 +3890,8 @@ var App = {
     if (tsumoBtn) tsumoBtn.addEventListener('click', function() { sendFrAction('tsumo'); });
     var nukiBtn = document.getElementById('btnFrNuki');
     if (nukiBtn) nukiBtn.addEventListener('click', function() {
-      var north = myHand.find(function(t) { return FriendGame.isNukiTile(t); });
+      // リーチ中はツモってきた北を抜く（手牌のほかの北ではない）
+      var north = frNukiTile;
       if (north) { showCallEffect('nuki', 'あなた', 'self'); sendFrAction('nuki', { tileId: north.id }); }
     });
     document.querySelectorAll('[data-ankan-idx]').forEach(function(btn) {
