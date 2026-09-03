@@ -1,5 +1,7 @@
 import json
 import os
+from datetime import datetime
+from xml.sax.saxutils import escape
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 
@@ -354,6 +356,55 @@ def privacy():
 @app.route('/terms')
 def terms():
     return render_template('terms.html')
+
+# SEO: クローラー向け robots.txt
+# 2026-09-03まで robots.txt も sitemap.xml も無く、Googleに一度も
+# クロールされていなかった（URL が Google に認識されていません）。
+# sitemap を持つ他のアプリ（はよおきんかい等）はクロールされているため、
+# 入口が無いことが原因と判断して追加した。
+@app.route('/robots.txt')
+def robots_txt():
+    return """User-agent: *
+Allow: /
+
+Sitemap: https://mahjong.webtool-labs.com/sitemap.xml
+""", 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+
+# SEO: サイトマップ（公開ページのみ。APIは含めない）
+SITE_URL = 'https://mahjong.webtool-labs.com'
+PUBLIC_SITEMAP_PAGES = [
+    {'path': '/',        'template': 'index.html',   'priority': '1.0'},
+    {'path': '/terms',   'template': 'terms.html',   'priority': '0.5'},
+    {'path': '/privacy', 'template': 'privacy.html', 'priority': '0.5'},
+]
+
+
+def _template_lastmod(template_name):
+    """テンプレートの更新日をそのまま lastmod に使う。
+    手で日付を書くと更新のたびに直し忘れるため、ファイルの日付から作る。"""
+    path = os.path.join(app.root_path, 'templates', template_name)
+    try:
+        return datetime.fromtimestamp(os.path.getmtime(path)).strftime('%Y-%m-%d')
+    except OSError:
+        return datetime.now().strftime('%Y-%m-%d')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    rows = ['<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for page in PUBLIC_SITEMAP_PAGES:
+        rows.extend([
+            '  <url>',
+            '    <loc>' + escape(SITE_URL + page['path']) + '</loc>',
+            '    <lastmod>' + _template_lastmod(page['template']) + '</lastmod>',
+            '    <priority>' + page['priority'] + '</priority>',
+            '  </url>',
+        ])
+    rows.append('</urlset>')
+    return '\n'.join(rows) + '\n', 200, {"Content-Type": "application/xml; charset=utf-8"}
+
 
 @app.route('/api/ai-advice', methods=['POST'])
 def ai_advice():
