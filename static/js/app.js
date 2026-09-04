@@ -276,7 +276,7 @@ var CH_MG_KEYS = {
   2: ['mg1', 'mg2'],
   3: ['mg1', 'mg2'],
   4: ['mg1', 'mg2', 'mg3'],
-  5: ['mg2'],
+  5: ['mg0', 'mg1', 'mg2'],
   6: ['mg1'],
 };
 function chMgTitles(id) {
@@ -387,14 +387,14 @@ var CH_INTROS = {
     tip: '💡 全部の見た目を確認したら「クイズを始めよう」を押してね！',
   },
   ch4_1: {
-    icon: '❓',
+    icon: '🗣️',
     points: [
-      '字牌には数字がないから<strong>順子にはなれない</strong>！',
-      '「東・南・西」は並んでいても順子ではない',
-      '字牌で作れるのは<strong>刻子（同じ3枚）</strong>か<strong>頭（同じ2枚）</strong>だけ',
+      '字牌は<strong>中国語のような読み方</strong>をする。「東」は「ひがし」ではなく<strong>トン</strong>',
+      '風牌は<strong>トン・ナン・シャー・ペー</strong>（東・南・西・北）',
+      '三元牌は<strong>ハク・ハツ・チュン</strong>（白・發・中）',
     ],
-    example: '❌ 東・南・西（順子にならない！）\n✅ 1萬・2萬・3萬（数字が続くので順子OK）',
-    tip: '💡 3枚が「順子になる？ならない？」を○✕で答えよう！',
+    example: '東＝トン　南＝ナン　西＝シャー　北＝ペー\n白＝ハク　發＝ハツ　中＝チュン\n\n❌ 西を「にし」、中を「なか」とは読まない',
+    tip: '💡 出てきた牌の読み方を4つの中から選ぼう！',
   },
   ch4_2: {
     realTiles: [
@@ -411,15 +411,36 @@ var CH_INTROS = {
     tip: '💡 同じ字牌を3枚タップして選ぼう！',
   },
   // Chapter 5
+  // 三元牌と風牌は覚え方がまったく違うので、別々に練習してからまとめる
   ch5_0: {
+    icon: '🀄',
+    points: [
+      '<strong>三元牌</strong>は<strong>白・發・中</strong>の3種類だけ',
+      'この3つは刻子（同じ牌3枚）にすれば<strong>いつでも役牌</strong>になる',
+      '場風や自風がどれでも関係なく役になるのが三元牌の強み',
+    ],
+    example: '✅ 白・白・白（いつでも役牌！）\n✅ 發・發・發\n✅ 中・中・中\n❌ 東・東・東（これは風牌。次のミニゲームでやるよ）',
+    tip: '💡 出てきた刻子が「三元牌の役牌になる？」を○✕で答えよう！',
+  },
+  ch5_1: {
+    icon: '🧭',
+    points: [
+      '<strong>風牌</strong>は<strong>東・南・西・北</strong>の4種類',
+      '風牌は<strong>場風</strong>（今の局の風）か<strong>自風</strong>（自分の席の風）と同じときだけ役牌になる',
+      '同じ風牌でも、場風・自風でなければ役にならないのが三元牌との違い',
+    ],
+    example: '場風=東、自風=南のとき\n✅ 東・東・東（場風なので役牌）\n✅ 南・南・南（自風なので役牌）\n❌ 西・西・西（どちらでもない）\n❌ 北・北・北（どちらでもない）',
+    tip: '💡 このミニゲームは「場風=東、自風=南」で考えてね！',
+  },
+  ch5_2: {
     icon: '🔍',
     points: [
-      '役牌になるのは：<strong>白・發・中</strong>の刻子、<strong>場の風</strong>の刻子、<strong>自分の風</strong>の刻子',
-      '東場なら東・東・東は役牌になる（場の風）',
-      '自分が南家なら南・南・南も役牌になる（自風）',
+      'ここまでのまとめ。刻子を見て<strong>三元牌・風牌・役牌でない</strong>の3つから選ぶよ',
+      '<strong>白・發・中</strong>ならいつでも<strong>三元牌の役牌</strong>',
+      '<strong>場風・自風と同じ風牌</strong>なら<strong>風牌の役牌</strong>。それ以外は役牌にならない',
     ],
-    example: '✅ 白・白・白（三元牌はいつでも役牌！）\n✅ 中・中・中（三元牌はいつでも役牌！）\n❌ 西・西・西（場の風でも自風でもない場合）',
-    tip: '💡 この問題では「場風=東、自風=南」で考えてね！',
+    example: '✅ 白・白・白 → 三元牌の役牌\n✅ 東・東・東 → 風牌の役牌（場風が東のとき）\n❌ 西・西・西 → 役牌でない',
+    tip: '💡 この問題でも「場風=東、自風=南」で考えてね！',
   },
   // Chapter 6
   ch6_0: {
@@ -2357,24 +2378,33 @@ var App = {
         });
 
       } else if (mgIdx === 1) {
+        // ── 字牌の読み方クイズ（4択） ──
         var mg=mgs[1]; var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
-        // 概念説明ヒント（字牌の性質を理解させる）
         var ch4mg2Hints = [
-          'この問題は「この3枚が順子（じゅんし）になれるか？」を問う問題。順子とは<strong>同じ種類の牌</strong>で<strong>数字が1ずつ続く</strong>3枚のことだよ',
-          '字牌（東・南・西・北・白・發・中）は「場所の名前」や「役の名前」の牌。萬子・筒子・索子のように1〜9の数字がないよ。数字がないと順子は作れないね',
+          '麻雀の字牌は<strong>中国語のような読み方</strong>をするよ。「東」を「ひがし」ではなく「トン」と読むのがその例',
+          '風牌は<strong>トン・ナン・シャー・ペー</strong>（東・南・西・北）。三元牌は<strong>ハク・ハツ・チュン</strong>（白・發・中）。この7つを覚えれば字牌は全部だよ',
         ];
         var hLvCh4 = 0;
+        // 選択肢は毎回シャッフルする（位置で覚えてしまわないように）
+        var ch4Choices = Tiles.shuffle(q.choices.slice());
         main.innerHTML = chHeader('第4章 字牌を覚えよう', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">'+mg.instruction+'</div>' +
-          '<div class="game-area"><div class="tiles-row">'+q.tiles.map(function(t){return Tiles.renderTile(Tiles.make(t.suit,t.num),{noHover:true});}).join('')+'</div>' +
-          '<div class="yn-panel" style="margin-top:14px"><button class="btn btn-yes" id="btnY">○ なる</button><button class="btn btn-no" id="btnN">✕ ならない</button></div>' +
+          '<div class="game-area"><div class="tiles-row">'+Tiles.renderTile(Tiles.make(q.tile.suit,q.tile.num),{noHover:true})+'</div>' +
+          '<div class="choice-grid" style="margin-top:14px">'+
+            ch4Choices.map(function(c){ return '<button class="btn-choice" data-read="'+esc(c)+'">'+esc(c)+'</button>'; }).join('')+
+          '</div>' +
           '<div id="feedback"></div></div>' +
           '<div class="btn-row"><button class="btn btn-hint" id="btnHintCh4">💡 ヒントを見る</button></div>' +
           '<div class="hint-box" id="hintBoxCh4"></div>';
-        var handleYN=function(ch){if(showingFb)return;showingFb=true;var ok=ch===q.answer;if(ok)correct++;
-          showFeedback(ok,q.fb,function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){mgIdx=2;qIdx=0;correct=0;showMgClear(1,render);}else render();});};
-        document.getElementById('btnY').addEventListener('click',function(){handleYN(true);});
-        document.getElementById('btnN').addEventListener('click',function(){handleYN(false);});
+        document.querySelectorAll('.btn-choice[data-read]').forEach(function(b){
+          b.addEventListener('click', function(){
+            if(showingFb)return; showingFb=true;
+            var ok = b.dataset.read === q.answer;
+            if(ok)correct++;
+            showFeedback(ok, ok ? q.fb : '「'+Tiles.label(Tiles.make(q.tile.suit,q.tile.num))+'」は「'+q.answer+'」と読むよ。'+q.fb,
+              function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){mgIdx=2;qIdx=0;correct=0;showMgClear(1,render);}else render();});
+          });
+        });
         document.getElementById('btnHintCh4').addEventListener('click', function() {
           var hb = document.getElementById('hintBoxCh4'), btn = document.getElementById('btnHintCh4');
           hLvCh4 = Math.min(hLvCh4 + 1, ch4mg2Hints.length);
@@ -2410,7 +2440,8 @@ var App = {
 
   // ===== CHAPTER 5 =====
   _ch5: function(main, ch, startMg) {
-    var mgs=[Chapters.ch5.mg2];
+    // ①三元牌だけ ②風牌だけ ③まとめ、の3つに分けている
+    var mgs=[Chapters.ch5.mg0, Chapters.ch5.mg1, Chapters.ch5.mg2];
     var mgIdx=Math.min(Math.max(0,(startMg||1)-1), mgs.length-1),qIdx=0,correct=0,showingFb=false;
     var qBank={},introShown={};
     var render=function(){
@@ -2423,26 +2454,54 @@ var App = {
         if(CH_INTROS[introKey]){showMgIntro(main,'第5章 役牌を作ろう',mg5.title,CH_INTROS[introKey],render);return;}
       }
 
-      var mg=mgs[0];var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
-      var ch5mg2Hints = [
-        'この問題は「同じ牌3枚の刻子が役牌になれるか、なれるなら三元牌と風牌のどちらか」を問うもの。役牌とは<strong>刻子を作ると役（得点の権利）になる特定の牌</strong>のこと',
-        '<strong>白・發・中（三元牌）</strong>の刻子はいつでも「役牌（三元牌）」。<strong>場の風牌・自分の風牌</strong>の刻子は「役牌（風牌）」。それ以外の牌の刻子は役牌にならないよ',
+      var mg=mgs[mgIdx];var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
+      // ミニゲームごとにヒントを変える（何を問われているかが違うため）
+      var CH5_HINTS = [
+        [
+          'この問題は「その刻子が<strong>三元牌</strong>の役牌になるか」を問うもの。役牌とは<strong>刻子を作ると役（得点の権利）になる特定の牌</strong>のこと',
+          '三元牌は<strong>白・發・中の3種類だけ</strong>。この3つは場風・自風に関係なく、刻子にすればいつでも役牌になるよ',
+        ],
+        [
+          'この問題は「その刻子が<strong>風牌</strong>の役牌になるか」を問うもの。風牌は東・南・西・北の4種類',
+          '風牌は<strong>場風（今の局の風）</strong>か<strong>自風（自分の席の風）</strong>と同じときだけ役牌になる。今回は場風が東、自風が南なので、その2つだけが当たり',
+        ],
+        [
+          'ここまでの2つのまとめ。刻子が役牌になれるか、なれるなら<strong>三元牌と風牌のどちらか</strong>を答えるよ',
+          '<strong>白・發・中</strong>ならいつでも<strong>三元牌の役牌</strong>。<strong>場風・自風</strong>と同じ風牌なら<strong>風牌の役牌</strong>。それ以外は役牌にならないよ',
+        ],
       ];
+      var ch5mg2Hints = CH5_HINTS[mgIdx];
       var hLvCh5 = 0;
+      // ①②は○×、③は3択
+      var isSummary = (mgIdx === 2);
+      var answerPanel = isSummary
+        ? '<div class="choice-grid" style="margin-top:14px">'+
+            '<button class="btn-choice" data-ans="dragon">三元牌の役牌</button>'+
+            '<button class="btn-choice" data-ans="wind">風牌の役牌</button>'+
+            '<button class="btn-choice" data-ans="none">役牌でない</button>'+
+          '</div>'
+        : '<div class="choice-grid" style="margin-top:14px">'+
+            '<button class="btn-choice" data-ans="yes">○ なる</button>'+
+            '<button class="btn-choice" data-ans="no">✕ ならない</button>'+
+          '</div>';
       main.innerHTML=chHeader('第5章 役牌を作ろう',mg.title,pct,correct,mg.passNeeded)+
         '<div class="game-instruction">'+mg.instruction+'</div>'+
         '<div class="game-area"><div class="tiles-row">'+q.tiles.map(function(t){return Tiles.renderTile(Tiles.make(t.suit,t.num),{noHover:true});}).join('')+'</div>'+
-        '<div class="choice-grid" style="margin-top:14px">'+
-          '<button class="btn-choice" data-ans="dragon">役牌（三元牌）</button>'+
-          '<button class="btn-choice" data-ans="wind">役牌（風牌）</button>'+
-          '<button class="btn-choice" data-ans="none">役牌でない</button>'+
-        '</div>'+
+        answerPanel+
         '<div id="feedback"></div></div>'+
         '<div class="btn-row"><button class="btn btn-hint" id="btnHintCh5">💡 ヒントを見る</button></div>'+
         '<div class="hint-box" id="hintBoxCh5"></div>';
-      var handleYN=function(ch){if(showingFb)return;showingFb=true;var ok=ch===q.answer;if(ok)correct++;
-        document.querySelectorAll('.choice-grid .btn-choice').forEach(function(b){b.classList.add(b.dataset.ans===q.answer?'correct-ans':'wrong-ans');});
-        showFeedback(ok,q.fb,function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){showClear(5,3);}else render();});};
+      // ①②の正解は true/false、③は 'dragon'/'wind'/'none'
+      var correctAns = isSummary ? q.answer : (q.answer ? 'yes' : 'no');
+      var handleYN=function(ch){if(showingFb)return;showingFb=true;var ok=ch===correctAns;if(ok)correct++;
+        document.querySelectorAll('.choice-grid .btn-choice').forEach(function(b){b.classList.add(b.dataset.ans===correctAns?'correct-ans':'wrong-ans');});
+        showFeedback(ok,q.fb,function(){
+          showingFb=false;qIdx++;
+          if(correct>=mg.passNeeded){
+            if(mgIdx<mgs.length-1){var done=mgIdx;mgIdx++;qIdx=0;correct=0;showMgClear(done,render);}
+            else showClear(5,3);
+          } else render();
+        });};
       document.querySelectorAll('.choice-grid .btn-choice').forEach(function(el){
         el.addEventListener('click',function(){handleYN(el.dataset.ans);});
       });

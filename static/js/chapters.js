@@ -143,17 +143,22 @@ const Chapters = (() => {
       title: 'ミニゲーム①　字牌の見た目を覚えよう',
       instruction: '裏向きの牌をめくって<strong>同じ字牌2枚</strong>を揃えよう！',
     },
+    // 2026-09-04：「字牌は順子になる？」から読み方クイズへ差し替えた。
+    // 順子の話は第2章・第3章で扱っており重複していた一方、
+    // 字牌の読み方はミニゲーム①で一覧を見せるだけで練習が無かった。
     mg2: {
-      title: 'ミニゲーム②　字牌は順子になる？',
-      instruction: 'この3枚は<strong>順子</strong>になる？',
+      title: 'ミニゲーム②　字牌の読み方を覚えよう',
+      instruction: 'この字牌の<strong>読み方</strong>はどれ？',
       questions: [
-        { tiles: [{suit:'wind',num:1},{suit:'wind',num:2},{suit:'wind',num:3}], answer: false, fb: '東・南・西は字牌！字牌は順子にならないよ。' },
-        { tiles: [{suit:'man',num:1},{suit:'man',num:2},{suit:'man',num:3}], answer: true, fb: '1萬・2萬・3萬は数牌で順子になる！' },
-        { tiles: [{suit:'dragon',num:1},{suit:'dragon',num:2},{suit:'dragon',num:3}], answer: false, fb: '白・發・中は字牌。字牌には順序がないから順子にならない！' },
-        { tiles: [{suit:'pin',num:5},{suit:'pin',num:6},{suit:'pin',num:7}], answer: true, fb: '5筒・6筒・7筒は数牌で順子になる！' },
-        { tiles: [{suit:'wind',num:2},{suit:'wind',num:3},{suit:'wind',num:4}], answer: false, fb: '南・西・北も字牌。字牌は絶対に順子にならない！' },
+        { tile: {suit:'wind',num:1},   answer: 'トン',   choices: ['トン','ナン','シャー','ペー'], fb: '東は「トン」。麻雀では方角を中国語の読み方で呼ぶよ。' },
+        { tile: {suit:'wind',num:2},   answer: 'ナン',   choices: ['ナン','トン','シャー','ペー'], fb: '南は「ナン」。日本語の「なん」と同じ音だから覚えやすいね。' },
+        { tile: {suit:'wind',num:3},   answer: 'シャー', choices: ['シャー','サイ','ペー','ナン'], fb: '西は「シャー」。「にし」とは読まないので注意！' },
+        { tile: {suit:'wind',num:4},   answer: 'ペー',   choices: ['ペー','ホク','シャー','トン'], fb: '北は「ペー」。三人麻雀では北抜きで使う大事な牌だよ。' },
+        { tile: {suit:'dragon',num:1}, answer: 'ハク',   choices: ['ハク','シロ','ハツ','チュン'], fb: '白は「ハク」。何も書いていない真っ白な牌だね。' },
+        { tile: {suit:'dragon',num:2}, answer: 'ハツ',   choices: ['ハツ','ミドリ','ハク','チュン'], fb: '發は「ハツ」。緑色の文字の牌だよ。' },
+        { tile: {suit:'dragon',num:3}, answer: 'チュン', choices: ['チュン','ナカ','ハク','ハツ'], fb: '中は「チュン」。赤い牌で、このアプリのアイコンにもなっているよ。' },
       ],
-      passNeeded: 4,
+      passNeeded: 5,
     },
     mg3: {
       title: 'ミニゲーム③　刻子を作ろう',
@@ -171,16 +176,45 @@ const Chapters = (() => {
   // 役牌は「役牌（三元牌）」「役牌（風牌）」の2つの役として扱う。
   // answer: 'dragon'=役牌（三元牌）／'wind'=役牌（風牌）／'none'=役牌でない
   const ch5 = {
-    mg2: {
-      title: 'ミニゲーム①　三元牌？風牌？役牌じゃない？',
-      instruction: 'この3枚の刻子は<strong>役牌（三元牌）</strong>？<strong>役牌（風牌）</strong>？それとも役牌じゃない？（場風:東、自風:南）',
+    // 2026-09-04：三元牌と風牌を別々に学べるよう、3つに分けた。
+    // 1つの問題で3択にしていたため、どちらのルールでつまずいたのか
+    // 分からなかった。①三元牌だけ ②風牌だけ ③まとめ、の順にする。
+    mg0: {
+      title: 'ミニゲーム①　三元牌は役牌になる？',
+      instruction: 'この3枚の刻子は<strong>三元牌の役牌</strong>になる？',
       questions: [
-        { tiles: [{suit:'dragon',num:1},{suit:'dragon',num:1},{suit:'dragon',num:1}], answer: 'dragon', fb: '白の刻子は役牌（三元牌）！白・發・中はいつでも役牌になるよ。' },
-        { tiles: [{suit:'dragon',num:2},{suit:'dragon',num:2},{suit:'dragon',num:2}], answer: 'dragon', fb: '發の刻子は役牌（三元牌）！三元牌（白・發・中）はいつでも役牌。' },
+        { tiles: [{suit:'dragon',num:1},{suit:'dragon',num:1},{suit:'dragon',num:1}], answer: true,  fb: '白の刻子は三元牌の役牌！白・發・中はいつでも役牌になるよ。' },
+        { tiles: [{suit:'dragon',num:2},{suit:'dragon',num:2},{suit:'dragon',num:2}], answer: true,  fb: '發の刻子は三元牌の役牌！場風や自風に関係なく、いつでも役になる。' },
+        { tiles: [{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'dragon',num:3}], answer: true,  fb: '中の刻子は三元牌の役牌！三元牌は白・發・中の3種類だけ。' },
+        { tiles: [{suit:'wind',num:1},{suit:'wind',num:1},{suit:'wind',num:1}],       answer: false, fb: '東は風牌であって三元牌ではないよ。三元牌は白・發・中だけ。' },
+        { tiles: [{suit:'man',num:5},{suit:'man',num:5},{suit:'man',num:5}],          answer: false, fb: '5萬は数牌。数牌の刻子だけでは役牌にならないよ。' },
+        { tiles: [{suit:'wind',num:4},{suit:'wind',num:4},{suit:'wind',num:4}],       answer: false, fb: '北は風牌。三元牌ではないよ。' },
+      ],
+      passNeeded: 4,
+    },
+    mg1: {
+      title: 'ミニゲーム②　風牌は役牌になる？',
+      instruction: 'この3枚の刻子は<strong>風牌の役牌</strong>になる？（場風:東、自風:南）',
+      questions: [
+        { tiles: [{suit:'wind',num:1},{suit:'wind',num:1},{suit:'wind',num:1}], answer: true,  fb: '東は場風！場風の刻子は風牌の役牌になるよ。' },
+        { tiles: [{suit:'wind',num:2},{suit:'wind',num:2},{suit:'wind',num:2}], answer: true,  fb: '南は自風！自分の風の刻子も風牌の役牌になるよ。' },
+        { tiles: [{suit:'wind',num:3},{suit:'wind',num:3},{suit:'wind',num:3}], answer: false, fb: '西は場風（東）でも自風（南）でもないから役牌にならない。' },
+        { tiles: [{suit:'wind',num:4},{suit:'wind',num:4},{suit:'wind',num:4}], answer: false, fb: '北も場風でも自風でもないので役牌にならないよ。' },
+        { tiles: [{suit:'dragon',num:2},{suit:'dragon',num:2},{suit:'dragon',num:2}], answer: false, fb: '發は三元牌。風牌ではないよ（三元牌としては役牌になる）。' },
+        { tiles: [{suit:'sou',num:9},{suit:'sou',num:9},{suit:'sou',num:9}], answer: false, fb: '9索は数牌。風牌ではないよ。' },
+      ],
+      passNeeded: 4,
+    },
+    mg2: {
+      title: 'ミニゲーム③　三元牌？風牌？役牌じゃない？',
+      instruction: 'この3枚の刻子は<strong>三元牌の役牌</strong>？<strong>風牌の役牌</strong>？それとも役牌じゃない？（場風:東、自風:南）',
+      questions: [
+        { tiles: [{suit:'dragon',num:1},{suit:'dragon',num:1},{suit:'dragon',num:1}], answer: 'dragon', fb: '白の刻子は三元牌の役牌！白・發・中はいつでも役牌になるよ。' },
+        { tiles: [{suit:'dragon',num:2},{suit:'dragon',num:2},{suit:'dragon',num:2}], answer: 'dragon', fb: '發の刻子は三元牌の役牌！白・發・中はいつでも役牌。' },
         { tiles: [{suit:'wind',num:3},{suit:'wind',num:3},{suit:'wind',num:3}], answer: 'none', fb: '西（3番目の風）は今回の場風・自風じゃないから役牌にならない。' },
-        { tiles: [{suit:'wind',num:1},{suit:'wind',num:1},{suit:'wind',num:1}], answer: 'wind', fb: '東の刻子！東は場風なので役牌（風牌）になるよ。' },
-        { tiles: [{suit:'wind',num:2},{suit:'wind',num:2},{suit:'wind',num:2}], answer: 'wind', fb: '南の刻子！南は自風なので役牌（風牌）になるよ。' },
-        { tiles: [{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'dragon',num:3}], answer: 'dragon', fb: '中の刻子は役牌（三元牌）！三元牌は必ず役牌。' },
+        { tiles: [{suit:'wind',num:1},{suit:'wind',num:1},{suit:'wind',num:1}], answer: 'wind', fb: '東の刻子！東は場風なので風牌の役牌になるよ。' },
+        { tiles: [{suit:'wind',num:2},{suit:'wind',num:2},{suit:'wind',num:2}], answer: 'wind', fb: '南の刻子！南は自風なので風牌の役牌になるよ。' },
+        { tiles: [{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'dragon',num:3}], answer: 'dragon', fb: '中の刻子は三元牌の役牌！三元牌は必ず役牌。' },
         { tiles: [{suit:'wind',num:4},{suit:'wind',num:4},{suit:'wind',num:4}], answer: 'none', fb: '北（4番目の風）は今回の場風・自風じゃないから役牌にならない。' },
       ],
       passNeeded: 5,
