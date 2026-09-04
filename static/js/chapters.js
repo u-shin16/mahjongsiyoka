@@ -7,8 +7,8 @@ const Chapters = (() => {
       title: 'ミニゲーム①　3枚セットを見つけよう',
       instruction: '<strong>3枚でセット</strong>になる牌を選ぼう！<br>同じ数字3枚、または数字が続く3枚がセット。',
       questions: [
-        { nums: [1,2,3,5,7], answer: [0,1,2], fb: '1・2・3は数字が続いているから順子（セット）だよ！' },
-        { nums: [4,4,4,2,8], answer: [0,1,2], fb: '同じ数字3枚は刻子（セット）！' },
+        { nums: [1,2,3,5,7], answer: [0,1,2], fb: '1・2・3は数字が続いているから順子だよ！' },
+        { nums: [4,4,4,2,8], answer: [0,1,2], fb: '同じ数字3枚は刻子！' },
         { nums: [6,7,8,2,4], answer: [0,1,2], fb: '6・7・8も順番に続いているのでセット！' },
         { nums: [3,3,3,5,9], answer: [0,1,2], fb: 'コツ：3が3枚で刻子。完璧！' },
         { nums: [2,3,4,6,9], answer: [0,1,2], fb: '2・3・4も数字が続くから順子！' },
@@ -145,7 +145,7 @@ const Chapters = (() => {
     },
     mg2: {
       title: 'ミニゲーム②　字牌は順子になる？',
-      instruction: 'この3枚は<strong>順子（セット）</strong>になる？',
+      instruction: 'この3枚は<strong>順子</strong>になる？',
       questions: [
         { tiles: [{suit:'wind',num:1},{suit:'wind',num:2},{suit:'wind',num:3}], answer: false, fb: '東・南・西は字牌！字牌は順子にならないよ。' },
         { tiles: [{suit:'man',num:1},{suit:'man',num:2},{suit:'man',num:3}], answer: true, fb: '1萬・2萬・3萬は数牌で順子になる！' },
