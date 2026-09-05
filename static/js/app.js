@@ -443,12 +443,13 @@ var CH_INTROS = {
   ch6_1: {
     icon: '4️⃣',
     points: [
-      '<strong>カン</strong>は<strong>同じ牌4枚</strong>を1組にする鳴き。ポン・チーと違って4枚使う',
+      '<strong>カン</strong>は<strong>同じ牌が4枚</strong>そろうとできる鳴き（ポンは3枚、チーは連続した3枚）',
+      '同じ牌は全部で4枚しかないので、<strong>4枚集まったらカンの形</strong>',
+      '4枚目は<strong>自分で引いても、誰かの捨て牌からでもOK</strong>',
       'カンをすると<strong>ドラが1枚増え</strong>、牌を1枚補充してもう一度打てる',
-      '<strong>4枚目をどこから持ってきたか</strong>で3種類に分かれる',
     ],
-    example: '暗カン　　＝4枚とも自分で揃えた（門前のまま・立直もできる）\n大明カン　＝他の人の捨て牌で4枚目を取った（誰からでもOK）\n加カン　　＝ポンしてある3枚に、自分で引いた4枚目を足した',
-    tip: '💡 場面を見て「どのカン？」を3択で答えよう！',
+    example: '✅ 同じ牌が手牌に4枚\n✅ 手牌に3枚 → 誰かがその牌を捨てた\n✅ ポンしてある3枚 → 自分で4枚目を引いた\n❌ 同じ牌が3枚だけ（それは刻子）',
+    tip: '💡 場面を見て「カンできる？」を○✕で答えよう！',
   },
   // Chapter 7
   ch7: {
@@ -2519,14 +2520,9 @@ var App = {
         if (CH_INTROS[introKey]) { showMgIntro(main, '第6章 鳴きを覚えよう', mg.title, CH_INTROS[introKey], render); return; }
       }
 
-      // ── MG2: どのカンか 3択 ──
+      // ── MG2: カンできる？（○×） ──
       if (mgIdx === 1) {
         var q2 = getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
-        var kanStyles = {
-          ankan:     { label:'暗カン',   style:'background:#6c3a7c;color:#fff' },
-          daiminkan: { label:'大明カン', style:'background:#c0392b;color:#fff' },
-          kakan:     { label:'加カン',   style:'background:#2471a3;color:#fff' },
-        };
         // 場面の作り方が3通りあるので、見せ方も変える
         var sceneHtml = '';
         if (q2.meld === 'pon') {
@@ -2534,7 +2530,7 @@ var App = {
           sceneHtml =
             '<div class="tiles-label">すでにポンしてある3枚</div>' +
             '<div class="tiles-row">' + [0,1,2].map(function(){ return Tiles.renderTile(pt, {noHover:true}); }).join('') + '</div>' +
-            '<div class="tiles-label" style="margin-top:12px">自分でツモった4枚目</div>' +
+            '<div class="tiles-label" style="margin-top:12px">自分でツモった牌</div>' +
             '<div class="tiles-row">' + Tiles.renderTile(pt, {noHover:true}) + '</div>';
         } else if (q2.from) {
           sceneHtml =
@@ -2544,25 +2540,23 @@ var App = {
             '<div class="tiles-row">' + Tiles.renderTile(Tiles.make(q2.hand[0].suit, q2.hand[0].num), {noHover:true}) + '</div>';
         } else {
           sceneHtml =
-            '<div class="tiles-label">自分の手牌（4枚とも自分で揃えた）</div>' +
+            '<div class="tiles-label">自分の手牌</div>' +
             '<div class="tiles-row">' + q2.hand.map(function(t){ return Tiles.renderTile(Tiles.make(t.suit,t.num), {noHover:true}); }).join('') + '</div>';
         }
         main.innerHTML = chHeader('第6章 鳴きを覚えよう', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">' + mg.instruction + '</div>' +
           '<div class="game-area">' + sceneHtml +
-            '<div class="btn-row" id="kanBtns" data-no-mahjong-readings style="margin-top:16px">' +
-            ['ankan','daiminkan','kakan'].map(function(k){
-              var st2 = kanStyles[k];
-              return '<button class="btn btn-secondary" style="'+st2.style+'" data-act="'+k+'">'+st2.label+'</button>';
-            }).join('') +
+            '<div class="choice-grid" data-no-mahjong-readings style="margin-top:16px">' +
+              '<button class="btn-choice" data-act="yes">○ カンできる</button>' +
+              '<button class="btn-choice" data-act="no">✕ できない</button>' +
             '</div>' +
             '<div id="feedback"></div>' +
           '</div>' +
           '<div class="btn-row"><button class="btn btn-hint" id="btnHintCh6b">💡 ヒントを見る</button></div>' +
           '<div class="hint-box" id="hintBoxCh6b"></div>';
         var kanHints = [
-          'カンは<strong>同じ牌4枚</strong>を1組にする鳴き。3種類あって、<strong>4枚目をどこから持ってきたか</strong>で名前が変わるよ',
-          '<strong>暗カン</strong>＝4枚とも自分で揃えた（門前のまま）。<strong>大明カン</strong>＝他の人の捨て牌で4枚目を取った。<strong>加カン</strong>＝ポンしてある3枚に自分で引いた4枚目を足した',
+          'カンは<strong>同じ牌が4枚</strong>そろうとできる鳴き。ポンは3枚、チーは連続した3枚だったね',
+          '同じ牌は全部で4枚しかないので、<strong>4枚集まったらカンの形</strong>。自分だけで4枚そろえても、誰かの捨て牌で4枚目を取ってもいいよ',
         ];
         var hLvK = 0;
         document.getElementById('btnHintCh6b').addEventListener('click', function() {
@@ -2573,11 +2567,11 @@ var App = {
           if(hLvK>=kanHints.length){btn.textContent='💡 ヒントはここまで';btn.disabled=true;}
           else btn.textContent='💡 もっとヒント（'+(hLvK+1)+'/'+kanHints.length+'）';
         });
-        document.querySelectorAll('#kanBtns .btn').forEach(function(el) {
+        document.querySelectorAll('.choice-grid .btn-choice').forEach(function(el) {
           el.addEventListener('click', function() {
             if (showingFb) return;
             showingFb = true;
-            var ok = el.dataset.act === q2.answer;
+            var ok = (el.dataset.act === 'yes') === !!q2.answer;
             if (ok) correct++;
             showFeedback(ok, q2.fb, function() {
               showingFb = false; qIdx++;

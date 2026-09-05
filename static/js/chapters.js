@@ -305,42 +305,53 @@ const Chapters = (() => {
     // 2026-09-05：カンの説明がどこにも無かったので足した。
     // 第8章（暗カンは鳴きに数えない）・第11章（三槓子）・第12章（三麻はポン・カンOK）が
     // カンを知っている前提で問うているのに、教える場所が無かった。
+    // 種類（暗カン・大明カン・加カン）は分けず、「4枚そろえばカンできる」だけを教える。
     mg2: {
-      title: 'ミニゲーム②　これはどのカン？',
-      instruction: 'カンは<strong>同じ牌4枚</strong>を1組にする鳴き。この場面は<strong>どのカン</strong>？',
+      title: 'ミニゲーム②　カンできる？',
+      instruction: 'カンは<strong>同じ牌が4枚</strong>そろうとできる鳴き。この場面は<strong>カンできる</strong>？',
       questions: [
         {
           hand: [{suit:'man',num:5},{suit:'man',num:5},{suit:'man',num:5},{suit:'man',num:5}],
-          from: null, meld: null, answer: 'ankan',
-          fb: '4枚とも自分で揃えた→<strong>暗カン</strong>。誰の捨て牌も使っていないので、門前のまま（立直もできる）。',
+          from: null, meld: null, answer: true,
+          fb: '5萬が4枚そろっている→<strong>カンできる</strong>！自分だけで4枚集めた形だよ。',
         },
         {
           hand: [{suit:'pin',num:3},{suit:'pin',num:3},{suit:'pin',num:3}],
-          from: 'right', meld: null, answer: 'daiminkan',
-          fb: '手牌に3枚あって、他の人が捨てた4枚目を取った→<strong>大明カン</strong>。ポンと同じで誰からでもできるけど、門前ではなくなる。',
+          from: 'right', meld: null, answer: true,
+          fb: '手牌の3枚＋捨てられた1枚で4枚→<strong>カンできる</strong>！チーと違って、カンは誰の捨て牌でもOK。',
         },
         {
-          hand: [{suit:'sou',num:7}],
-          from: null, meld: 'pon', answer: 'kakan',
-          fb: 'すでにポンしてある3枚に、自分で引いた4枚目を足した→<strong>加カン</strong>。「ポンをカンに格上げする」イメージ。',
+          hand: [{suit:'sou',num:7},{suit:'sou',num:7},{suit:'sou',num:7}],
+          from: null, meld: null, answer: false,
+          fb: '3枚しかない→<strong>カンできない</strong>。3枚は刻子。カンには4枚目が必要だよ。',
         },
         {
           hand: [{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'dragon',num:3}],
-          from: null, meld: null, answer: 'ankan',
-          fb: '中を4枚とも自分で揃えた→<strong>暗カン</strong>。字牌でもカンはできるよ。',
+          from: null, meld: null, answer: true,
+          fb: '中が4枚そろっている→<strong>カンできる</strong>！字牌でもカンはできるよ。',
         },
         {
-          hand: [{suit:'man',num:1},{suit:'man',num:1},{suit:'man',num:1}],
-          from: 'left', meld: null, answer: 'daiminkan',
-          fb: '上家が捨てた4枚目を取った→<strong>大明カン</strong>。チーと違って、カンは誰の捨て牌でもできる。',
+          hand: [{suit:'man',num:1},{suit:'man',num:1}],
+          from: 'left', meld: null, answer: false,
+          fb: '手牌2枚＋捨て牌1枚で3枚→<strong>カンできない</strong>。これはポンならできる形だね。',
         },
         {
-          hand: [{suit:'pin',num:9}],
-          from: null, meld: 'pon', answer: 'kakan',
-          fb: 'ポンしてある9筒に、自分で引いた9筒を足した→<strong>加カン</strong>。',
+          hand: [{suit:'pin',num:9},{suit:'pin',num:9},{suit:'pin',num:9}],
+          from: null, meld: 'pon', answer: true,
+          fb: 'ポンしてある3枚＋自分で引いた1枚で4枚→<strong>カンできる</strong>！',
+        },
+        {
+          hand: [{suit:'sou',num:2},{suit:'sou',num:2},{suit:'sou',num:2},{suit:'sou',num:2}],
+          from: null, meld: null, answer: true,
+          fb: '2索が4枚→<strong>カンできる</strong>。同じ牌は全部で4枚しかないので、4枚集めたらカンの形だよ。',
+        },
+        {
+          hand: [{suit:'man',num:6},{suit:'man',num:7},{suit:'man',num:8}],
+          from: null, meld: null, answer: false,
+          fb: '6萬・7萬・8萬は順子→<strong>カンできない</strong>。カンは同じ牌4枚だけだよ。',
         },
       ],
-      passNeeded: 4,
+      passNeeded: 6,
     },
 
   };
