@@ -869,6 +869,7 @@ function annotateMahjongMissionReadings(root) {
     acceptNode: function(node) {
       var parent = node.parentElement;
       if (!parent || /^(SCRIPT|STYLE|TEXTAREA)$/.test(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      // 選択肢のボタンなど、読み方を入れると長くなりすぎる場所は印を付けて除く
       if (parent.closest('[data-no-mahjong-readings]')) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     },
@@ -2157,7 +2158,7 @@ var App = {
           '<div class="game-area"><div class="tiles-label">手牌（13枚）</div>' +
           '<div class="tiles-row">'+handTiles.map(function(t){return Tiles.renderTile(t,{noHover:true});}).join('')+'</div>' +
           '<div style="margin-top:10px;color:#8ab89c;font-size:0.85rem">どの数字を引けばアガリ？</div>' +
-          '<div class="choice-grid">'+dispChoices1.map(function(n,ci){return '<button class="btn-choice" data-ci="'+ci+'">'+n+'</button>';}).join('')+
+          '<div class="choice-grid" data-no-mahjong-readings>'+dispChoices1.map(function(n,ci){return '<button class="btn-choice" data-ci="'+ci+'">'+n+'</button>';}).join('')+
           '</div><div id="feedback"></div></div>' +
           '<div class="btn-row"><button class="btn btn-hint" id="btnHint3">💡 ヒントを見る</button></div>' +
           '<div class="hint-box" id="hintBox3"></div>';
@@ -2270,7 +2271,7 @@ var App = {
         main.innerHTML = chHeader('第3章 本物の麻雀牌', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">'+mg.instruction+'</div>' +
           '<div class="game-area">'+Tiles.renderTile(Tiles.make(q.suit,q.num),{noHover:true})+
-          '<div class="choice-grid" style="max-width:300px;margin-top:12px" id="suitC">'+
+          '<div class="choice-grid" data-no-mahjong-readings style="max-width:300px;margin-top:12px" id="suitC">'+
           ['man','pin','sou'].map(function(s,ci){return '<button class="btn-choice" data-suit="'+s+'" data-ci="'+ci+'">'+(s==='man'?'萬子（マンズ）':s==='pin'?'筒子（ピンズ）':'索子（ソーズ）')+'</button>';}).join('')+
           '</div><div id="feedback"></div></div>';
         document.querySelectorAll('#suitC .btn-choice').forEach(function(el) {
@@ -2381,7 +2382,7 @@ var App = {
         main.innerHTML = chHeader('第4章 字牌を覚えよう', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">'+mg.instruction+'</div>' +
           '<div class="game-area"><div class="tiles-row">'+Tiles.renderTile(Tiles.make(q.tile.suit,q.tile.num),{noHover:true})+'</div>' +
-          '<div class="choice-grid" style="margin-top:14px">'+
+          '<div class="choice-grid" data-no-mahjong-readings style="margin-top:14px">'+
             ch4Choices.map(function(c){ return '<button class="btn-choice" data-read="'+esc(c)+'">'+esc(c)+'</button>'; }).join('')+
           '</div>' +
           '<div id="feedback"></div></div>' +
@@ -2447,12 +2448,12 @@ var App = {
       // ①②は○×、③は3択
       var isSummary = (mgIdx === 2);
       var answerPanel = isSummary
-        ? '<div class="choice-grid" style="margin-top:14px">'+
+        ? '<div class="choice-grid" data-no-mahjong-readings style="margin-top:14px">'+
             '<button class="btn-choice" data-ans="dragon">三元牌の役牌</button>'+
             '<button class="btn-choice" data-ans="wind">風牌の役牌</button>'+
             '<button class="btn-choice" data-ans="none">役牌でない</button>'+
           '</div>'
-        : '<div class="choice-grid" style="margin-top:14px">'+
+        : '<div class="choice-grid" data-no-mahjong-readings style="margin-top:14px">'+
             '<button class="btn-choice" data-ans="yes">○ なる</button>'+
             '<button class="btn-choice" data-ans="no">✕ ならない</button>'+
           '</div>';
@@ -2634,7 +2635,7 @@ var App = {
           '<div class="yn-panel" style="margin-top:12px"><button class="btn btn-yes" id="btnY">○ はい</button><button class="btn btn-no" id="btnN">✕ いいえ</button></div><div id="feedback"></div>';
       }else if(q.type==='suit_id'){
         var tile=Tiles.make(q.tile.suit,q.tile.num);
-        qHtml=Tiles.renderTile(tile,{noHover:true})+'<div class="choice-grid" style="max-width:300px;margin-top:12px" id="suitC">'+
+        qHtml=Tiles.renderTile(tile,{noHover:true})+'<div class="choice-grid" data-no-mahjong-readings style="max-width:300px;margin-top:12px" id="suitC">'+
           ['man','pin','sou'].map(function(s,ci){return '<button class="btn-choice" data-suit="'+s+'" data-ci="'+ci+'">'+(s==='man'?'萬子':s==='pin'?'筒子':'索子')+'</button>';}).join('')+'</div><div id="feedback"></div>';
       }else if(q.type==='agari_tile'){
         var handT=q.hand.map(function(t){return Tiles.make(t.suit,t.num);});
@@ -2724,7 +2725,7 @@ var App = {
         main.innerHTML = chHeader(navTitle, mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">' + mg.instruction + '</div>' +
           '<div class="game-area">' + promptHtml + tilesHtml +
-          '<div class="choice-grid" style="max-width:420px;margin:14px auto 0" id="optGrid">' +
+          '<div class="choice-grid" data-no-mahjong-readings style="max-width:420px;margin:14px auto 0" id="optGrid">' +
           opts.map(function(o, ci) { return '<button class="btn-choice" data-ci="' + ci + '">' + esc(o) + '</button>'; }).join('') +
           '</div><div id="feedback"></div></div>';
         document.querySelectorAll('#optGrid .btn-choice').forEach(function(el) {

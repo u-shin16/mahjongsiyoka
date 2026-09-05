@@ -772,6 +772,10 @@ button { font-family: inherit; cursor: pointer; }
 .choice-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  /* 行ごとに高さが変わると、文字数の違うボタンで大きさがそろわない。
+     すべての行を同じ高さにして、どのボタンも同じ大きさにする。 */
+  grid-auto-rows: 1fr;
+  align-items: stretch;
   gap: 10px;
   width: 100%;
   max-width: 320px;
@@ -785,6 +789,13 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 1rem;
   font-weight: 700;
   transition: all 0.15s;
+  /* 文字が何行になっても中央にそろえる */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 56px;
+  line-height: 1.35;
 }
 .btn-choice:hover { background: rgba(232,184,75,0.2); border-color: var(--gold); }
 .btn-choice.correct-ans { background: rgba(39,174,96,0.3); border-color: #27ae60; }
