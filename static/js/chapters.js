@@ -160,16 +160,6 @@ const Chapters = (() => {
       ],
       passNeeded: 5,
     },
-    mg3: {
-      title: 'ミニゲーム③　刻子を作ろう',
-      instruction: '散らばった牌から<strong>同じ字牌3枚</strong>を選んで刻子を作ろう！',
-      questions: [
-        { pool: [{suit:'wind',num:1},{suit:'dragon',num:3},{suit:'wind',num:1},{suit:'wind',num:2},{suit:'wind',num:1},{suit:'dragon',num:1}], target: {suit:'wind',num:1}, fb: '東を3枚選んで刻子！' },
-        { pool: [{suit:'dragon',num:2},{suit:'wind',num:3},{suit:'dragon',num:2},{suit:'wind',num:1},{suit:'dragon',num:2},{suit:'dragon',num:3}], target: {suit:'dragon',num:2}, fb: '發を3枚選んで刻子！' },
-        { pool: [{suit:'dragon',num:3},{suit:'wind',num:4},{suit:'dragon',num:1},{suit:'dragon',num:3},{suit:'wind',num:2},{suit:'dragon',num:3}], target: {suit:'dragon',num:3}, fb: '中を3枚選んで刻子！' },
-      ],
-      passNeeded: 3,
-    },
   };
 
   // ===== Chapter 5: Yakuhai =====

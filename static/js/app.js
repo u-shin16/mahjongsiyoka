@@ -275,7 +275,7 @@ var CH_MG_KEYS = {
   1: ['mg1', 'mg2', 'mg3'],
   2: ['mg1', 'mg2'],
   3: ['mg1', 'mg2'],
-  4: ['mg1', 'mg2', 'mg3'],
+  4: ['mg1', 'mg2'],
   5: ['mg0', 'mg1', 'mg2'],
   6: ['mg1'],
 };
@@ -392,23 +392,10 @@ var CH_INTROS = {
       '字牌は<strong>中国語のような読み方</strong>をする。「東」は「ひがし」ではなく<strong>トン</strong>',
       '風牌は<strong>トン・ナン・シャー・ペー</strong>（東・南・西・北）',
       '三元牌は<strong>ハク・ハツ・チュン</strong>（白・發・中）',
+      '字牌には数字がないので<strong>順子は作れない</strong>。作れるのは<strong>刻子</strong>（同じ牌3枚）だけ',
     ],
     example: '東＝トン　南＝ナン　西＝シャー　北＝ペー\n白＝ハク　發＝ハツ　中＝チュン\n\n❌ 西を「にし」、中を「なか」とは読まない',
     tip: '💡 出てきた牌の読み方を4つの中から選ぼう！',
-  },
-  ch4_2: {
-    realTiles: [
-      { suit: 'wind', num: 1 },
-      { suit: 'wind', num: 1 },
-      { suit: 'wind', num: 1 },
-    ],
-    points: [
-      '字牌でも<strong>同じ牌3枚</strong>で刻子が作れる',
-      '例：東・東・東 = 東の刻子',
-      '散らばった牌の中から同じ字牌を3枚選ぼう',
-    ],
-    example: '例：東・白・東・發・東 が並んでいたら\n→ 東を3枚選んで「東の刻子」完成！',
-    tip: '💡 同じ字牌を3枚タップして選ぼう！',
   },
   // Chapter 5
   // 三元牌と風牌は覚え方がまったく違うので、別々に練習してからまとめる
@@ -2320,7 +2307,11 @@ var App = {
 
   // ===== CHAPTER 4 =====
   _ch4: function(main, ch, startMg) {
-    var mgs = [Chapters.ch4.mg1, Chapters.ch4.mg2, Chapters.ch4.mg3];
+    // 2026-09-05：ミニゲーム③「刻子を作ろう」を外した。
+    // 「同じ牌3枚を選ぶ」操作は第1章①と同じで、字牌ならではの学びが無く、
+    // 字牌の刻子は第5章で嫌というほど扱うため。
+    // 「字牌は刻子しか作れない」という話は ch4_1 の導入に1行で入れてある。
+    var mgs = [Chapters.ch4.mg1, Chapters.ch4.mg2];
     var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
     var render = function() {
@@ -2402,7 +2393,7 @@ var App = {
             var ok = b.dataset.read === q.answer;
             if(ok)correct++;
             showFeedback(ok, ok ? q.fb : '「'+Tiles.label(Tiles.make(q.tile.suit,q.tile.num))+'」は「'+q.answer+'」と読むよ。'+q.fb,
-              function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){mgIdx=2;qIdx=0;correct=0;showMgClear(1,render);}else render();});
+              function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){showClear(4,3);}else render();});
           });
         });
         document.getElementById('btnHintCh4').addEventListener('click', function() {
@@ -2414,25 +2405,6 @@ var App = {
           else btn.textContent = '💡 もっとヒント（' + (hLvCh4+1) + '/' + ch4mg2Hints.length + '）';
         });
 
-      } else {
-        var mg=mgs[2]; var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
-        var poolTiles=Tiles.shuffle(q.pool.map(function(t){return Tiles.make(t.suit,t.num);})); var selIds=[];
-        main.innerHTML = chHeader('第4章 字牌を覚えよう', mg.title, pct, correct, mg.passNeeded) +
-          '<div class="game-instruction">散らばった字牌から<strong style="color:var(--gold)">'+Tiles.label(q.target)+' を3枚</strong>選ぼう！</div>' +
-          '<div class="game-area"><div class="tiles-row" id="poolRow">'+poolTiles.map(function(t){return Tiles.renderTile(t,{});}).join('')+'</div>' +
-          '<div id="feedback"></div></div>';
-        document.querySelectorAll('#poolRow .tile').forEach(function(el,i) {
-          el.addEventListener('click', function() {
-            if (showingFb) return;
-            var si=selIds.indexOf(i);
-            if(si>=0){selIds.splice(si,1);el.classList.remove('selected');}else if(selIds.length<3){selIds.push(i);el.classList.add('selected');}
-            if(selIds.length===3){
-              var ok=selIds.map(function(si){return poolTiles[si];}).every(function(t){return Tiles.isSame(t,q.target);});
-              showingFb=true; if(ok)correct++;
-              showFeedback(ok,ok?q.fb:'おしい！同じ字牌を3枚選んでね。',function(){showingFb=false;selIds=[];qIdx++;if(correct>=mg.passNeeded)showClear(4,3);else render();});
-            }
-          });
-        });
       }
     };
     render();
