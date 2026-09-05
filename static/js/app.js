@@ -277,7 +277,7 @@ var CH_MG_KEYS = {
   3: ['mg1', 'mg2'],
   4: ['mg1', 'mg2'],
   5: ['mg0', 'mg1', 'mg2'],
-  6: ['mg1'],
+  6: ['mg1', 'mg2'],
 };
 function chMgTitles(id) {
   if (CH_MG_KEYS[id]) {
@@ -439,6 +439,16 @@ var CH_INTROS = {
     ],
     example: '手牌に5萬5萬 → 誰かが5萬を捨てたら「ポン！」\n手牌に3萬4萬 → 左の人が5萬を捨てたら「チー！」\n手牌に2萬6萬 → 4萬が来ても順子にならない → 鳴けない',
     tip: '💡 3択（ポン・チー・鳴けない）から正しい行動を選ぼう！',
+  },
+  ch6_1: {
+    icon: '4️⃣',
+    points: [
+      '<strong>カン</strong>は<strong>同じ牌4枚</strong>を1組にする鳴き。ポン・チーと違って4枚使う',
+      'カンをすると<strong>ドラが1枚増え</strong>、牌を1枚補充してもう一度打てる',
+      '<strong>4枚目をどこから持ってきたか</strong>で3種類に分かれる',
+    ],
+    example: '暗カン　　＝4枚とも自分で揃えた（門前のまま・立直もできる）\n大明カン　＝他の人の捨て牌で4枚目を取った（誰からでもOK）\n加カン　　＝ポンしてある3枚に、自分で引いた4枚目を足した',
+    tip: '💡 場面を見て「どのカン？」を3択で答えよう！',
   },
   // Chapter 7
   ch7: {
@@ -2492,8 +2502,8 @@ var App = {
 
   // ===== CHAPTER 6 =====
   _ch6: function(main, ch, startMg) {
-    // MG1: ポン・チー・鳴けない 3択
-    var mgs = [Chapters.ch6.mg1];
+    // MG1: ポン・チー・鳴けない 3択／MG2: どのカンか 3択
+    var mgs = [Chapters.ch6.mg1, Chapters.ch6.mg2];
     var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
 
@@ -2507,6 +2517,76 @@ var App = {
         introShown[mgIdx] = true;
         var introKey = 'ch6_' + mgIdx;
         if (CH_INTROS[introKey]) { showMgIntro(main, '第6章 鳴きを覚えよう', mg.title, CH_INTROS[introKey], render); return; }
+      }
+
+      // ── MG2: どのカンか 3択 ──
+      if (mgIdx === 1) {
+        var q2 = getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
+        var kanStyles = {
+          ankan:     { label:'暗カン',   style:'background:#6c3a7c;color:#fff' },
+          daiminkan: { label:'大明カン', style:'background:#c0392b;color:#fff' },
+          kakan:     { label:'加カン',   style:'background:#2471a3;color:#fff' },
+        };
+        // 場面の作り方が3通りあるので、見せ方も変える
+        var sceneHtml = '';
+        if (q2.meld === 'pon') {
+          var pt = Tiles.make(q2.hand[0].suit, q2.hand[0].num);
+          sceneHtml =
+            '<div class="tiles-label">すでにポンしてある3枚</div>' +
+            '<div class="tiles-row">' + [0,1,2].map(function(){ return Tiles.renderTile(pt, {noHover:true}); }).join('') + '</div>' +
+            '<div class="tiles-label" style="margin-top:12px">自分でツモった4枚目</div>' +
+            '<div class="tiles-row">' + Tiles.renderTile(pt, {noHover:true}) + '</div>';
+        } else if (q2.from) {
+          sceneHtml =
+            '<div class="tiles-label">自分の手牌</div>' +
+            '<div class="tiles-row">' + q2.hand.map(function(t){ return Tiles.renderTile(Tiles.make(t.suit,t.num), {noHover:true}); }).join('') + '</div>' +
+            '<div class="tiles-label" style="margin-top:12px">' + (FROM_LABEL[q2.from]||'相手') + 'の捨て牌</div>' +
+            '<div class="tiles-row">' + Tiles.renderTile(Tiles.make(q2.hand[0].suit, q2.hand[0].num), {noHover:true}) + '</div>';
+        } else {
+          sceneHtml =
+            '<div class="tiles-label">自分の手牌（4枚とも自分で揃えた）</div>' +
+            '<div class="tiles-row">' + q2.hand.map(function(t){ return Tiles.renderTile(Tiles.make(t.suit,t.num), {noHover:true}); }).join('') + '</div>';
+        }
+        main.innerHTML = chHeader('第6章 鳴きを覚えよう', mg.title, pct, correct, mg.passNeeded) +
+          '<div class="game-instruction">' + mg.instruction + '</div>' +
+          '<div class="game-area">' + sceneHtml +
+            '<div class="btn-row" id="kanBtns" data-no-mahjong-readings style="margin-top:16px">' +
+            ['ankan','daiminkan','kakan'].map(function(k){
+              var st2 = kanStyles[k];
+              return '<button class="btn btn-secondary" style="'+st2.style+'" data-act="'+k+'">'+st2.label+'</button>';
+            }).join('') +
+            '</div>' +
+            '<div id="feedback"></div>' +
+          '</div>' +
+          '<div class="btn-row"><button class="btn btn-hint" id="btnHintCh6b">💡 ヒントを見る</button></div>' +
+          '<div class="hint-box" id="hintBoxCh6b"></div>';
+        var kanHints = [
+          'カンは<strong>同じ牌4枚</strong>を1組にする鳴き。3種類あって、<strong>4枚目をどこから持ってきたか</strong>で名前が変わるよ',
+          '<strong>暗カン</strong>＝4枚とも自分で揃えた（門前のまま）。<strong>大明カン</strong>＝他の人の捨て牌で4枚目を取った。<strong>加カン</strong>＝ポンしてある3枚に自分で引いた4枚目を足した',
+        ];
+        var hLvK = 0;
+        document.getElementById('btnHintCh6b').addEventListener('click', function() {
+          var hb=document.getElementById('hintBoxCh6b'), btn=document.getElementById('btnHintCh6b');
+          hLvK=Math.min(hLvK+1,kanHints.length);
+          hb.innerHTML='<span style="font-size:0.72rem;color:var(--gold);font-weight:700;display:block;margin-bottom:4px">ヒント'+hLvK+'</span>'+kanHints[hLvK-1];
+          hb.classList.add('visible');
+          if(hLvK>=kanHints.length){btn.textContent='💡 ヒントはここまで';btn.disabled=true;}
+          else btn.textContent='💡 もっとヒント（'+(hLvK+1)+'/'+kanHints.length+'）';
+        });
+        document.querySelectorAll('#kanBtns .btn').forEach(function(el) {
+          el.addEventListener('click', function() {
+            if (showingFb) return;
+            showingFb = true;
+            var ok = el.dataset.act === q2.answer;
+            if (ok) correct++;
+            showFeedback(ok, q2.fb, function() {
+              showingFb = false; qIdx++;
+              if (correct >= mg.passNeeded) { showClear(6, 3); }
+              else render();
+            });
+          });
+        });
+        return;
       }
 
       // ── MG1: ポン・チー・鳴けない 3択 ──
@@ -2563,7 +2643,7 @@ var App = {
             if (ok) correct++;
             showFeedback(ok, q.fb, function() {
               showingFb = false; qIdx++;
-              if (correct >= mg.passNeeded) { showClear(6, 3); }
+              if (correct >= mg.passNeeded) { mgIdx = 1; qIdx = 0; correct = 0; showMgClear(0, render); }
               else render();
             });
           });

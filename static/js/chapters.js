@@ -302,6 +302,47 @@ const Chapters = (() => {
     mg2: null,
     mg3: null,
     mg4: null,
+    // 2026-09-05：カンの説明がどこにも無かったので足した。
+    // 第8章（暗カンは鳴きに数えない）・第11章（三槓子）・第12章（三麻はポン・カンOK）が
+    // カンを知っている前提で問うているのに、教える場所が無かった。
+    mg2: {
+      title: 'ミニゲーム②　これはどのカン？',
+      instruction: 'カンは<strong>同じ牌4枚</strong>を1組にする鳴き。この場面は<strong>どのカン</strong>？',
+      questions: [
+        {
+          hand: [{suit:'man',num:5},{suit:'man',num:5},{suit:'man',num:5},{suit:'man',num:5}],
+          from: null, meld: null, answer: 'ankan',
+          fb: '4枚とも自分で揃えた→<strong>暗カン</strong>。誰の捨て牌も使っていないので、門前のまま（立直もできる）。',
+        },
+        {
+          hand: [{suit:'pin',num:3},{suit:'pin',num:3},{suit:'pin',num:3}],
+          from: 'right', meld: null, answer: 'daiminkan',
+          fb: '手牌に3枚あって、他の人が捨てた4枚目を取った→<strong>大明カン</strong>。ポンと同じで誰からでもできるけど、門前ではなくなる。',
+        },
+        {
+          hand: [{suit:'sou',num:7}],
+          from: null, meld: 'pon', answer: 'kakan',
+          fb: 'すでにポンしてある3枚に、自分で引いた4枚目を足した→<strong>加カン</strong>。「ポンをカンに格上げする」イメージ。',
+        },
+        {
+          hand: [{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'dragon',num:3},{suit:'dragon',num:3}],
+          from: null, meld: null, answer: 'ankan',
+          fb: '中を4枚とも自分で揃えた→<strong>暗カン</strong>。字牌でもカンはできるよ。',
+        },
+        {
+          hand: [{suit:'man',num:1},{suit:'man',num:1},{suit:'man',num:1}],
+          from: 'left', meld: null, answer: 'daiminkan',
+          fb: '上家が捨てた4枚目を取った→<strong>大明カン</strong>。チーと違って、カンは誰の捨て牌でもできる。',
+        },
+        {
+          hand: [{suit:'pin',num:9}],
+          from: null, meld: 'pon', answer: 'kakan',
+          fb: 'ポンしてある9筒に、自分で引いた9筒を足した→<strong>加カン</strong>。',
+        },
+      ],
+      passNeeded: 4,
+    },
+
   };
 
   // ===== Chapter 7: Review test =====
