@@ -6,14 +6,24 @@ const Tiles = (() => {
   const DRAGON_NAMES = ['白', '發', '中'];
   const SUIT_SUFFIX = { man: '萬', pin: '筒', sou: '索' };
   const NUM_KANJI = ['一','二','三','四','五','六','七','八','九'];
+  // 2026-09-07：牌の絵には下側に色のついた土台（萬子は赤・筒子は青・索子は緑）が
+  // 描き込まれている。河のように小さく表示すると、その土台だけが色の帯として残り、
+  // 変な立体感に見えていた。そこで土台のぶんを切り落として表示する。
+  //
+  // ★戻すときは TILE_BASE_CUT を 0 にするだけでよい。ほかは何も触らなくてよい。★
+  //
+  // 0.115 は実測から決めた値。土台は牌の高さの8〜10%で、境目の影を消すために
+  // 少し多めに切っている。牌の高さだけが約11%縮み、幅は変わらない。
+  const TILE_BASE_CUT = 0.115;
+
   const SPRITE = {
     url: '/static/img/mahjong-tiles.png',
     sheetW: 1448,
     sheetH: 1086,
     displayW: 52,
-    displayH: 71.443,
+    displayH: 71.443 * (1 - TILE_BASE_CUT),
     smallW: 40,
-    smallH: 54.953,
+    smallH: 54.953 * (1 - TILE_BASE_CUT),
     rects: {
       east: { x: 77, y: 115, w: 133, h: 181 },
       south: { x: 245, y: 115, w: 132, h: 181 },
@@ -145,12 +155,16 @@ const Tiles = (() => {
   }
 
   function spritePosition(tile) {
-    if (tile.suit === 'wind') return SPRITE.rects[['east', 'south', 'west', 'north'][tile.num - 1]];
-    if (tile.suit === 'dragon') return SPRITE.rects[['haku', 'hatsu', 'chun'][tile.num - 1]];
-    if (tile.suit === 'man') return SPRITE.rects['man' + tile.num];
-    if (tile.suit === 'pin') return SPRITE.rects['pin' + tile.num];
-    if (tile.suit === 'sou') return SPRITE.rects['sou' + tile.num];
-    return null;
+    let r = null;
+    if (tile.suit === 'wind') r = SPRITE.rects[['east', 'south', 'west', 'north'][tile.num - 1]];
+    else if (tile.suit === 'dragon') r = SPRITE.rects[['haku', 'hatsu', 'chun'][tile.num - 1]];
+    else if (tile.suit === 'man') r = SPRITE.rects['man' + tile.num];
+    else if (tile.suit === 'pin') r = SPRITE.rects['pin' + tile.num];
+    else if (tile.suit === 'sou') r = SPRITE.rects['sou' + tile.num];
+    if (!r) return null;
+    // 土台のぶんだけ切り取る高さを縮める（TILE_BASE_CUT が 0 なら元のまま）
+    if (!TILE_BASE_CUT) return r;
+    return { x: r.x, y: r.y, w: r.w, h: Math.round(r.h * (1 - TILE_BASE_CUT)) };
   }
 
   function spriteStyle(pos, small) {
