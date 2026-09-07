@@ -4376,28 +4376,14 @@ body.is-battle-page .app-main.battle-main {
    ロンできる牌のライトアップ（金色・z-index 5）と区別するため青にし、
    両方が当たったときは金色が上に出るよう z-index を1つ下げている。 */
 .disc-river .river-tile.river-same {
-  box-shadow: 0 0 0 3px #8fd4ff, 0 0 18px 8px rgba(110,190,255,0.95);
-  filter: brightness(1.45) saturate(1.15);
+  box-shadow: 0 0 0 3px #8fd4ff, 0 0 16px 6px rgba(110,190,255,0.9);
+  filter: brightness(1.4) saturate(1.1);
   z-index: 4;
-  animation: riverSamePulse 1.1s ease-in-out infinite;
 }
 
-/* 光らせるだけだと河の牌が多いときに埋もれるので、当たった牌があるあいだは
-   ほかの牌を暗くして、光っている牌だけが浮いて見えるようにする */
-.disc-river.has-same .river-tile:not(.river-same):not(.river-call-target) {
-  filter: brightness(0.42) saturate(0.55);
-  opacity: 0.55;
-}
-
-/* ロンできる牌の金色は、青の点滅で上書きしない */
+/* ロンできる牌の金色は、青の光で上書きしない */
 .disc-river .river-tile.river-call-target.river-same {
-  animation: none;
   box-shadow: 0 0 0 3px #ffe38a, 0 0 16px 6px rgba(255,215,106,0.9);
-}
-
-@keyframes riverSamePulse {
-  0%, 100% { box-shadow: 0 0 0 3px #8fd4ff, 0 0 14px 5px rgba(110,190,255,0.8); }
-  50%      { box-shadow: 0 0 0 3px #bfe8ff, 0 0 24px 11px rgba(150,215,255,1); }
 }
 
 /* ─────────────────────────────────
