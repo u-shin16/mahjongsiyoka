@@ -3,11 +3,33 @@
 // ===== Progress =====
 var Progress = {
   _data: null,
+  // 2026-09-07：12章から13章へ組み替えたときに章番号がずれた。
+  // 古い番号のまま星が残っていると、別の章に星が付いて見えるので付け替える。
+  // 8章と9章は番号が変わらないので表に入れていない。
+  CH_MAP_2026_09: { 1:2, 2:3, 3:4, 4:5, 5:6, 6:7, 7:10, 10:11, 11:12, 12:13 },
+  CH_MAP_VERSION: 2,
+  migrate: function(data) {
+    if (!data || data.chapterMapVersion >= this.CH_MAP_VERSION) return data;
+    var map = this.CH_MAP_2026_09;
+    var src = data.stars || {};
+    var out = {};
+    Object.keys(src).forEach(function(k) {
+      var nk = (map[k] != null) ? map[k] : k;
+      out[nk] = Math.max(out[nk] || 0, src[k]);
+    });
+    data.stars = out;
+    data.chapterMapVersion = this.CH_MAP_VERSION;
+    return data;
+  },
   load: function() {
     try { this._data = JSON.parse(localStorage.getItem('mj_progress') || 'null') || {}; }
     catch (e) { this._data = {}; }
     if (!this._data.stars) this._data.stars = {};
     if (!this._data.titles) this._data.titles = [];
+    var before = JSON.stringify(this._data.stars);
+    this.migrate(this._data);
+    // 付け替えが起きたときだけ書き戻す（毎回書くとクラウドへ余計に送るため）
+    if (JSON.stringify(this._data.stars) !== before) this.save();
     return this;
   },
   save: function() {
@@ -272,12 +294,12 @@ function shuffledChoices(originalChoices, isSameFn) {
 
 // ===== 章のミニゲーム番号選択（クリア済みの章で「①から」「②から」を選べるようにする） =====
 var CH_MG_KEYS = {
-  1: ['mg1', 'mg2', 'mg3'],
-  2: ['mg1', 'mg2'],
+  2: ['mg1', 'mg2', 'mg3'],
   3: ['mg1', 'mg2'],
   4: ['mg1', 'mg2'],
-  5: ['mg0', 'mg1', 'mg2'],
-  6: ['mg1', 'mg2'],
+  5: ['mg1', 'mg2'],
+  6: ['mg0', 'mg1', 'mg2'],
+  7: ['mg1', 'mg2'],
 };
 function chMgTitles(id) {
   if (CH_MG_KEYS[id]) {
@@ -290,7 +312,7 @@ function chMgTitles(id) {
 // ===== Mini-game Intro Data =====
 var CH_INTROS = {
   // Chapter 1
-  ch1_0: {
+  ch2_0: {
     tiles: [1, 2, 3],
     points: [
       '<strong>同じ数字3枚</strong> → セット（<strong>刻子（コーツ）</strong>）',
@@ -300,7 +322,7 @@ var CH_INTROS = {
     example: '✅ 1・2・3（続いてる！）\n✅ 5・5・5（同じ3枚！）\n❌ 1・3・5（続いてない…）',
     tip: '💡 5枚の中から、セットになる3枚をタップして選ぼう！',
   },
-  ch1_1: {
+  ch2_1: {
     icon: '👑',
     points: [
       'アガリには 4セット＋<strong>頭（2枚ペア）</strong> が必要',
@@ -310,7 +332,7 @@ var CH_INTROS = {
     example: '✅ 2・2（同じ数字！）\n✅ 9・9（同じ数字！）\n❌ 3・4（違う数字はNG）',
     tip: '💡 5枚の中から頭になる2枚を選ぼう！',
   },
-  ch1_2: {
+  ch2_2: {
     icon: '🏆',
     points: [
       'あと1枚でアガリになる状態を「<strong>テンパイ</strong>」という',
@@ -321,7 +343,7 @@ var CH_INTROS = {
     tip: '💡 残っている2枚組（ターツ）に何を足すと3枚セットになるか見よう！',
   },
   // Chapter 2
-  ch2_0: {
+  ch3_0: {
     icon: '🎨',
     points: [
       '色が違う牌は<strong>別の牌</strong>として扱う',
@@ -331,7 +353,7 @@ var CH_INTROS = {
     example: '✅ 赤1・赤2・赤3（同じ色で連続！）\n✅ 青5・青5・青5（同じ色・同じ数字！）\n❌ 赤1・青2・赤3（色がバラバラ）',
     tip: '💡 3枚を見て「セットになる？ならない？」を判定しよう！',
   },
-  ch2_1: {
+  ch3_1: {
     icon: '🧩',
     points: [
       '3色（赤・青・緑）の牌を使ったアガリ形',
@@ -342,7 +364,7 @@ var CH_INTROS = {
     tip: '💡 未完成の面子に足りない色と数字を探そう！',
   },
   // Chapter 3
-  ch3_0: {
+  ch4_0: {
     realTiles: [
       { suit: 'man', num: 3 },
       { suit: 'pin', num: 5 },
@@ -356,7 +378,7 @@ var CH_INTROS = {
     example: '1萬〜9萬（萬子）\n1筒〜9筒（筒子）\n1索〜9索（索子）\nそれぞれ9種類ずつあるよ！',
     tip: '💡 表示された牌が「萬子・筒子・索子」のどれか選ぼう！',
   },
-  ch3_1: {
+  ch4_1: {
     icon: '🎯',
     points: [
       '萬子・筒子・索子が混ざった手牌でアガリ牌を選ぼう',
@@ -367,7 +389,7 @@ var CH_INTROS = {
     tip: '💡 13枚の手牌を見て、面子が完成する牌を4択から選ぼう！',
   },
   // Chapter 4
-  ch4_0: {
+  ch5_0: {
     realTiles: [
       { suit: 'wind', num: 1 },
       { suit: 'wind', num: 2 },
@@ -386,7 +408,7 @@ var CH_INTROS = {
     example: '東（トン）南（ナン）西（シャー）北（ペー）\n白（ハク）發（ハツ）中（チュン）\n\n例：東1局で自分が西家なら\n→ 場風は「東」、自風は「西」',
     tip: '💡 全部の見た目を確認したら「クイズを始めよう」を押してね！',
   },
-  ch4_1: {
+  ch5_1: {
     icon: '🗣️',
     points: [
       '字牌は<strong>中国語のような読み方</strong>をする。「東」は「ひがし」ではなく<strong>トン</strong>',
@@ -399,7 +421,7 @@ var CH_INTROS = {
   },
   // Chapter 5
   // 三元牌と風牌は覚え方がまったく違うので、別々に練習してからまとめる
-  ch5_0: {
+  ch6_0: {
     realTiles: [
       { suit: 'dragon', num: 1 },
       { suit: 'dragon', num: 2 },
@@ -413,7 +435,7 @@ var CH_INTROS = {
     example: '✅ 白・白・白（いつでも役牌！）\n✅ 發・發・發\n✅ 中・中・中\n❌ 東・東・東（これは風牌。次のミニゲームでやるよ）',
     tip: '💡 出てきた刻子が「三元牌の役牌になる？」を○✕で答えよう！',
   },
-  ch5_1: {
+  ch6_1: {
     icon: '🧭',
     points: [
       '<strong>風牌</strong>は<strong>東・南・西・北</strong>の4種類',
@@ -423,7 +445,7 @@ var CH_INTROS = {
     example: '場風=東、自風=南のとき\n✅ 東・東・東（場風なので役牌）\n✅ 南・南・南（自風なので役牌）\n❌ 西・西・西（どちらでもない）\n❌ 北・北・北（どちらでもない）',
     tip: '💡 このミニゲームは「場風=東、自風=南」で考えてね！',
   },
-  ch5_2: {
+  ch6_2: {
     icon: '🔍',
     points: [
       'ここまでのまとめ。刻子を見て<strong>三元牌・風牌・役牌でない</strong>の3つから選ぶよ',
@@ -434,7 +456,7 @@ var CH_INTROS = {
     tip: '💡 この問題でも「場風=東、自風=南」で考えてね！',
   },
   // Chapter 6
-  ch6_0: {
+  ch7_0: {
     icon: '📢',
     points: [
       '<strong>ポン</strong>：同じ牌2枚持ってれば、誰の捨て牌でもOK！',
@@ -444,7 +466,7 @@ var CH_INTROS = {
     example: '手牌に5萬5萬 → 誰かが5萬を捨てたら「ポン！」\n手牌に3萬4萬 → 左の人が5萬を捨てたら「チー！」\n手牌に2萬6萬 → 4萬が来ても順子にならない → 鳴けない',
     tip: '💡 3択（ポン・チー・鳴けない）から正しい行動を選ぼう！',
   },
-  ch6_1: {
+  ch7_1: {
     icon: '4️⃣',
     points: [
       '<strong>カン</strong>は<strong>同じ牌が4枚</strong>そろうとできる鳴き（ポンは3枚、チーは連続した3枚）',
@@ -467,7 +489,7 @@ var CH_INTROS = {
     tip: '💡 焦らず落ち着いて考えよう。解説を読んで次の問題に進もう！',
   },
   // Chapter 8: 初心者向けの役
-  ch8_0: {
+  ch1_0: {
     icon: '🔁',
     points: [
       '配られるのは<strong>13枚</strong>。自分の番が来たら<strong>山から1枚ツモって14枚</strong>にする',
@@ -477,7 +499,7 @@ var CH_INTROS = {
     example: '配牌13枚 → ツモって14枚 → 1枚捨てて13枚 → 次の人へ\n\nこれをずっとくり返して、先にアガリ形を作った人の勝ち',
     tip: '💡 一局の流れを4つの選択肢から選ぼう！',
   },
-  ch8_1: {
+  ch1_1: {
     icon: '🤝',
     points: [
       '<strong>ロン</strong>＝他の人が捨てた牌でアガる。点数は<strong>捨てた1人だけ</strong>が払う',
@@ -487,7 +509,7 @@ var CH_INTROS = {
     example: '他の人の捨て牌でアガる → ロン（1人が全部払う）\n自分で引いてアガる → ツモ（3人で分けて払う）',
     tip: '💡 ロンとツモ、どちらの話かを選ぼう！',
   },
-  ch8_2: {
+  ch8_0: {
     icon: '🍃',
     points: [
       '<strong>タンヤオ</strong>＝2〜8の数牌だけで作る役（1翻）',
@@ -497,7 +519,7 @@ var CH_INTROS = {
     example: '✅ 2・3・4萬（全部2〜8）\n✅ 6・7・8索（全部2〜8）\n❌ 1筒（1が入る）\n❌ 白（字牌が入る）',
     tip: '💡 3枚を見て「使える？使えない？」を○✕で答えよう！',
   },
-  ch8_3: {
+  ch8_1: {
     icon: '🕊️',
     points: [
       '<strong>平和（ピンフ）</strong>＝全部順子＋頭が役牌でない＋両面待ち、で成立する役（1翻）',
@@ -507,7 +529,7 @@ var CH_INTROS = {
     example: '✅ 5筒・5筒（数牌の頭はOK）\n❌ 白・白（三元牌はいつでもNG）\n❌ 東・東（場風=東の場合、NG）\n✅ 北・北（場風・自風でなければOK）',
     tip: '💡 この問題では「場風=東、自風=南」で考えてね！',
   },
-  ch8_4: {
+  ch8_2: {
     icon: '🀄',
     points: [
       '<strong>門前清自摸和（メンゼンツモ）</strong>＝鳴きなし＋ツモ和了で成立する役（1翻）',
@@ -517,7 +539,7 @@ var CH_INTROS = {
     example: '✅ 鳴きなし＋ツモ和了\n❌ ポンあり＋ツモ和了（鳴くとNG）\n❌ 鳴きなし＋ロン和了（ツモ限定）',
     tip: '💡 「鳴きなし」かつ「ツモ」の両方がそろっているかを見極めよう！',
   },
-  ch8_5: {
+  ch8_3: {
     icon: '⚡',
     points: [
       '<strong>一発（イッパツ）</strong>＝立直宣言後、一巡（イチジュン）以内・鳴きなしで和了すると成立する役（1翻）',
@@ -527,7 +549,7 @@ var CH_INTROS = {
     example: '✅ 立直後、一巡（イチジュン）以内・鳴きなしで和了\n❌ 途中でポン・チー・カンが入る\n❌ 立直から二巡目（ニジュンメ）以降の和了',
     tip: '💡 「一巡（イチジュン）以内」かつ「鳴きなし」の両方がそろっているかを見極めよう！',
   },
-  ch8_6: {
+  ch8_4: {
     icon: '📢',
     points: [
       '<strong>立直（リーチ）</strong>＝門前でテンパイしたときに宣言できる役（1翻）',
@@ -537,7 +559,7 @@ var CH_INTROS = {
     example: '✅ 門前＋テンパイ＋1000点以上\n❌ 鳴いている（門前でない）\n❌ テンパイしていない\n❌ 持ち点が1000点未満',
     tip: '💡 「宣言できる？できない？」を○✕で答えよう！',
   },
-  ch8_7: {
+  ch8_5: {
     icon: '📛',
     points: [
       '初心者がよく使う役：<strong>立直・タンヤオ・平和・役牌・門前清自摸和・一発</strong>',
@@ -547,7 +569,7 @@ var CH_INTROS = {
     example: '「2〜8だけで作る役」→ タンヤオ\n「門前テンパイで1000点宣言」→ 立直\n「立直後、一巡（イチジュン）以内で和了」→ 一発',
     tip: '💡 選択肢から正しいものを1つ選ぼう！',
   },
-  ch8_8: {
+  ch1_2: {
     icon: '🚫',
     points: [
       '麻雀は<strong>役が1つも無いとアガれない</strong>。形がそろっていてもダメ',
@@ -557,7 +579,7 @@ var CH_INTROS = {
     example: '✅ 立直を宣言した／中をポンした／2〜8だけで作った\n❌ 鳴いて役が無い／ドラが3枚あるだけ\n\n対局画面の「役なし」の印は、これを教えてくれているよ',
     tip: '💡 その場面でアガれるかを○✕で答えよう！',
   },
-  ch8_9: {
+  ch1_3: {
     icon: '🙅',
     points: [
       '<strong>自分が捨てた牌がアガリ牌に入っていると、ロンできない</strong>（フリテン）',
@@ -599,7 +621,7 @@ var CH_INTROS = {
     tip: '💡 翻数に合う点数ランクの名前を選ぼう！',
   },
   // Chapter 10: 中級者向けの役
-  ch10_0: {
+  ch11_0: {
     icon: '👯',
     points: [
       '<strong>七対子</strong>＝2枚ペアを7組そろえる特殊な形（2翻・門前のみ）',
@@ -609,7 +631,7 @@ var CH_INTROS = {
     example: '✅ 7種類の違うペア\n❌ 同じ牌4枚を2ペア扱い（6種類しかない）',
     tip: '💡 14枚を見て「七対子になっている？」を○✕で答えよう！',
   },
-  ch10_1: {
+  ch11_1: {
     icon: '🧱',
     points: [
       '<strong>対々和（トイトイ）</strong>＝全部の面子が刻子（同じ3枚）＋頭',
@@ -619,7 +641,7 @@ var CH_INTROS = {
     example: '✅ 刻子4つ＋頭\n❌ 中に2・3・4のような順子がある',
     tip: '💡 14枚を見て「対々和の形？」を○✕で答えよう！',
   },
-  ch10_2: {
+  ch11_2: {
     icon: '🎋',
     points: [
       '<strong>一気通貫（イッツウ）</strong>＝同じ種類の牌で1〜9すべて（123-456-789）をそろえる役',
@@ -629,7 +651,7 @@ var CH_INTROS = {
     example: '✅ 1〜9萬（全部萬子）\n❌ 1〜6萬＋7〜9筒（種類が混ざる）\n❌ 1〜8萬＋8萬（9萬が抜けている）',
     tip: '💡 9枚を見て「1〜9が同じ種類でそろっている？」を○✕で答えよう！',
   },
-  ch10_3: {
+  ch11_3: {
     icon: '👬',
     points: [
       '<strong>一盃口（イーペーコー）</strong>＝同じ種類の順子（連続3枚）を2組そろえる役（1翻・門前限定）',
@@ -639,7 +661,7 @@ var CH_INTROS = {
     example: '✅ 2-3-4萬が2組\n❌ 2-3-4萬と3-4-5萬（違う順子）\n❌ 萬・筒・索で同じ数字（それは三色同順）',
     tip: '💡 14枚を見て「一盃口になっている？」を○✕で答えよう！',
   },
-  ch10_4: {
+  ch11_4: {
     icon: '🎨',
     points: [
       '<strong>三色同順</strong>＝萬子・筒子・索子の3種類で、同じ数字の順子を1組ずつそろえる役',
@@ -649,7 +671,7 @@ var CH_INTROS = {
     example: '✅ 2-3-4萬・2-3-4筒・2-3-4索\n❌ 2-3-4萬・3-4-5筒・2-3-4索（数字がズレている）',
     tip: '💡 14枚を見て「三色同順になっている？」を○✕で答えよう！',
   },
-  ch10_5: {
+  ch11_5: {
     icon: '🎯',
     points: [
       '<strong>三色同刻</strong>＝萬子・筒子・索子の3種類で、同じ数字の刻子（同じ牌3枚）をそろえる役',
@@ -659,7 +681,7 @@ var CH_INTROS = {
     example: '✅ 5萬5萬5萬・5筒5筒5筒・5索5索5索\n❌ 5萬5萬5萬・6筒6筒6筒・5索5索5索（数字がズレている）',
     tip: '💡 14枚を見て「三色同刻になっている？」を○✕で答えよう！',
   },
-  ch10_6: {
+  ch11_6: {
     icon: '🀄',
     points: [
       '<strong>三暗刻</strong>＝暗刻（自分でツモって作った刻子）を3つそろえる役',
@@ -669,7 +691,7 @@ var CH_INTROS = {
     example: '✅ 刻子が3つ＋順子1つ＋頭（4つ目は順子でもOK）\n❌ 刻子が2つ以下（残りは順子）\n💡 4つとも刻子なら対々和も同時に成立することが多い',
     tip: '💡 「ツモ和了なら、暗刻が3つある？」を○✕で答えよう！',
   },
-  ch10_7: {
+  ch11_7: {
     icon: '🈁',
     points: [
       '<strong>混全帯幺九（チャンタ）</strong>＝すべての面子・頭に1・9・字牌のどれかが入っている役',
@@ -679,7 +701,7 @@ var CH_INTROS = {
     example: '✅ すべての面子・頭に1・9・字牌\n❌ 4-5-6のような真ん中の数字だけの面子がある',
     tip: '💡 14枚を見て「混全帯幺九になっている？」を○✕で答えよう！',
   },
-  ch10_8: {
+  ch11_8: {
     icon: '🟢',
     points: [
       '<strong>小三元</strong>＝白・發・中のうち2つを刻子、残り1つを頭にする役',
@@ -689,7 +711,7 @@ var CH_INTROS = {
     example: '✅ 白・發が刻子、中が頭\n❌ 白・發・中が全部刻子（それは大三元）\n❌ 頭が三元牌でない',
     tip: '💡 14枚を見て「小三元になっている？」を○✕で答えよう！',
   },
-  ch10_9: {
+  ch11_9: {
     icon: '🎴',
     points: [
       '中級でよく出る役は全部で9種類：<strong>一盃口・七対子・対々和・三色同順・三色同刻・一気通貫・三暗刻・混全帯幺九・小三元</strong>',
@@ -699,7 +721,7 @@ var CH_INTROS = {
     example: '「同じ順子が2組」→ 一盃口\n「全部刻子」→ 対々和\n「同じ種類で1〜9」→ 一気通貫',
     tip: '💡 4つの役から正しいものを選ぼう！',
   },
-  ch10_10: {
+  ch11_10: {
     icon: '🔎',
     points: [
       '今度は完成した<strong>手牌を見て</strong>、成立している役を当てる問題',
@@ -710,7 +732,7 @@ var CH_INTROS = {
     tip: '💡 14枚の手牌を見て、当てはまる役を4択から選ぼう！',
   },
   // Chapter 11: 上級者向けの役
-  ch11_0: {
+  ch12_0: {
     icon: '🟥',
     points: [
       '<strong>清一色（チンイツ）</strong>＝1種類の数牌だけで作る（字牌もなし・6翻）',
@@ -720,7 +742,7 @@ var CH_INTROS = {
     example: '✅ 全部萬子だけ\n❌ 萬子＋筒子\n❌ 萬子＋白（字牌）→ これは混一色',
     tip: '💡 手牌が「1種類の数牌だけ？」を○✕で答えよう！',
   },
-  ch11_1: {
+  ch12_1: {
     icon: '🟦',
     points: [
       '<strong>混一色（ホンイツ）</strong>＝1種類の数牌＋字牌で作る役（門前3翻・鳴き2翻）',
@@ -730,7 +752,7 @@ var CH_INTROS = {
     example: '✅ 萬子＋東（字牌）\n❌ 萬子＋筒子（2種類混ざる）\n❌ 字牌なし（それは清一色）',
     tip: '💡 手牌が「1種類の数牌＋字牌？」を○✕で答えよう！',
   },
-  ch11_2: {
+  ch12_2: {
     icon: '👯',
     points: [
       '<strong>二盃口（リャンペーコー）</strong>＝一盃口（同じ順子2組）が2セットある役（3翻・門前限定）',
@@ -740,7 +762,7 @@ var CH_INTROS = {
     example: '✅ 1-2-3萬×2組＋4-5-6筒×2組\n❌ 同じ順子の組が1つだけ',
     tip: '💡 14枚を見て「二盃口になっている？」を○✕で答えよう！',
   },
-  ch11_3: {
+  ch12_3: {
     // 麻雀牌の絵文字（🀫＝伏せ牌）を使っていたが、フォントによっては
     // ただの白い縞模様の板に見えて何の牌か分からなかった。
     // 三槓子は「同じ牌4枚の組が3つ」なので、4枚組が伝わる数字にする。
@@ -753,7 +775,7 @@ var CH_INTROS = {
     example: '✅ 4枚組が3つ\n❌ 4枚組が2つ以下（残りは普通の刻子や順子）',
     tip: '💡 手牌を見て「槓子が3つある？」を○✕で答えよう！',
   },
-  ch11_4: {
+  ch12_4: {
     icon: '🈶',
     points: [
       '<strong>純全帯幺九（ジュンチャン）</strong>＝すべての面子・頭に1・9が入っていて、字牌は使わない役',
@@ -763,7 +785,7 @@ var CH_INTROS = {
     example: '✅ すべての面子・頭に1か9（字牌なし）\n❌ 字牌が入っている（それは混全帯幺九）',
     tip: '💡 14枚を見て「純全帯幺九になっている？」を○✕で答えよう！',
   },
-  ch11_5: {
+  ch12_5: {
     icon: '⬛',
     points: [
       '<strong>混老頭（ホンロウトウ）</strong>＝1・9・字牌だけで手を作る役（2翻）',
@@ -773,7 +795,7 @@ var CH_INTROS = {
     example: '✅ 1・9・字牌だけ\n❌ 真ん中の数字（2〜8）が混じっている',
     tip: '💡 14枚を見て「混老頭になっている？」を○✕で答えよう！',
   },
-  ch11_6: {
+  ch12_6: {
     icon: '🔥',
     points: [
       '上級役：<strong>清一色・混一色・二盃口・三槓子・純全帯幺九・混老頭</strong>',
@@ -783,7 +805,7 @@ var CH_INTROS = {
     example: '「1種類の数牌だけ」→ 清一色\n「カンを3回」→ 三槓子\n「字牌なしで1・9のみ」→ 純全帯幺九',
     tip: '💡 4つの役から正しいものを選ぼう！',
   },
-  ch11_7: {
+  ch12_7: {
     icon: '🔢',
     points: [
       '上級役の<strong>翻数</strong>を覚えよう',
@@ -793,7 +815,7 @@ var CH_INTROS = {
     example: '清一色（門前）→ 6翻\n混一色（門前）→ 3翻\n二盃口 → 3翻\n純全帯幺九（門前）→ 3翻',
     tip: '💡 役の翻数を4つの候補から選ぼう！',
   },
-  ch11_8: {
+  ch12_8: {
     icon: '🔎',
     points: [
       '今度は完成した<strong>手牌を見て</strong>、成立している役を当てる問題',
@@ -804,7 +826,7 @@ var CH_INTROS = {
     tip: '💡 14枚の手牌を見て、当てはまる役を4択から選ぼう！',
   },
   // Chapter 12: 三人麻雀入門
-  ch12_0: {
+  ch13_0: {
     icon: '🀄',
     points: [
       '<strong>三人麻雀（三麻）</strong>は3人で打つ麻雀',
@@ -814,7 +836,7 @@ var CH_INTROS = {
     example: '○ 三麻は3人で対局\n○ 萬子の2〜8は使わない\n✕ 三麻は4人で打つ',
     tip: '💡 三麻のルールが正しいか○✕で答えよう！',
   },
-  ch12_1: {
+  ch13_1: {
     icon: '🧭',
     points: [
       '三麻ならではのルールをクイズで確認',
@@ -2000,7 +2022,7 @@ var App = {
   _renderHome: function(main) {
     var self = this;
     var cards = [
-      { label:'はじめる',     icon:'🎮', sub:'チャプター1から学ぼう', page:'chapter', params:{id:1}, cls:'primary' },
+      { label:'はじめる',     icon:'🎮', sub:'対局のルールから学ぼう', page:'chapter', params:{id:1}, cls:'primary' },
       { label:'チャプター選択', icon:'📚', sub:'好きな章から', page:'chapters' },
       { label:'VS CPU',       icon:'🤖', sub:'4人打ちCPU対局', page:'battle_setup', params:{playerCount:4} },
       { label:'単語クイズ',   icon:'📝', sub:'用語・役をランダム出題', page:'quiz_select' },
@@ -2031,8 +2053,16 @@ var App = {
   // ===== Chapter Select =====
   _renderChapters: function(main) {
     var self = this;
-    main.innerHTML = '<div class="page-title">チャプター選択</div><div class="chapter-list" id="chList">' +
-      GameData.CHAPTERS.map(function(c) {
+    // 2026-09-07：13章を必修・実戦・発展・腕試しの4つに分けて出す。
+    // それまでは12章が一列に並ぶだけで、どこまでやれば打てるのかが
+    // 画面のどこにも書いていなかった。
+    var TIERS = [
+      { key:'core',     label:'必修',   sub:'これだけで麻雀が打てる' },
+      { key:'practice', label:'実戦',   sub:'覚えると強くなる' },
+      { key:'advanced', label:'発展',   sub:'知らなくても打てる' },
+      { key:'test',     label:'腕試し', sub:'ここまでの確認' },
+    ];
+    var card = function(c) {
         var stars = Progress.getStars(c.id);
         var cleared = stars > 0;
         // 前の章をクリアするまでロック（第1章は常に挑戦可能）
@@ -2071,6 +2101,21 @@ var App = {
           mgPicker +
           '</div>' +
           rightCol + '</div>';
+    };
+    main.innerHTML = '<div class="page-title">チャプター選択</div>' +
+      '<div class="chapter-list" id="chList">' +
+      TIERS.map(function(t) {
+        var cs = GameData.CHAPTERS.filter(function(c) { return c.tier === t.key; });
+        if (!cs.length) return '';
+        var done = cs.filter(function(c) { return Progress.isCleared(c.id); }).length;
+        return '<div class="chapter-tier tier-'+t.key+'">' +
+          '<div class="chapter-tier-head">' +
+            '<span class="chapter-tier-label">'+t.label+'</span>' +
+            '<span class="chapter-tier-sub">'+t.sub+'</span>' +
+            '<span class="chapter-tier-count">'+done+' / '+cs.length+'</span>' +
+          '</div>' +
+          cs.map(card).join('') +
+        '</div>';
       }).join('') + '</div>';
 
     document.querySelectorAll('#chList .chapter-card').forEach(function(el) {
@@ -2127,27 +2172,32 @@ var App = {
       document.getElementById('btnGoChs').addEventListener('click', function() { App.navigate('chapters'); });
       return;
     }
-    var engines = [null,this._ch1.bind(this),this._ch2.bind(this),this._ch3.bind(this),
-                   this._ch4.bind(this),this._ch5.bind(this),this._ch6.bind(this),this._ch7.bind(this)];
+    // 添字＝章番号。null の章は _chQuiz（mgs を順に出す共通の作り）が担当する。
+    // 2026-09-07に章を組み替えたため、第1章（対局のルール）と第8・9・11〜13章が共通、
+    // 第2〜7章と第10章（道場）が専用のエンジンになっている。
+    var engines = [null, null,
+                   this._ch2.bind(this), this._ch3.bind(this), this._ch4.bind(this),
+                   this._ch5.bind(this), this._ch6.bind(this), this._ch7.bind(this),
+                   null, null, this._ch10.bind(this)];
     var engine = engines[id] || this._chQuiz.bind(this);
     engine(main, ch, startMg);
   },
 
   // ===== CHAPTER 1 =====
-  _ch1: function(main, ch, startMg) {
-    var mgs = [Chapters.ch1.mg1, Chapters.ch1.mg2, Chapters.ch1.mg3];
+  _ch2: function(main, ch, startMg) {
+    var mgs = [Chapters.ch2.mg1, Chapters.ch2.mg2, Chapters.ch2.mg3];
     var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false, selected = [];
     var qBank = {}, introShown = {};
 
     var render = function() {
-      if (mgIdx >= mgs.length) { showClear(1,3); return; }
+      if (mgIdx >= mgs.length) { showClear(2,3); return; }
       var mg = mgs[mgIdx];
       var pct = Math.round(mgIdx/mgs.length*100);
       // イントロ表示
       if (qIdx === 0 && !introShown[mgIdx]) {
         introShown[mgIdx] = true;
         var introKey = 'ch1_' + mgIdx;
-        if (CH_INTROS[introKey]) { showMgIntro(main, '第1章 数字だけの麻雀', mg.title, CH_INTROS[introKey], render); return; }
+        if (CH_INTROS[introKey]) { showMgIntro(main, '第2章 数字だけの麻雀', mg.title, CH_INTROS[introKey], render); return; }
       }
 
       if (mgIdx < 2) {
@@ -2174,7 +2224,7 @@ var App = {
         }
         var hintLv = 0;
 
-        main.innerHTML = chHeader('第1章 数字だけの麻雀', mg.title, pct, correct, mg.passNeeded) +
+        main.innerHTML = chHeader('第2章 数字だけの麻雀', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">'+mg.instruction+'<br><small style="color:#8ab89c">選ぶ枚数：<strong style="color:var(--gold)">'+sel+'枚</strong></small></div>' +
           '<div class="game-area"><div class="tiles-row" id="tilesRow">'+
           tiles.map(function(t){return Tiles.renderTile(t,{});}).join('')+
@@ -2213,7 +2263,7 @@ var App = {
                 if (!ok) { render(); return; }
                 if (correct >= mg.passNeeded) {
                   var prev = mgIdx; mgIdx++; qIdx = 0; correct = 0;
-                  if (mgIdx >= mgs.length) showClear(1,3); else showMgClear(prev,render);
+                  if (mgIdx >= mgs.length) showClear(2,3); else showMgClear(prev,render);
                 } else render();
               });
             }
@@ -2230,7 +2280,7 @@ var App = {
           'たとえば2・4なら3、7・9なら8、8・8の刻子を作りたい8・8なら8が必要だよ',
         ];
         var hintLv3 = 0;
-        main.innerHTML = chHeader('第1章 数字だけの麻雀', mg.title, pct, correct, mg.passNeeded) +
+        main.innerHTML = chHeader('第2章 数字だけの麻雀', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">'+mg.instruction+'</div>' +
           '<div class="game-area"><div class="tiles-label">手牌（13枚）</div>' +
           '<div class="tiles-row">'+handTiles.map(function(t){return Tiles.renderTile(t,{noHover:true});}).join('')+'</div>' +
@@ -2259,7 +2309,7 @@ var App = {
             if (ok) correct++;
             showFeedback(ok, q.fb, function() {
               showingFb = false; qIdx++;
-              if (correct >= mg.passNeeded) { mgIdx++; qIdx = 0; correct = 0; if (mgIdx >= mgs.length) showClear(1,3); else showMgClear(2,render); }
+              if (correct >= mg.passNeeded) { mgIdx++; qIdx = 0; correct = 0; if (mgIdx >= mgs.length) showClear(2,3); else showMgClear(2,render); }
               else render();
             });
           });
@@ -2272,26 +2322,26 @@ var App = {
   },
 
   // ===== CHAPTER 2 =====
-  _ch2: function(main, ch, startMg) {
-    var mgs = [Chapters.ch2.mg1, Chapters.ch2.mg2];
+  _ch3: function(main, ch, startMg) {
+    var mgs = [Chapters.ch3.mg1, Chapters.ch3.mg2];
     var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
 
     var render = function() {
-      if (mgIdx >= mgs.length) { showClear(2,3); return; }
+      if (mgIdx >= mgs.length) { showClear(3,3); return; }
       var mg = mgs[mgIdx];
       if (qIdx === 0 && !introShown[mgIdx]) {
         introShown[mgIdx] = true;
         var introKey = 'ch2_' + mgIdx;
-        if (CH_INTROS[introKey]) { showMgIntro(main, '第2章 色付き牌', mg.title, CH_INTROS[introKey], render); return; }
+        if (CH_INTROS[introKey]) { showMgIntro(main, '第3章 色付き牌', mg.title, CH_INTROS[introKey], render); return; }
       }
-      if (mgIdx >= mgs.length) { showClear(2,3); return; }
+      if (mgIdx >= mgs.length) { showClear(3,3); return; }
       var mg = mgs[mgIdx]; var pct = Math.round(mgIdx/mgs.length*100);
 
       if (mgIdx === 0) {
         var q = getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
         var tiles = q.tiles.map(function(t){return Tiles.makeColored(t.c,t.n);});
-        main.innerHTML = chHeader('第2章 色付き牌', mg.title, pct, correct, mg.passNeeded) +
+        main.innerHTML = chHeader('第3章 色付き牌', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">'+mg.instruction+'</div>' +
           '<div class="game-area"><div class="tiles-row">'+tiles.map(function(t){return Tiles.renderTile(t,{noHover:true});}).join('')+'</div>' +
           '<div style="margin-top:12px;color:#8ab89c;font-size:0.85rem">この3枚はセット？</div>' +
@@ -2312,7 +2362,7 @@ var App = {
         var q = getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
         var sc2 = shuffledChoices(q.choices, function(c,ans){return c.c===ans.c && c.n===ans.n;});
         var handTiles = q.hand.map(function(t){return Tiles.makeColored(t.c,t.n);});
-        main.innerHTML = chHeader('第2章 色付き牌', mg.title, pct, correct, mg.passNeeded) +
+        main.innerHTML = chHeader('第3章 色付き牌', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">'+mg.instruction+'</div>' +
           '<div class="game-area"><div class="tiles-label">手牌（13枚）</div>' +
           '<div class="tiles-row">'+handTiles.map(function(t){return Tiles.renderTile(t,{noHover:true,small:true});}).join('')+'</div>' +
@@ -2323,7 +2373,7 @@ var App = {
         bindChoiceTiles('#choiceRow .choice-tile', function(ci) {
           if (showingFb) return; showingFb = true;
           var ok = sc2.findOk(ci, q.answer); if(ok) correct++;
-          showFeedback(ok, q.fb, function() { showingFb=false; qIdx++; if(correct>=mg.passNeeded) showClear(2,3); else render(); });
+          showFeedback(ok, q.fb, function() { showingFb=false; qIdx++; if(correct>=mg.passNeeded) showClear(3,3); else render(); });
         });
       }
     };
@@ -2331,21 +2381,21 @@ var App = {
   },
 
   // ===== CHAPTER 3 =====
-  _ch3: function(main, ch, startMg) {
-    var mgs = [Chapters.ch3.mg1, Chapters.ch3.mg2];
+  _ch4: function(main, ch, startMg) {
+    var mgs = [Chapters.ch4.mg1, Chapters.ch4.mg2];
     var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
     var render = function() {
-      if (mgIdx >= mgs.length) { showClear(3,3); return; }
+      if (mgIdx >= mgs.length) { showClear(4,3); return; }
       var mg = mgs[mgIdx]; var pct = Math.round(mgIdx/mgs.length*100);
       if (qIdx === 0 && !introShown[mgIdx]) {
         introShown[mgIdx] = true;
         var introKey = 'ch3_' + mgIdx;
-        if (CH_INTROS[introKey]) { showMgIntro(main, '第3章 本物の麻雀牌', mg.title, CH_INTROS[introKey], render); return; }
+        if (CH_INTROS[introKey]) { showMgIntro(main, '第4章 本物の麻雀牌', mg.title, CH_INTROS[introKey], render); return; }
       }
       if (mgIdx === 0) {
         var q = getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
-        main.innerHTML = chHeader('第3章 本物の麻雀牌', mg.title, pct, correct, mg.passNeeded) +
+        main.innerHTML = chHeader('第4章 本物の麻雀牌', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">'+mg.instruction+'</div>' +
           '<div class="game-area">'+Tiles.renderTile(Tiles.make(q.suit,q.num),{noHover:true})+
           '<div class="choice-grid" data-no-mahjong-readings style="max-width:300px;margin-top:12px" id="suitC">'+
@@ -2366,7 +2416,7 @@ var App = {
         var q = getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
         var sc3 = shuffledChoices(q.choices, Tiles.isSame.bind(Tiles));
         var handTiles = q.hand.map(function(t){return Tiles.make(t.suit,t.num);});
-        main.innerHTML = chHeader('第3章 本物の麻雀牌', mg.title, pct, correct, mg.passNeeded) +
+        main.innerHTML = chHeader('第4章 本物の麻雀牌', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">'+mg.instruction+'</div>' +
           '<div class="game-area"><div class="tiles-label">手牌（13枚）</div>' +
           '<div class="tiles-row">'+handTiles.map(function(t){return Tiles.renderTile(t,{noHover:true,small:true});}).join('')+'</div>' +
@@ -2376,7 +2426,7 @@ var App = {
         bindChoiceTiles('#choiceRow .choice-tile', function(ci) {
           if (showingFb) return; showingFb = true;
           var ok = sc3.findOk(ci, q.answer); if(ok) correct++;
-          showFeedback(ok, q.fb, function() { showingFb=false; qIdx++; if(correct>=mgs[1].passNeeded) showClear(3,3); else render(); });
+          showFeedback(ok, q.fb, function() { showingFb=false; qIdx++; if(correct>=mgs[1].passNeeded) showClear(4,3); else render(); });
         });
       }
     };
@@ -2384,22 +2434,22 @@ var App = {
   },
 
   // ===== CHAPTER 4 =====
-  _ch4: function(main, ch, startMg) {
+  _ch5: function(main, ch, startMg) {
     // 2026-09-05：ミニゲーム③「刻子を作ろう」を外した。
     // 「同じ牌3枚を選ぶ」操作は第1章①と同じで、字牌ならではの学びが無く、
     // 字牌の刻子は第5章で嫌というほど扱うため。
     // 「字牌は刻子しか作れない」という話は ch4_1 の導入に1行で入れてある。
-    var mgs = [Chapters.ch4.mg1, Chapters.ch4.mg2];
+    var mgs = [Chapters.ch5.mg1, Chapters.ch5.mg2];
     var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
     var render = function() {
-      if (mgIdx >= mgs.length) { showClear(4,3); return; }
+      if (mgIdx >= mgs.length) { showClear(5,3); return; }
       var pct = Math.round(mgIdx/mgs.length*100);
       if (qIdx === 0 && !introShown[mgIdx]) {
         introShown[mgIdx] = true;
         var introKey = 'ch4_' + mgIdx;
         var mg4 = mgs[mgIdx];
-        if (CH_INTROS[introKey]) { showMgIntro(main, '第4章 字牌を覚えよう', mg4.title, CH_INTROS[introKey], render); return; }
+        if (CH_INTROS[introKey]) { showMgIntro(main, '第5章 字牌を覚えよう', mg4.title, CH_INTROS[introKey], render); return; }
       }
 
       if (mgIdx === 0) {
@@ -2415,7 +2465,7 @@ var App = {
         ];
 
         // 説明ページのみ（問題なし）。ボタンを押したら次のミニゲームへ
-        main.innerHTML = chHeader('第4章 字牌を覚えよう', mgs[0].title, pct, 0, 0) +
+        main.innerHTML = chHeader('第5章 字牌を覚えよう', mgs[0].title, pct, 0, 0) +
           '<div class="game-instruction">字牌は全部で<strong>7種類</strong>。見た目・名前・読み方を確認しよう！</div>' +
           '<div class="game-area">' +
             '<div class="honor-intro-grid">' +
@@ -2456,7 +2506,7 @@ var App = {
         var hLvCh4 = 0;
         // 選択肢は毎回シャッフルする（位置で覚えてしまわないように）
         var ch4Choices = Tiles.shuffle(q.choices.slice());
-        main.innerHTML = chHeader('第4章 字牌を覚えよう', mg.title, pct, correct, mg.passNeeded) +
+        main.innerHTML = chHeader('第5章 字牌を覚えよう', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">'+mg.instruction+'</div>' +
           '<div class="game-area"><div class="tiles-row">'+Tiles.renderTile(Tiles.make(q.tile.suit,q.tile.num),{noHover:true})+'</div>' +
           '<div class="choice-grid" data-no-mahjong-readings style="margin-top:14px">'+
@@ -2471,7 +2521,7 @@ var App = {
             var ok = b.dataset.read === q.answer;
             if(ok)correct++;
             showFeedback(ok, ok ? q.fb : '「'+Tiles.label(Tiles.make(q.tile.suit,q.tile.num))+'」は「'+q.answer+'」と読むよ。'+q.fb,
-              function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){showClear(4,3);}else render();});
+              function(){showingFb=false;qIdx++;if(correct>=mg.passNeeded){showClear(5,3);}else render();});
           });
         });
         document.getElementById('btnHintCh4').addEventListener('click', function() {
@@ -2489,19 +2539,19 @@ var App = {
   },
 
   // ===== CHAPTER 5 =====
-  _ch5: function(main, ch, startMg) {
+  _ch6: function(main, ch, startMg) {
     // ①三元牌だけ ②風牌だけ ③まとめ、の3つに分けている
-    var mgs=[Chapters.ch5.mg0, Chapters.ch5.mg1, Chapters.ch5.mg2];
+    var mgs=[Chapters.ch6.mg0, Chapters.ch6.mg1, Chapters.ch6.mg2];
     var mgIdx=Math.min(Math.max(0,(startMg||1)-1), mgs.length-1),qIdx=0,correct=0,showingFb=false;
     var qBank={},introShown={};
     var render=function(){
-      if(mgIdx>=mgs.length){showClear(5,3);return;}
+      if(mgIdx>=mgs.length){showClear(6,3);return;}
       var pct=Math.round(mgIdx/mgs.length*100);
       if(qIdx===0&&!introShown[mgIdx]){
         introShown[mgIdx]=true;
         var introKey='ch5_'+mgIdx;
         var mg5=mgs[mgIdx];
-        if(CH_INTROS[introKey]){showMgIntro(main,'第5章 役牌を作ろう',mg5.title,CH_INTROS[introKey],render);return;}
+        if(CH_INTROS[introKey]){showMgIntro(main,'第6章 役牌を作ろう',mg5.title,CH_INTROS[introKey],render);return;}
       }
 
       var mg=mgs[mgIdx];var q=getShuffledQ(qBank, mgIdx, qIdx, mg.questions);
@@ -2534,7 +2584,7 @@ var App = {
             '<button class="btn-choice" data-ans="yes">○ なる</button>'+
             '<button class="btn-choice" data-ans="no">✕ ならない</button>'+
           '</div>';
-      main.innerHTML=chHeader('第5章 役牌を作ろう',mg.title,pct,correct,mg.passNeeded)+
+      main.innerHTML=chHeader('第6章 役牌を作ろう',mg.title,pct,correct,mg.passNeeded)+
         '<div class="game-instruction">'+mg.instruction+'</div>'+
         '<div class="game-area"><div class="tiles-row">'+q.tiles.map(function(t){return Tiles.renderTile(Tiles.make(t.suit,t.num),{noHover:true});}).join('')+'</div>'+
         answerPanel+
@@ -2549,7 +2599,7 @@ var App = {
           showingFb=false;qIdx++;
           if(correct>=mg.passNeeded){
             if(mgIdx<mgs.length-1){var done=mgIdx;mgIdx++;qIdx=0;correct=0;showMgClear(done,render);}
-            else showClear(5,3);
+            else showClear(6,3);
           } else render();
         });};
       document.querySelectorAll('.choice-grid .btn-choice').forEach(function(el){
@@ -2568,22 +2618,22 @@ var App = {
   },
 
   // ===== CHAPTER 6 =====
-  _ch6: function(main, ch, startMg) {
+  _ch7: function(main, ch, startMg) {
     // MG1: ポン・チー・鳴けない 3択／MG2: どのカンか 3択
-    var mgs = [Chapters.ch6.mg1, Chapters.ch6.mg2];
+    var mgs = [Chapters.ch7.mg1, Chapters.ch7.mg2];
     var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false;
     var qBank = {}, introShown = {};
 
     var FROM_LABEL = { right:'右（下家）', left:'上家（左）', opposite:'対面', left_only:'上家（左）' };
 
     var render = function() {
-      if (mgIdx >= mgs.length) { showClear(6, 3); return; }
+      if (mgIdx >= mgs.length) { showClear(7, 3); return; }
       var mg = mgs[mgIdx];
       var pct = Math.round(mgIdx / mgs.length * 100);
       if (qIdx === 0 && !introShown[mgIdx]) {
         introShown[mgIdx] = true;
         var introKey = 'ch6_' + mgIdx;
-        if (CH_INTROS[introKey]) { showMgIntro(main, '第6章 鳴きを覚えよう', mg.title, CH_INTROS[introKey], render); return; }
+        if (CH_INTROS[introKey]) { showMgIntro(main, '第7章 鳴きを覚えよう', mg.title, CH_INTROS[introKey], render); return; }
       }
 
       // ── MG2: カンできる？（○×） ──
@@ -2609,7 +2659,7 @@ var App = {
             '<div class="tiles-label">自分の手牌</div>' +
             '<div class="tiles-row">' + q2.hand.map(function(t){ return Tiles.renderTile(Tiles.make(t.suit,t.num), {noHover:true}); }).join('') + '</div>';
         }
-        main.innerHTML = chHeader('第6章 鳴きを覚えよう', mg.title, pct, correct, mg.passNeeded) +
+        main.innerHTML = chHeader('第7章 鳴きを覚えよう', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">' + mg.instruction + '</div>' +
           '<div class="game-area">' + sceneHtml +
             '<div class="choice-grid" data-no-mahjong-readings style="margin-top:16px">' +
@@ -2641,7 +2691,7 @@ var App = {
             if (ok) correct++;
             showFeedback(ok, q2.fb, function() {
               showingFb = false; qIdx++;
-              if (correct >= mg.passNeeded) { showClear(6, 3); }
+              if (correct >= mg.passNeeded) { showClear(7, 3); }
               else render();
             });
           });
@@ -2663,7 +2713,7 @@ var App = {
         };
         var nakiOrder = ['pon', 'chi', 'none']; // 固定順：ポン・チー・鳴けない
 
-        main.innerHTML = chHeader('第6章 鳴きを覚えよう', mg.title, pct, correct, mg.passNeeded) +
+        main.innerHTML = chHeader('第7章 鳴きを覚えよう', mg.title, pct, correct, mg.passNeeded) +
           '<div class="game-instruction">' + mg.instruction + '</div>' +
           '<div class="game-area">' +
             '<div class="tiles-label">自分の手牌（一部）</div>' +
@@ -2714,8 +2764,8 @@ var App = {
   },
 
   // ===== CHAPTER 7 =====
-  _ch7: function(main) {
-    var allQs=Tiles.shuffle(Chapters.ch7.questions.slice());
+  _ch10: function(main) {
+    var allQs=Tiles.shuffle(Chapters.ch10.questions.slice());
     var qIdx=0,correct=0,showingFb=false,introShown=false;
     var handleQ=function(ok,fb){
       if(showingFb)return;showingFb=true;if(ok)correct++;
@@ -2724,18 +2774,18 @@ var App = {
     var render=function(){
       if(!introShown){
         introShown=true;
-        if(CH_INTROS.ch7){showMgIntro(main,'第7章 復習テスト',Chapters.ch7.title,CH_INTROS.ch7,render);return;}
+        if(CH_INTROS.ch10){showMgIntro(main,'第10章 復習テスト',Chapters.ch10.title,CH_INTROS.ch10,render);return;}
       }
       if(qIdx>=allQs.length){
         var g=qIdx>=10?correct>=10?{g:'もう打てる雀士',s:3}:correct>=8?{g:'期待の雀士',s:3}:correct>=7?{g:'初級雀士',s:2}:{g:'見習い雀士',s:1}:{g:'見習い雀士',s:1};
-        Progress.setStars(7,g.s);if(g.s>=2)Progress.addTitle('道場初級クリア');
+        Progress.setStars(10,g.s);if(g.s>=2)Progress.addTitle('道場初級クリア');
         main.innerHTML='<div class="clear-screen"><div class="clear-icon">🏆</div><div class="clear-title">道場チャレンジ 終了！</div>' +
           '<div class="stars-row">'+starsHtml(g.s)+'</div>' +
           '<div style="font-size:1.3rem;font-weight:900;color:var(--gold);margin-bottom:12px">段位：'+g.g+'</div>' +
           '<div style="font-size:1.1rem;color:#a8d8b0;margin-bottom:20px">正解 '+correct+' / '+allQs.length+' 問</div>' +
           (correct<7?'<div class="game-instruction" style="margin-bottom:18px">もう少し！チャプター1〜6を復習するともっと強くなれるよ。</div>':'')+
           '<div class="btn-row"><button class="btn btn-primary" id="btnR7">もう一度</button><button class="btn btn-secondary" id="btnCh7">章選択へ</button></div></div>';
-        document.getElementById('btnR7').addEventListener('click',function(){App.navigate('chapter',{id:7});});
+        document.getElementById('btnR7').addEventListener('click',function(){App.navigate('chapter',{id:10});});
         document.getElementById('btnCh7').addEventListener('click',function(){App.navigate('chapters');});
         return;
       }
@@ -6129,17 +6179,18 @@ function showMgClear(completedIdx, nextRender) {
 }
 
 function showClear(chId, stars) {
-  var msgs = {1:'はじめてのアガリ！麻雀は「セット」と「頭」を作るゲームだよ。',2:'色の違いを理解したね！',3:'本物の麻雀牌を使いこなせるようになってきた！',4:'字牌をすべて覚えたかな？',5:'役牌をマスターした！',6:'ポンとチーを使いこなせるようになった！',7:'道場チャレンジ完了！',8:'立直・タンヤオ・平和・門前清自摸和・一発を覚えた！',9:'翻と点数が読めるようになった！',10:'中級役（七対子・対々和など）をマスター！',11:'清一色などの上級役まで到達！すごい！',12:'三人麻雀のルールもバッチリ！'};
-  var titleMap = {1:'はじめてのアガリ',5:'役牌マスター',6:'鳴きデビュー',8:'役デビュー',9:'点数計算入門',10:'中級役マスター',11:'上級役マスター',12:'三麻デビュー'};
+  // 2026-09-07に章を組み替えたので番号を振り直した（全13章）
+  var msgs = {1:'一局の回し方が分かった！ここが分かればもう打てるよ。',2:'はじめてのアガリ！麻雀は「セット」と「頭」を作るゲームだよ。',3:'色の違いを理解したね！',4:'本物の麻雀牌を使いこなせるようになってきた！',5:'字牌をすべて覚えたかな？',6:'役牌をマスターした！ここまでで必修はぜんぶ終わり。もう対局できるよ！',7:'ポンとチーを使いこなせるようになった！',8:'立直・タンヤオ・平和・門前清自摸和・一発を覚えた！',9:'翻と点数が読めるようになった！',10:'道場チャレンジ完了！',11:'中級役（七対子・対々和など）をマスター！',12:'清一色などの上級役まで到達！すごい！',13:'三人麻雀のルールもバッチリ！'};
+  var titleMap = {1:'ルールを覚えた',2:'はじめてのアガリ',6:'役牌マスター',7:'鳴きデビュー',8:'役デビュー',9:'点数計算入門',11:'中級役マスター',12:'上級役マスター',13:'三麻デビュー'};
   Progress.setStars(chId, stars);
   if (titleMap[chId]) Progress.addTitle(titleMap[chId]);
   showOverlay('<div style="text-align:center"><div style="font-size:3rem;margin-bottom:12px">🏆</div>' +
     '<h2>第'+chId+'章クリア！</h2><div style="font-size:1.8rem;margin:10px 0">'+starsHtml(stars)+'</div>' +
     '<p style="color:#a8d8b0;line-height:1.7;margin-bottom:20px">'+(msgs[chId]||'よくできました！')+'</p>' +
     '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
-    (chId<12?'<button class="btn btn-primary" id="btnNextCh">次の章へ →</button>':'')+
+    (chId<13?'<button class="btn btn-primary" id="btnNextCh">次の章へ →</button>':'')+
     '<button class="btn btn-secondary" id="btnGoChapters">章選択へ</button></div></div>');
-  if (chId<12) document.getElementById('btnNextCh').addEventListener('click', function(){hideOverlay();App.navigate('chapter',{id:chId+1});});
+  if (chId<13) document.getElementById('btnNextCh').addEventListener('click', function(){hideOverlay();App.navigate('chapter',{id:chId+1});});
   document.getElementById('btnGoChapters').addEventListener('click', function(){hideOverlay();App.navigate('chapters');});
 }
 

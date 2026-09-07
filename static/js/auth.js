@@ -63,6 +63,10 @@ var Auth = (function() {
       Progress.load();
       var local = Progress._data;
 
+      // クラウドに古い章番号のまま残っていることがあるので、混ぜる前に付け替える
+      // （付け替えないと、ログインした瞬間に星が別の章へ戻ってしまう）
+      if (window.Progress && Progress.migrate) Progress.migrate(cloud);
+
       var stars = {};
       var cs = cloud.stars || {};
       Object.keys(cs).forEach(function(k) { stars[k] = cs[k]; });
@@ -77,11 +81,15 @@ var Auth = (function() {
 
       local.stars = stars;
       local.titles = titles;
+      local.chapterMapVersion = (window.Progress && Progress.CH_MAP_VERSION) || 0;
       localStorage.setItem('mj_progress', JSON.stringify(local));
 
       return ref.set({
         stars: stars,
         titles: titles,
+        // 章番号の付け替えを何度も走らせないための印。落とすと次のログインで
+        // もう一度ずれるので、必ず一緒に保存する
+        chapterMapVersion: (window.Progress && Progress.CH_MAP_VERSION) || 0,
         email: _user.email,
         name: _user.displayName || '',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -98,6 +106,7 @@ var Auth = (function() {
       _db.collection('users').doc(_user.uid).set({
         stars: data.stars,
         titles: data.titles,
+        chapterMapVersion: data.chapterMapVersion || 0,
         email: _user.email,
         name: _user.displayName || '',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),

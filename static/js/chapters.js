@@ -2,7 +2,7 @@
 
 const Chapters = (() => {
   // ===== Chapter 1: Number tiles only =====
-  const ch1 = {
+  const ch2 = {
     mg1: {
       title: 'ミニゲーム①　3枚セットを見つけよう',
       instruction: '<strong>3枚でセット</strong>になる牌を選ぼう！<br>同じ数字3枚、または数字が続く3枚がセット。',
@@ -39,7 +39,7 @@ const Chapters = (() => {
 
   // ===== Chapter 2: Colored tiles =====
   const COLOR_NAMES = { red: '赤', blue: '青', green: '緑' };
-  const ch2 = {
+  const ch3 = {
     mg1: {
       title: 'ミニゲーム①　これはセット？',
       instruction: '<strong>同じ色</strong>の数字が続くか、<strong>同じ色・同じ数字</strong>3枚ならセット！',
@@ -87,7 +87,7 @@ const Chapters = (() => {
   // ===== Chapter 3: Real suit tiles =====
   const SUITS = ['man','pin','sou'];
   const SUIT_LABELS = { man: '萬子', pin: '筒子', sou: '索子' };
-  const ch3 = {
+  const ch4 = {
     mg1: {
       title: 'ミニゲーム①　牌の種類を当てよう',
       instruction: 'この牌は<strong>萬子（マンズ）・筒子（ピンズ）・索子（ソーズ）</strong>のどれ？',
@@ -138,7 +138,7 @@ const Chapters = (() => {
     {suit:'dragon',num:1},{suit:'dragon',num:2},{suit:'dragon',num:3},
   ];
   const HONOR_NAMES = ['東','南','西','北','白','發','中'];
-  const ch4 = {
+  const ch5 = {
     mg1: {
       title: 'ミニゲーム①　字牌の見た目を覚えよう',
       instruction: '裏向きの牌をめくって<strong>同じ字牌2枚</strong>を揃えよう！',
@@ -165,7 +165,7 @@ const Chapters = (() => {
   // ===== Chapter 5: Yakuhai =====
   // 役牌は「役牌（三元牌）」「役牌（風牌）」の2つの役として扱う。
   // answer: 'dragon'=役牌（三元牌）／'wind'=役牌（風牌）／'none'=役牌でない
-  const ch5 = {
+  const ch6 = {
     // 2026-09-04：三元牌と風牌を別々に学べるよう、3つに分けた。
     // 1つの問題で3択にしていたため、どちらのルールでつまずいたのか
     // 分からなかった。①三元牌だけ ②風牌だけ ③まとめ、の順にする。
@@ -213,7 +213,7 @@ const Chapters = (() => {
   };
 
   // ===== Chapter 6: Naki (Pon/Chi) =====
-  const ch6 = {
+  const ch7 = {
     mg1: {
       title: 'ミニゲーム①　ポン？チー？鳴けない？',
       instruction: '捨て牌を見て正しい行動を選ぼう！<br>' +
@@ -356,7 +356,7 @@ const Chapters = (() => {
   };
 
   // ===== Chapter 7: Review test =====
-  const ch7 = {
+  const ch10 = {
     title: '道場チャレンジ　初級試験',
     instruction: '10問に答えて段位を目指そう！',
     questions: [
@@ -373,8 +373,12 @@ const Chapters = (() => {
     ],
   };
 
-  // ===== Chapter 8: 初心者向けの役（立直・タンヤオ・平和） =====
-  const ch8 = {
+  // ===== Chapter 1: 対局のルール =====
+  // 2026-09-07：役とアガリ形は教えているのに、一局をどう回すかを教える場所が
+  // どこにも無かった。フリテン・役なし・配牌・流局は12章のどこにも出てこず、
+  // フリテンは用語集に1行あるだけだった。対局画面には「役なし」「ツモのみ」の
+  // 印が出るのに意味を知る場所が無い状態だったので、いちばん最初の章にした。
+  const ch1 = {
     mgs: [
       {
         type: 'choice',
@@ -400,114 +404,13 @@ const Chapters = (() => {
           { text: '自分で山から引いてきた牌でアガった。', choices: ['ロン','ツモ'], answer: 'ツモ', fb: '自分で引いてアガるのがツモ。' },
           { text: '点数を、捨てた1人だけが払うのはどっち？', choices: ['ロン','ツモ'], answer: 'ロン', fb: 'ロンは、アガリ牌を捨てた人が1人で全部払うよ。' },
           { text: '点数を、ほかの3人で分けて払うのはどっち？', choices: ['ロン','ツモ'], answer: 'ツモ', fb: 'ツモは全員から少しずつもらう。だれも1人で大きく損をしないよ。' },
-          { text: '門前清自摸和（メンゼンツモ）が付くのはどっち？', choices: ['ロン','ツモ'], answer: 'ツモ', fb: '鳴いていなければ、ツモでアガるだけで1翻付く。ツモは役が付きやすい。' },
-          { text: 'フリテンのときにできないのはどっち？', choices: ['ロン','ツモ'], answer: 'ロン', fb: 'フリテンでもツモならアガれる。できないのはロンだけだよ。' },
+          { text: '鳴いていなければ、それだけで役が1つ付くのはどっち？', choices: ['ロン','ツモ'], answer: 'ツモ', fb: '鳴かずにツモでアガると、それだけで役が1つ付く。ツモは役に困りにくいよ。' },
+          { text: '自分の番でなくてもアガれるのはどっち？', choices: ['ロン','ツモ'], answer: 'ロン', fb: 'ロンは他の人が捨てた瞬間に宣言する。自分の番を待たなくていいよ。' },
         ],
       },
       {
         type: 'yn',
-        title: 'ミニゲーム③　タンヤオに使える？',
-        instruction: '表示の3枚は<strong>タンヤオ</strong>に使える？（2〜8の数牌だけならOK。1・9・字牌が混じるとNG）',
-        yesLabel: '○ 使える', noLabel: '✕ 使えない',
-        passNeeded: 6,
-        questions: [
-          { tiles: [{suit:'man',num:2},{suit:'man',num:3},{suit:'man',num:4}], answer: true,  fb: '2・3・4萬は全部2〜8。タンヤオに使えるよ！' },
-          { tiles: [{suit:'pin',num:1},{suit:'pin',num:2},{suit:'pin',num:3}], answer: false, fb: '1筒が入っている！1や9が混じるとタンヤオにできない。' },
-          { tiles: [{suit:'sou',num:6},{suit:'sou',num:7},{suit:'sou',num:8}], answer: true,  fb: '6・7・8索は全部2〜8。タンヤオOK！' },
-          { tiles: [{suit:'man',num:7},{suit:'man',num:8},{suit:'man',num:9}], answer: false, fb: '9萬が入っている！9はタンヤオNG。' },
-          { tiles: [{suit:'dragon',num:1},{suit:'dragon',num:1},{suit:'dragon',num:1}], answer: false, fb: '白は字牌。字牌が入るとタンヤオにはできない。' },
-          { tiles: [{suit:'pin',num:4},{suit:'pin',num:5},{suit:'pin',num:6}], answer: true,  fb: '4・5・6筒は中張牌（2〜8）だけ。タンヤオOK！' },
-          { tiles: [{suit:'sou',num:1},{suit:'sou',num:1},{suit:'sou',num:1}], answer: false, fb: '1索は端の牌。1が入るとタンヤオにできない。' },
-          { tiles: [{suit:'man',num:3},{suit:'man',num:4},{suit:'man',num:5}], answer: true,  fb: '3・4・5萬はすべて2〜8。タンヤオに使える！' },
-        ],
-      },
-      {
-        type: 'yn',
-        title: 'ミニゲーム④　平和の頭になれる？',
-        instruction: 'この2枚の頭（雀頭）は<strong>平和</strong>に使える？（場風:東、自風:南。三元牌と場風・自風の風牌はNG）',
-        yesLabel: '○ 使える', noLabel: '✕ 使えない',
-        passNeeded: 6,
-        questions: [
-          { tiles: [{suit:'pin',num:5},{suit:'pin',num:5}], answer: true, fb: '数牌の頭はいつでもOK！平和の頭に使える。' },
-          { tiles: [{suit:'dragon',num:1},{suit:'dragon',num:1}], answer: false, fb: '白（三元牌）の頭は役牌になるからNG。平和は頭が役牌だと成立しない。' },
-          { tiles: [{suit:'man',num:3},{suit:'man',num:3}], answer: true, fb: '3萬は数牌。頭にしてもOK！' },
-          { tiles: [{suit:'wind',num:1},{suit:'wind',num:1}], answer: false, fb: '東は場風！場風・自風の頭は役牌になるからNG。' },
-          { tiles: [{suit:'wind',num:2},{suit:'wind',num:2}], answer: false, fb: '南は自風！自分の風の頭も役牌になるからNG。' },
-          { tiles: [{suit:'dragon',num:2},{suit:'dragon',num:2}], answer: false, fb: '發（三元牌）もNG。白・發・中はいつでも役牌になる。' },
-          { tiles: [{suit:'wind',num:3},{suit:'wind',num:3}], answer: true, fb: '西は場風でも自風でもないからOK！役牌にならない風牌なら頭に使える。' },
-          { tiles: [{suit:'sou',num:9},{suit:'sou',num:9}], answer: true, fb: '9索は数牌。1・9でも頭ならタンヤオと違ってOK！平和は頭の数字を問わない。' },
-        ],
-      },
-      {
-        type: 'yn',
-        title: 'ミニゲーム⑤　門前清自摸和になる？',
-        instruction: 'つぎの状況は<strong>門前清自摸和</strong>（メンゼンツモ）になる？（鳴きなし＋ツモ和了で成立）',
-        yesLabel: '○ 成立する', noLabel: '✕ 成立しない',
-        passNeeded: 6,
-        questions: [
-          { text: '鳴き（ポン・チー）なしでツモ和了した。', answer: true, fb: '門前（鳴きなし）でツモなら門前清自摸和が成立！1翻。' },
-          { text: 'ポンをしている状態でツモ和了した。', answer: false, fb: '鳴いている（ポンした）と門前清自摸和は成立しない。門前限定の役だよ。' },
-          { text: '鳴きなしでロン和了した。', answer: false, fb: 'ロンだと成立しない！門前清自摸和は「ツモ」で和了したときだけの役。' },
-          { text: 'チーをしている状態でツモ和了した。', answer: false, fb: 'チーも「鳴き」！鳴きが1つでもあると門前清自摸和は成立しない。' },
-          { text: '鳴きなしでツモ和了し、タンヤオも同時に成立していた。', answer: true, fb: '門前でツモなら成立！他の役（タンヤオなど）と同時に成立してもOK、翻数は合計される。' },
-          { text: '暗カン（鳴かずに行うカン）だけをして、鳴きなしでツモ和了した。', answer: true, fb: '暗カンは「鳴き」に数えない！門前を崩さないので門前清自摸和も成立するよ。' },
-          { text: '鳴きなしでツモ和了し、役牌の刻子も入っていた。', answer: true, fb: '門前＋ツモなら成立！役牌との複合もよくあるパターン。' },
-          { text: 'ポンをしている状態でロン和了した。', answer: false, fb: '鳴きあり＋ロンなので、門前清自摸和は成立しない（他の役があれば別）。' },
-        ],
-      },
-      {
-        type: 'yn',
-        title: 'ミニゲーム⑥　一発になる？',
-        instruction: 'つぎの状況は<strong>一発</strong>（イッパツ）になる？（立直宣言後、一巡（イチジュン）以内・鳴きなしで和了すると成立）',
-        yesLabel: '○ 成立する', noLabel: '✕ 成立しない',
-        passNeeded: 6,
-        questions: [
-          { text: '立直を宣言した直後の一巡目（イチジュンメ）で、誰も鳴かずにツモ和了した。', answer: true, fb: '立直後、一巡（イチジュン）以内・鳴きなしでツモ！一発成立、1翻。' },
-          { text: '立直を宣言した直後の一巡目（イチジュンメ）で、誰も鳴かずにロン和了した。', answer: true, fb: '一発はツモでもロンでもOK！鳴きが入らなければ成立するよ。' },
-          { text: '立直を宣言した後、他家がポンをしてから和了した。', answer: false, fb: '誰かが鳴く（ポン・チー・カン）と、その時点で一発は消える。' },
-          { text: '立直を宣言してから二巡目（ニジュンメ）以降に和了した。', answer: false, fb: '一巡（イチジュン）以内でないと一発は成立しない！二巡目（ニジュンメ）以降はアウト。' },
-          { text: '立直を宣言した直後の一巡目（イチジュンメ）で、他家がチーをしてから自分がロン和了した。', answer: false, fb: 'チーも「鳴き」！間に鳴きが入ると一発は消える。' },
-          { text: '立直を宣言した直後の一巡目（イチジュンメ）で、誰も鳴かずにツモ和了した（ダブルリーチだった）。', answer: true, fb: 'ダブルリーチと一発は同時に成立できる！鳴きなし・一巡（イチジュン）以内が条件。' },
-          { text: '立直を宣言した後、自分が暗カンをしてからツモ和了した。', answer: false, fb: '自分の暗カンも「鳴き」に数えるので一発は消える。' },
-          { text: '立直を宣言した直後の一巡目（イチジュンメ）で、誰も鳴かずに他家の捨て牌でロン和了した。', answer: true, fb: '鳴きが一切なければ、他家の捨て牌でのロンでも一発成立！' },
-        ],
-      },
-      {
-        type: 'yn',
-        title: 'ミニゲーム⑦　立直になる？',
-        instruction: 'つぎの状況は<strong>立直</strong>（リーチ）を宣言できる？（門前でテンパイしていることが条件。1000点の供託が必要）',
-        yesLabel: '○ 宣言できる', noLabel: '✕ できない',
-        passNeeded: 5,
-        questions: [
-          { text: '門前（鳴きなし）でテンパイしている。持ち点は十分ある。', answer: true, fb: '門前でテンパイ！立直を宣言できるよ。' },
-          { text: 'ポンをしている（鳴きあり）状態でテンパイしている。', answer: false, fb: '鳴いている（門前でない）と立直は宣言できない。' },
-          { text: '門前だが、まだテンパイしていない。', answer: false, fb: 'テンパイしていないと立直は宣言できない。' },
-          { text: '門前でテンパイしていて、持ち点が1000点以上ある。', answer: true, fb: '門前＋テンパイ＋1000点以上！立直の条件がそろっている。' },
-          { text: '門前でテンパイしているが、持ち点が0点しかない。', answer: false, fb: '立直には1000点の供託が必要。点数が足りないと宣言できない。' },
-          { text: 'チーをしている状態でテンパイしている。', answer: false, fb: 'チーも鳴き！門前でなくなるので立直は宣言できない。' },
-        ],
-      },
-      {
-        type: 'choice',
-        title: 'ミニゲーム⑧　役を当てよう',
-        instruction: '説明に合う役を選ぼう！',
-        passNeeded: 3,
-        questions: [
-          { text: '門前（鳴きなし）でテンパイし、1000点を出して宣言する役は？', choices: ['立直','タンヤオ','平和','役牌','門前清自摸和','一発'], answer: '立直', fb: '門前でテンパイしたら立直（リーチ）！1000点を供託して宣言するよ。' },
-          { text: '2〜8の数牌だけ（1・9・字牌なし）で作る役は？', choices: ['立直','タンヤオ','平和','役牌','門前清自摸和','一発'], answer: 'タンヤオ', fb: '断么九（タンヤオ）！中張牌だけで作るよ。' },
-          { text: '全部順子・頭が役牌以外・両面待ち、の3条件で成立する役は？', choices: ['立直','タンヤオ','平和','役牌','門前清自摸和','一発'], answer: '平和', fb: '平和（ピンフ）！3つの条件すべてが必要だよ。' },
-          { text: '白・發・中などの同じ牌3枚（刻子）で成立する役は？', choices: ['立直','タンヤオ','平和','役牌','門前清自摸和','一発'], answer: '役牌', fb: '役牌（ヤクハイ）！三元牌や場風・自風の刻子で成立。' },
-          { text: '鳴かずにツモで和了したときだけ成立する役は？', choices: ['立直','タンヤオ','平和','役牌','門前清自摸和','一発'], answer: '門前清自摸和', fb: '門前清自摸和（メンゼンツモ）！門前でツモ和了したときだけの1翻役。' },
-          { text: '立直宣言後、一巡（イチジュン）以内・鳴きなしで和了すると成立する役は？', choices: ['立直','門前清自摸和','一発','役牌'], answer: '一発', fb: '一発（イッパツ）！立直とセットでよく出る1翻役。' },
-        ],
-      },
-      // 2026-09-07：ここまで「どんな役があるか」だけを教えていて、
-      // 「役が無いとアガれない」「フリテンだとロンできない」を教える場所が
-      // どこにも無かった。対局画面には「役なし」「ツモのみ」の印が出るのに、
-      // 意味を知る場所が無い状態だったので足した。
-      {
-        type: 'yn',
-        title: 'ミニゲーム⑨　この手はアガれる？',
+        title: 'ミニゲーム③　この手はアガれる？',
         instruction: '麻雀は<strong>役が1つも無いとアガれない</strong>。形がそろっていてもダメ。つぎの場面はアガれる？',
         yesLabel: '○ アガれる', noLabel: '✕ アガれない',
         passNeeded: 6,
@@ -524,7 +427,7 @@ const Chapters = (() => {
       },
       {
         type: 'yn',
-        title: 'ミニゲーム⑩　この場面はロンできる？',
+        title: 'ミニゲーム④　この場面はロンできる？',
         instruction: '自分が捨てた牌がアガリ牌に入っていると<strong>ロンできない</strong>（フリテン）。つぎの場面はロンできる？',
         yesLabel: '○ ロンできる', noLabel: '✕ できない',
         passNeeded: 6,
@@ -537,6 +440,109 @@ const Chapters = (() => {
           { text: '待ちは1萬と4萬。自分の河には7萬しか捨てていない。他家が4萬を捨てた。', answer: true, fb: '捨てているのが待ちに無い牌なら、フリテンにはならない。' },
           { text: 'アガリ牌が出たのにロンせず見逃した。同じ巡のうちに、また別のアガリ牌が出た。', answer: false, fb: '見逃すとその巡のあいだフリテンになる。自分の番が来るまではロンできない。' },
           { text: '立直をしたあと、アガリ牌が出たのに見逃した。その後にまたアガリ牌が出た。', answer: false, fb: '<strong>立直後に見逃すと、その局はずっとロンできない。</strong>立直中は見逃さないよう気をつけよう。' },
+        ],
+      },
+    ],
+  };
+
+  // ===== Chapter 8: 基本の役（立直・タンヤオ・平和） =====
+  const ch8 = {
+    mgs: [
+      {
+        type: 'yn',
+        title: 'ミニゲーム①　タンヤオに使える？',
+        instruction: '表示の3枚は<strong>タンヤオ</strong>に使える？（2〜8の数牌だけならOK。1・9・字牌が混じるとNG）',
+        yesLabel: '○ 使える', noLabel: '✕ 使えない',
+        passNeeded: 6,
+        questions: [
+          { tiles: [{suit:'man',num:2},{suit:'man',num:3},{suit:'man',num:4}], answer: true,  fb: '2・3・4萬は全部2〜8。タンヤオに使えるよ！' },
+          { tiles: [{suit:'pin',num:1},{suit:'pin',num:2},{suit:'pin',num:3}], answer: false, fb: '1筒が入っている！1や9が混じるとタンヤオにできない。' },
+          { tiles: [{suit:'sou',num:6},{suit:'sou',num:7},{suit:'sou',num:8}], answer: true,  fb: '6・7・8索は全部2〜8。タンヤオOK！' },
+          { tiles: [{suit:'man',num:7},{suit:'man',num:8},{suit:'man',num:9}], answer: false, fb: '9萬が入っている！9はタンヤオNG。' },
+          { tiles: [{suit:'dragon',num:1},{suit:'dragon',num:1},{suit:'dragon',num:1}], answer: false, fb: '白は字牌。字牌が入るとタンヤオにはできない。' },
+          { tiles: [{suit:'pin',num:4},{suit:'pin',num:5},{suit:'pin',num:6}], answer: true,  fb: '4・5・6筒は中張牌（2〜8）だけ。タンヤオOK！' },
+          { tiles: [{suit:'sou',num:1},{suit:'sou',num:1},{suit:'sou',num:1}], answer: false, fb: '1索は端の牌。1が入るとタンヤオにできない。' },
+          { tiles: [{suit:'man',num:3},{suit:'man',num:4},{suit:'man',num:5}], answer: true,  fb: '3・4・5萬はすべて2〜8。タンヤオに使える！' },
+        ],
+      },
+      {
+        type: 'yn',
+        title: 'ミニゲーム②　平和の頭になれる？',
+        instruction: 'この2枚の頭（雀頭）は<strong>平和</strong>に使える？（場風:東、自風:南。三元牌と場風・自風の風牌はNG）',
+        yesLabel: '○ 使える', noLabel: '✕ 使えない',
+        passNeeded: 6,
+        questions: [
+          { tiles: [{suit:'pin',num:5},{suit:'pin',num:5}], answer: true, fb: '数牌の頭はいつでもOK！平和の頭に使える。' },
+          { tiles: [{suit:'dragon',num:1},{suit:'dragon',num:1}], answer: false, fb: '白（三元牌）の頭は役牌になるからNG。平和は頭が役牌だと成立しない。' },
+          { tiles: [{suit:'man',num:3},{suit:'man',num:3}], answer: true, fb: '3萬は数牌。頭にしてもOK！' },
+          { tiles: [{suit:'wind',num:1},{suit:'wind',num:1}], answer: false, fb: '東は場風！場風・自風の頭は役牌になるからNG。' },
+          { tiles: [{suit:'wind',num:2},{suit:'wind',num:2}], answer: false, fb: '南は自風！自分の風の頭も役牌になるからNG。' },
+          { tiles: [{suit:'dragon',num:2},{suit:'dragon',num:2}], answer: false, fb: '發（三元牌）もNG。白・發・中はいつでも役牌になる。' },
+          { tiles: [{suit:'wind',num:3},{suit:'wind',num:3}], answer: true, fb: '西は場風でも自風でもないからOK！役牌にならない風牌なら頭に使える。' },
+          { tiles: [{suit:'sou',num:9},{suit:'sou',num:9}], answer: true, fb: '9索は数牌。1・9でも頭ならタンヤオと違ってOK！平和は頭の数字を問わない。' },
+        ],
+      },
+      {
+        type: 'yn',
+        title: 'ミニゲーム③　門前清自摸和になる？',
+        instruction: 'つぎの状況は<strong>門前清自摸和</strong>（メンゼンツモ）になる？（鳴きなし＋ツモ和了で成立）',
+        yesLabel: '○ 成立する', noLabel: '✕ 成立しない',
+        passNeeded: 6,
+        questions: [
+          { text: '鳴き（ポン・チー）なしでツモ和了した。', answer: true, fb: '門前（鳴きなし）でツモなら門前清自摸和が成立！1翻。' },
+          { text: 'ポンをしている状態でツモ和了した。', answer: false, fb: '鳴いている（ポンした）と門前清自摸和は成立しない。門前限定の役だよ。' },
+          { text: '鳴きなしでロン和了した。', answer: false, fb: 'ロンだと成立しない！門前清自摸和は「ツモ」で和了したときだけの役。' },
+          { text: 'チーをしている状態でツモ和了した。', answer: false, fb: 'チーも「鳴き」！鳴きが1つでもあると門前清自摸和は成立しない。' },
+          { text: '鳴きなしでツモ和了し、タンヤオも同時に成立していた。', answer: true, fb: '門前でツモなら成立！他の役（タンヤオなど）と同時に成立してもOK、翻数は合計される。' },
+          { text: '暗カン（鳴かずに行うカン）だけをして、鳴きなしでツモ和了した。', answer: true, fb: '暗カンは「鳴き」に数えない！門前を崩さないので門前清自摸和も成立するよ。' },
+          { text: '鳴きなしでツモ和了し、役牌の刻子も入っていた。', answer: true, fb: '門前＋ツモなら成立！役牌との複合もよくあるパターン。' },
+          { text: 'ポンをしている状態でロン和了した。', answer: false, fb: '鳴きあり＋ロンなので、門前清自摸和は成立しない（他の役があれば別）。' },
+        ],
+      },
+      {
+        type: 'yn',
+        title: 'ミニゲーム④　一発になる？',
+        instruction: 'つぎの状況は<strong>一発</strong>（イッパツ）になる？（立直宣言後、一巡（イチジュン）以内・鳴きなしで和了すると成立）',
+        yesLabel: '○ 成立する', noLabel: '✕ 成立しない',
+        passNeeded: 6,
+        questions: [
+          { text: '立直を宣言した直後の一巡目（イチジュンメ）で、誰も鳴かずにツモ和了した。', answer: true, fb: '立直後、一巡（イチジュン）以内・鳴きなしでツモ！一発成立、1翻。' },
+          { text: '立直を宣言した直後の一巡目（イチジュンメ）で、誰も鳴かずにロン和了した。', answer: true, fb: '一発はツモでもロンでもOK！鳴きが入らなければ成立するよ。' },
+          { text: '立直を宣言した後、他家がポンをしてから和了した。', answer: false, fb: '誰かが鳴く（ポン・チー・カン）と、その時点で一発は消える。' },
+          { text: '立直を宣言してから二巡目（ニジュンメ）以降に和了した。', answer: false, fb: '一巡（イチジュン）以内でないと一発は成立しない！二巡目（ニジュンメ）以降はアウト。' },
+          { text: '立直を宣言した直後の一巡目（イチジュンメ）で、他家がチーをしてから自分がロン和了した。', answer: false, fb: 'チーも「鳴き」！間に鳴きが入ると一発は消える。' },
+          { text: '立直を宣言した直後の一巡目（イチジュンメ）で、誰も鳴かずにツモ和了した（ダブルリーチだった）。', answer: true, fb: 'ダブルリーチと一発は同時に成立できる！鳴きなし・一巡（イチジュン）以内が条件。' },
+          { text: '立直を宣言した後、自分が暗カンをしてからツモ和了した。', answer: false, fb: '自分の暗カンも「鳴き」に数えるので一発は消える。' },
+          { text: '立直を宣言した直後の一巡目（イチジュンメ）で、誰も鳴かずに他家の捨て牌でロン和了した。', answer: true, fb: '鳴きが一切なければ、他家の捨て牌でのロンでも一発成立！' },
+        ],
+      },
+      {
+        type: 'yn',
+        title: 'ミニゲーム⑤　立直になる？',
+        instruction: 'つぎの状況は<strong>立直</strong>（リーチ）を宣言できる？（門前でテンパイしていることが条件。1000点の供託が必要）',
+        yesLabel: '○ 宣言できる', noLabel: '✕ できない',
+        passNeeded: 5,
+        questions: [
+          { text: '門前（鳴きなし）でテンパイしている。持ち点は十分ある。', answer: true, fb: '門前でテンパイ！立直を宣言できるよ。' },
+          { text: 'ポンをしている（鳴きあり）状態でテンパイしている。', answer: false, fb: '鳴いている（門前でない）と立直は宣言できない。' },
+          { text: '門前だが、まだテンパイしていない。', answer: false, fb: 'テンパイしていないと立直は宣言できない。' },
+          { text: '門前でテンパイしていて、持ち点が1000点以上ある。', answer: true, fb: '門前＋テンパイ＋1000点以上！立直の条件がそろっている。' },
+          { text: '門前でテンパイしているが、持ち点が0点しかない。', answer: false, fb: '立直には1000点の供託が必要。点数が足りないと宣言できない。' },
+          { text: 'チーをしている状態でテンパイしている。', answer: false, fb: 'チーも鳴き！門前でなくなるので立直は宣言できない。' },
+        ],
+      },
+      {
+        type: 'choice',
+        title: 'ミニゲーム⑥　役を当てよう',
+        instruction: '説明に合う役を選ぼう！',
+        passNeeded: 3,
+        questions: [
+          { text: '門前（鳴きなし）でテンパイし、1000点を出して宣言する役は？', choices: ['立直','タンヤオ','平和','役牌','門前清自摸和','一発'], answer: '立直', fb: '門前でテンパイしたら立直（リーチ）！1000点を供託して宣言するよ。' },
+          { text: '2〜8の数牌だけ（1・9・字牌なし）で作る役は？', choices: ['立直','タンヤオ','平和','役牌','門前清自摸和','一発'], answer: 'タンヤオ', fb: '断么九（タンヤオ）！中張牌だけで作るよ。' },
+          { text: '全部順子・頭が役牌以外・両面待ち、の3条件で成立する役は？', choices: ['立直','タンヤオ','平和','役牌','門前清自摸和','一発'], answer: '平和', fb: '平和（ピンフ）！3つの条件すべてが必要だよ。' },
+          { text: '白・發・中などの同じ牌3枚（刻子）で成立する役は？', choices: ['立直','タンヤオ','平和','役牌','門前清自摸和','一発'], answer: '役牌', fb: '役牌（ヤクハイ）！三元牌や場風・自風の刻子で成立。' },
+          { text: '鳴かずにツモで和了したときだけ成立する役は？', choices: ['立直','タンヤオ','平和','役牌','門前清自摸和','一発'], answer: '門前清自摸和', fb: '門前清自摸和（メンゼンツモ）！門前でツモ和了したときだけの1翻役。' },
+          { text: '立直宣言後、一巡（イチジュン）以内・鳴きなしで和了すると成立する役は？', choices: ['立直','門前清自摸和','一発','役牌'], answer: '一発', fb: '一発（イッパツ）！立直とセットでよく出る1翻役。' },
         ],
       },
     ],
@@ -589,7 +595,7 @@ const Chapters = (() => {
   };
 
   // ===== Chapter 10: 中級者向けの役（一盃口・七対子・対々和） =====
-  const ch10 = {
+  const ch11 = {
     mgs: [
       {
         type: 'yn',
@@ -760,7 +766,7 @@ const Chapters = (() => {
   };
 
   // ===== Chapter 11: 上級者向けの役（清一色・二盃口・三槓子） =====
-  const ch11 = {
+  const ch12 = {
     mgs: [
       {
         type: 'yn',
@@ -896,7 +902,7 @@ const Chapters = (() => {
   };
 
   // ===== Chapter 12: 三人麻雀入門（北抜き・3人対局・三麻ルール） =====
-  const ch12 = {
+  const ch13 = {
     mgs: [
       {
         type: 'yn',
@@ -927,5 +933,5 @@ const Chapters = (() => {
     ],
   };
 
-  return { ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10, ch11, ch12, HONOR_NAMES, COLOR_NAMES, SUIT_LABELS };
+  return { ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10, ch11, ch12, ch13, HONOR_NAMES, COLOR_NAMES, SUIT_LABELS };
 })();

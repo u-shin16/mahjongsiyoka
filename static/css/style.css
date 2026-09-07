@@ -7132,3 +7132,45 @@ body.is-battle-page .jt-table {
   .fr-choice-emoji { font-size: 1.8rem; }
   .fr-choice-title { font-size: 1rem; }
 }
+
+
+/* ============================================================
+   CHAPTER TIERS: 章選択を必修・実戦・発展・腕試しの4つに分ける
+   2026-09-07に追加。12章が一列に並ぶだけで、どこまでやれば打てるのかが
+   画面のどこにも書いていなかったため。
+   ============================================================ */
+.chapter-tier { margin-bottom: 26px; }
+.chapter-tier:last-child { margin-bottom: 0; }
+
+.chapter-tier-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 2px 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.chapter-tier-label {
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+}
+.chapter-tier-sub {
+  font-size: 0.78rem;
+  color: #8ab89c;
+  flex: 1;
+}
+.chapter-tier-count {
+  font-size: 0.78rem;
+  color: #8ab89c;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 必修だけは目立たせる。ここを終えれば打てる、と分かるように */
+.chapter-tier.tier-core .chapter-tier-head { border-bottom-color: rgba(255,215,106,0.5); }
+.chapter-tier.tier-core .chapter-tier-label { color: #ffe38a; }
+
+.chapter-tier.tier-advanced .chapter-tier-label,
+.chapter-tier.tier-test .chapter-tier-label { color: #a8c8b0; }

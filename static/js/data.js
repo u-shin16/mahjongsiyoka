@@ -8,19 +8,28 @@ var _w = function(n) { return {suit:'wind',num:n}; };  // 1=東2=南3=西4=北
 var _d = function(n) { return {suit:'dragon',num:n}; }; // 1=白2=發3=中
 
 var GameData = (function() {
+  // 2026-09-07：12章を13章に組み替えた。
+  // それまで「どこまでやれば麻雀が打てるのか」が画面のどこにも書いていなく、
+  // 12章あるのを見た時点で諦めてしまう作りだった。
+  // tier で4つに分け、必修（1〜6章）を終えれば打てると言い切れるようにした。
+  //   core     … 必修。これだけで麻雀が打てる
+  //   practice … 実戦。覚えると強くなる
+  //   advanced … 発展。知らなくても打てる
+  //   test     … 腕試し
   var CHAPTERS = [
-    { id:1, title:'一種類の数字だけで\nアガってみよう', short:'数字セット入門', diff:1, min:5, topics:['3枚セット','頭（2枚）','アガリ形'] },
-    { id:2, title:'3種類の色の数字で\nアガってみよう', short:'色付き牌', diff:1, min:7, topics:['色が違うと別の牌','同じ色のみ順子OK','アガリ形完成'] },
-    { id:3, title:'筒子・索子・萬子で\nアガってみよう', short:'本物の麻雀牌', diff:2, min:8, topics:['筒子・索子・萬子の見た目','牌の種類判定','本物風アガリ'] },
-    { id:4, title:'字牌を覚えよう', short:'字牌', diff:2, min:8, topics:['字牌は順子にならない','神経衰弱','刻子を作る'] },
-    { id:5, title:'役牌を作ってみよう', short:'役牌', diff:2, min:4, topics:['三元牌（白・發・中）','風牌','役牌の判定'] },
-    { id:6, title:'鳴きを使ってみよう', short:'ポン・チー・カン', diff:3, min:6, topics:['ポン・チーの判定','鳴けない場合の判定','カンの判定'] },
-    { id:7, title:'復習テスト\n道場チャレンジ', short:'道場チャレンジ', diff:2, min:10, topics:['全章復習','10問テスト','段位評価'] },
-    { id:8, title:'対局のルールと\n初心者向けの役', short:'ルールと役', diff:3, min:34, topics:['対局の進め方','ロンとツモ','役が無いとアガれない','フリテン','立直・タンヤオ・平和'] },
-    { id:9, title:'翻を数えてみよう', short:'翻計算', diff:3, min:10, topics:['翻数','ドラ','点数'] },
-    { id:10, title:'中級者向けの役', short:'中級役', diff:3, min:40, topics:['一盃口','三色同順','三色同刻','対々和','一気通貫','三暗刻'] },
-    { id:11, title:'上級者向けの役', short:'上級役', diff:3, min:35, topics:['清一色','混一色','二盃口','三槓子','純全帯幺九'] },
-    { id:12, title:'三人麻雀入門', short:'三麻', diff:3, min:12, topics:['北抜き','3人対局','三麻ルール'] },
+    { id:1,  tier:'core',     title:'対局のルールを\n覚えよう', short:'対局のルール', diff:1, min:8, topics:['対局の進め方','ロンとツモ','役が無いとアガれない','フリテン'] },
+    { id:2,  tier:'core',     title:'一種類の数字だけで\nアガってみよう', short:'数字セット入門', diff:1, min:5, topics:['3枚セット','頭（2枚）','アガリ形'] },
+    { id:3,  tier:'core',     title:'3種類の色の数字で\nアガってみよう', short:'色付き牌', diff:1, min:7, topics:['色が違うと別の牌','同じ色のみ順子OK','アガリ形完成'] },
+    { id:4,  tier:'core',     title:'筒子・索子・萬子で\nアガってみよう', short:'本物の麻雀牌', diff:2, min:8, topics:['筒子・索子・萬子の見た目','牌の種類判定','本物風アガリ'] },
+    { id:5,  tier:'core',     title:'字牌を覚えよう', short:'字牌', diff:2, min:8, topics:['字牌は順子にならない','神経衰弱','刻子を作る'] },
+    { id:6,  tier:'core',     title:'役牌を作ってみよう', short:'役牌', diff:2, min:4, topics:['三元牌（白・發・中）','風牌','役牌の判定'] },
+    { id:7,  tier:'practice', title:'鳴きを使ってみよう', short:'ポン・チー・カン', diff:3, min:6, topics:['ポン・チーの判定','鳴けない場合の判定','カンの判定'] },
+    { id:8,  tier:'practice', title:'初心者向けの役', short:'基本の役', diff:3, min:20, topics:['立直','タンヤオ','平和','門前清自摸和','一発'] },
+    { id:9,  tier:'practice', title:'翻を数えてみよう', short:'翻とドラと点数', diff:3, min:10, topics:['翻数','ドラ','点数'] },
+    { id:10, tier:'test',     title:'復習テスト\n道場チャレンジ', short:'道場チャレンジ', diff:2, min:10, topics:['全章復習','10問テスト','段位評価'] },
+    { id:11, tier:'advanced', title:'中級者向けの役', short:'中級役', diff:3, min:40, topics:['一盃口','三色同順','三色同刻','対々和','一気通貫','三暗刻'] },
+    { id:12, tier:'advanced', title:'上級者向けの役', short:'上級役', diff:3, min:35, topics:['清一色','混一色','二盃口','三槓子','純全帯幺九'] },
+    { id:13, tier:'advanced', title:'三人麻雀入門', short:'三麻', diff:3, min:12, topics:['北抜き','3人対局','三麻ルール'] },
   ];
 
   var YAKU = [
