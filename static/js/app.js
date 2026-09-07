@@ -2065,8 +2065,11 @@ var App = {
     var card = function(c) {
         var stars = Progress.getStars(c.id);
         var cleared = stars > 0;
-        // 前の章をクリアするまでロック（第1章は常に挑戦可能）
-        var locked = c.id > 1 && !Progress.isCleared(c.id - 1);
+        // 前の章をクリアするまでロック（第1章は常に挑戦可能）。
+        // ただし2026-09-07：一度クリアした章は前の章の状態にかかわらず開ける。
+        // 章を組み替えたとき、クリア済みの章まで新しい第1章の後ろでロックされ、
+        // 押しても何も起きない状態になったため。
+        var locked = c.id > 1 && !cleared && !Progress.isCleared(c.id - 1);
         var rightCol = '';
         if (cleared) {
           rightCol = '<div class="chapter-cleared-col">' +
@@ -2162,8 +2165,9 @@ var App = {
   _renderChapterGame: function(main, id, startMg) {
     var ch = GameData.CHAPTERS.find(function(c) { return c.id === id; });
     if (!ch) { main.innerHTML = '<p style="color:red">章が見つかりません</p>'; return; }
-    // 前の章をクリアしていない章はロック（直接遷移もブロック）
-    if (id > 1 && !Progress.isCleared(id - 1)) {
+    // 前の章をクリアしていない章はロック（直接遷移もブロック）。
+    // クリア済みの章はいつでも復習できる
+    if (id > 1 && !Progress.isCleared(id) && !Progress.isCleared(id - 1)) {
       main.innerHTML = '<div class="coming-soon"><div class="big-icon">🔒</div>' +
         '<p>第'+id+'章はまだロックされています。<br><strong>第'+(id-1)+'章</strong>をクリアすると挑戦できます。</p><br>' +
         '<button class="btn btn-primary" id="btnGoCh'+(id-1)+'">第'+(id-1)+'章に挑戦</button> ' +
