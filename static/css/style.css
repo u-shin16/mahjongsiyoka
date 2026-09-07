@@ -4372,6 +4372,15 @@ body.is-battle-page .app-main.battle-main {
   z-index: 5;
 }
 
+/* 手牌にカーソルを合わせたとき、河にある同じ牌を光らせる。
+   ロンできる牌のライトアップ（金色・z-index 5）と区別するため青にし、
+   両方が当たったときは金色が上に出るよう z-index を1つ下げている。 */
+.disc-river .river-tile.river-same {
+  box-shadow: 0 0 0 2px #7ec8ff, 0 0 12px 4px rgba(110,190,255,0.75);
+  filter: brightness(1.25);
+  z-index: 4;
+}
+
 /* ─────────────────────────────────
    自分（下/self）：6列、中央下部
 ───────────────────────────────── */

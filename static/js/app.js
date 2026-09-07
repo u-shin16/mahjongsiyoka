@@ -1592,6 +1592,23 @@ function renderHiddenHand(prefix, count, max) {
 // 列は26pxのままなので、そのままだと両隣に5pxずつ食い込む。
 // 本物の麻雀と同じように、その行の後ろの牌を9pxずらして場所を作る
 // （列を広げると通常の牌の間にすき間ができ、牌を縮めると1枚だけ小さくなる）。
+// 手牌にカーソルを合わせたとき、同じ牌が河（自分・相手とも）に
+// すでに出ていれば、その牌を光らせる。
+// 何枚切れているかは初心者がいちばん分からないところなので、
+// 数を出すのではなく「そこにある」と見せるだけにしている。
+// ロンできる牌のライトアップ（金色）と混ざらないよう、色は青にしてある。
+function highlightSameTilesInRiver(tile) {
+  clearRiverHighlight();
+  if (!tile || tile.suit == null || tile.num == null) return;
+  var sel = '.disc-river .river-tile[data-suit="' + tile.suit + '"][data-num="' + tile.num + '"]';
+  document.querySelectorAll(sel).forEach(function(el) { el.classList.add('river-same'); });
+}
+function clearRiverHighlight() {
+  document.querySelectorAll('.river-tile.river-same').forEach(function(el) {
+    el.classList.remove('river-same');
+  });
+}
+
 var RIICHI_OVERHANG = 9;   // 35 - 26
 function renderDiscardRiverShared(discards, seat, riichiIdx, callTargetTileId) {
   var list = (discards || []).slice(0, RIVER_COLS * RIVER_ROWS);
@@ -3830,10 +3847,12 @@ var App = {
 
         el.addEventListener('pointerenter', function(e) {
           if (e.pointerType !== 'mouse' || !allowInteract() || !entry) return;
+          highlightSameTilesInRiver(entry.tile);
           showHoverWaitsFr(entry);
         });
         el.addEventListener('pointerleave', function(e) {
           if (e.pointerType !== 'mouse') return;
+          clearRiverHighlight();
           hideHoverWaitsFr();
         });
 
@@ -5516,10 +5535,12 @@ var App = {
         // pointerenter/leave：マウスのみ。ホバー時点で待ちをプレビュー表示する
         el.addEventListener('pointerenter', function(e) {
           if (e.pointerType !== 'mouse' || !allowDiscard()) return;
+          highlightSameTilesInRiver(displayOrder[di]);
           showHoverWaits(di);
         });
         el.addEventListener('pointerleave', function(e) {
           if (e.pointerType !== 'mouse') return;
+          clearRiverHighlight();
           hideHoverWaits();
         });
         // pointerdown: ドラッグ開始
