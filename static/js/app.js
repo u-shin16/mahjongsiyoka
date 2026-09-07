@@ -1601,11 +1601,19 @@ function highlightSameTilesInRiver(tile) {
   clearRiverHighlight();
   if (!tile || tile.suit == null || tile.num == null) return;
   var sel = '.disc-river .river-tile[data-suit="' + tile.suit + '"][data-num="' + tile.num + '"]';
-  document.querySelectorAll(sel).forEach(function(el) { el.classList.add('river-same'); });
+  var hits = document.querySelectorAll(sel);
+  if (!hits.length) return;
+  hits.forEach(function(el) { el.classList.add('river-same'); });
+  // 光らせるだけでは河の牌が多いときに埋もれるので、当たった牌が1枚でも
+  // あるあいだは4つの河すべてを暗くして、光っている牌だけを浮かせる。
+  document.querySelectorAll('.disc-river').forEach(function(r) { r.classList.add('has-same'); });
 }
 function clearRiverHighlight() {
   document.querySelectorAll('.river-tile.river-same').forEach(function(el) {
     el.classList.remove('river-same');
+  });
+  document.querySelectorAll('.disc-river.has-same').forEach(function(el) {
+    el.classList.remove('has-same');
   });
 }
 
