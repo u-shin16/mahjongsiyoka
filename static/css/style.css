@@ -67,12 +67,28 @@ button { font-family: inherit; cursor: pointer; }
 }
 .header-title {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   text-align: center;
   font-size: 1.15rem;
   font-weight: 900;
   color: var(--gold);
   cursor: pointer;
   letter-spacing: 0.05em;
+}
+
+/* ヘッダーのアイコン。絵文字ではなくアプリ内と同じ実物の牌を出す。
+   基本の牌は52x70なので、zoom 0.32で17x22になりタイトルの高さに収まる。 */
+.header-title .header-tile {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+.header-title .header-tile .tile {
+  zoom: 0.32;
+  cursor: pointer;
 }
 .btn-back, .btn-progress {
   background: rgba(232,184,75,0.15);

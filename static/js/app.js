@@ -1823,6 +1823,11 @@ var App = {
     });
     document.getElementById('btnProgress').addEventListener('click', function() { self.navigate('progress'); });
     document.getElementById('headerTitle').addEventListener('click', function() { self.navigate('home'); });
+    // ヘッダーのアイコンは絵文字ではなく、アプリ内で使っている実物の中の牌を出す
+    var headerTile = document.getElementById('headerTile');
+    if (headerTile && window.Tiles) {
+      headerTile.innerHTML = Tiles.renderTile(Tiles.make('dragon', 3), { noHover: true });
+    }
     document.getElementById('btnAccount').addEventListener('click', function() { self.navigate('login'); });
     // ログイン状態が変わったら関連ページを再描画（進捗マージ後の星を反映）
     if (window.Auth) {
