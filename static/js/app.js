@@ -401,6 +401,8 @@ var CH_INTROS = {
   // 三元牌と風牌は覚え方がまったく違うので、別々に練習してからまとめる
   ch5_0: {
     realTiles: [
+      { suit: 'dragon', num: 1 },
+      { suit: 'dragon', num: 2 },
       { suit: 'dragon', num: 3 },
     ],
     points: [
