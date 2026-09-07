@@ -299,7 +299,6 @@ const Chapters = (() => {
       ],
       passNeeded: 8,
     },
-    mg2: null,
     mg3: null,
     mg4: null,
     // 2026-09-05：カンの説明がどこにも無かったので足した。
