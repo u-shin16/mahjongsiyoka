@@ -400,7 +400,9 @@ var CH_INTROS = {
   // Chapter 5
   // 三元牌と風牌は覚え方がまったく違うので、別々に練習してからまとめる
   ch5_0: {
-    icon: '🀄',
+    realTiles: [
+      { suit: 'dragon', num: 3 },
+    ],
     points: [
       '<strong>三元牌</strong>は<strong>白・發・中</strong>の3種類だけ',
       'この3つは刻子（同じ牌3枚）にすれば<strong>いつでも役牌</strong>になる',
