@@ -441,7 +441,11 @@ button { font-family: inherit; cursor: pointer; }
   flex-shrink: 0;
   overflow: hidden;
 }
-.tile:hover:not(.no-hover) { transform: translateY(-6px); }
+/* ホバーの浮き上がりもマウスのある環境だけ。指のタップでは:hoverが残り、
+   押した牌が浮いたままになる（手牌と同じ理由） */
+@media (hover: hover) and (pointer: fine) {
+  .tile:hover:not(.no-hover) { transform: translateY(-6px); }
+}
 .tile.selected {
   transform: translateY(-10px);
   border-color: #ff9f43;
