@@ -1395,27 +1395,6 @@ function positionMeldAreas() {
   positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftHand, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
   positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightHand, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
 
-  // 上家の副露は鳴くほど下へ伸びて、卓の下端へ向かっていってしまう
-  // （2026-09-08に実機で確認。2組で下端まで届く）。
-  // 下端に合わせて固定し、増えたぶんは上へ伸ばす。こうすると1組目の位置が
-  // 動かず、何組鳴いても卓からはみ出さない。
-  // 位置は「実際に描画された枠」を測って合わせる。上家の副露は回転を掛けて
-  // 置いているため、設計値から計算すると縦横の対応を取り違えやすい。
-  var leftMeldArea = document.querySelector('.player-meld-area.seat-left');
-  if (leftMeldArea && leftMeldArea.offsetWidth) {
-    var lmr = leftMeldArea.getBoundingClientRect();
-    var lmBottom = toLocalY(lmr.bottom);
-    var LEFT_MELD_BOTTOM_MARGIN = 6;
-    var wantBottom = localBoundsB - LEFT_MELD_BOTTOM_MARGIN;
-    var dy = wantBottom - lmBottom;
-    if (Math.abs(dy) >= 1) {
-      var curTop = parseFloat(leftMeldArea.style.top);
-      if (isNaN(curTop)) curTop = toLocalY(lmr.top);
-      leftMeldArea.style.setProperty('top', Math.round(curTop + dy) + 'px', 'important');
-      leftMeldArea.style.setProperty('bottom', 'auto', 'important');
-    }
-  }
-
   // 上家の副露は「自分から見て右」＝画面では下へ伸びるため、左下にある
   // 自分のアイコン（.jt-seat-self）と重なることがある（2026-09-08に実機で確認）。
   // 副露の位置は動かさず、重なったときだけアイコンと、その右に置いている
