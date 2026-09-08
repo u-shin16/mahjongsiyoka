@@ -1324,7 +1324,7 @@ function positionMeldAreas() {
   // 組み立て、その完成した箱を90°/-90°回転させて配置する
   // （牌ごとの回転だと、回転後の見た目サイズとレイアウト上のサイズが
   //   ズレて複数セット時にうまく横に並ばなかったため）
-  var positionRotatedSeat = function(area, handEl, angleDeg, lift, gap, handHalf) {
+  var positionRotatedSeat = function(area, handEl, angleDeg, lift, gap, handHalf, mirrorOfRight) {
     if (!area || !handEl) return;
     if (gap == null) gap = GAP;
     var hr = handEl.getBoundingClientRect();
@@ -1341,6 +1341,11 @@ function positionMeldAreas() {
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
+    // 上家（90°）は本来「自分から見て右」＝画面では下へ副露が伸びる。
+    // その先には自分のアイコン（.jt-seat-self・左下）と手牌があり、鳴くほど
+    // 重なっていた。2026-09-08に、下家の置き方をそのまま左右反転して使うことにした。
+    // 回転角は90°のままなので牌の向きは変わらず、伸びる向きだけが下家の鏡になる。
+    if (mirrorOfRight) ry = -ry;
     var centerX = hcx + rx;
     var centerY = hcy + ry;
     // 下家（-90°）は鳴きが増えて縦列が伸びると、上端が右上の「退出/設定」
@@ -1386,13 +1391,13 @@ function positionMeldAreas() {
   // 副露エリア
   positionForSeat(document.querySelector('.player-meld-area.seat-self'), handRow, 0, MELD_LIFT, GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-meld-area.seat-opposite'), oppHand, 180, MELD_LIFT, GAP, CPU_HAND_HALF);
-  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftHand, 90, MELD_LIFT, GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftHand, 90, MELD_LIFT, GAP, CPU_HAND_HALF, true);
   positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightHand, -90, MELD_LIFT, GAP, CPU_HAND_HALF);
 
   // 北抜きエリア（副露とは独立配置。手牌が縮んでも動かないよう同じ固定半幅を使う）
   positionForSeat(document.querySelector('.player-nuki-area.seat-self'), handRow, 0, NUKI_LIFT, NUKI_GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-nuki-area.seat-opposite'), oppHand, 180, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftHand, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
+  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftHand, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF, true);
   positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightHand, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
 
   // 残り時間は、自分の抜き北の「左上」に置く。
