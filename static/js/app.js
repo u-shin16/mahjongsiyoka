@@ -1324,7 +1324,7 @@ function positionMeldAreas() {
   // 組み立て、その完成した箱を90°/-90°回転させて配置する
   // （牌ごとの回転だと、回転後の見た目サイズとレイアウト上のサイズが
   //   ズレて複数セット時にうまく横に並ばなかったため）
-  var positionRotatedSeat = function(area, handEl, angleDeg, lift, gap, handHalf, mirrorOfRight) {
+  var positionRotatedSeat = function(area, handEl, angleDeg, lift, gap, handHalf) {
     if (!area || !handEl) return;
     if (gap == null) gap = GAP;
     var hr = handEl.getBoundingClientRect();
@@ -1341,11 +1341,6 @@ function positionMeldAreas() {
     var rad = angleDeg * Math.PI / 180;
     var rx = ox * Math.cos(rad) - oy * Math.sin(rad);
     var ry = ox * Math.sin(rad) + oy * Math.cos(rad);
-    // 上家（90°）は本来「自分から見て右」＝画面では下へ副露が伸びる。
-    // その先には自分のアイコン（.jt-seat-self・左下）と手牌があり、鳴くほど
-    // 重なっていた。2026-09-08に、下家の置き方をそのまま左右反転して使うことにした。
-    // 回転角は90°のままなので牌の向きは変わらず、伸びる向きだけが下家の鏡になる。
-    if (mirrorOfRight) ry = -ry;
     var centerX = hcx + rx;
     var centerY = hcy + ry;
     // 下家（-90°）は鳴きが増えて縦列が伸びると、上端が右上の「退出/設定」
@@ -1391,14 +1386,55 @@ function positionMeldAreas() {
   // 副露エリア
   positionForSeat(document.querySelector('.player-meld-area.seat-self'), handRow, 0, MELD_LIFT, GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-meld-area.seat-opposite'), oppHand, 180, MELD_LIFT, GAP, CPU_HAND_HALF);
-  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftHand, 90, MELD_LIFT, GAP, CPU_HAND_HALF, true);
+  positionRotatedSeat(document.querySelector('.player-meld-area.seat-left'), leftHand, 90, MELD_LIFT, GAP, CPU_HAND_HALF);
   positionRotatedSeat(document.querySelector('.player-meld-area.seat-right'), rightHand, -90, MELD_LIFT, GAP, CPU_HAND_HALF);
 
   // 北抜きエリア（副露とは独立配置。手牌が縮んでも動かないよう同じ固定半幅を使う）
   positionForSeat(document.querySelector('.player-nuki-area.seat-self'), handRow, 0, NUKI_LIFT, NUKI_GAP, SELF_HAND_HALF);
   positionForSeat(document.querySelector('.player-nuki-area.seat-opposite'), oppHand, 180, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
-  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftHand, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF, true);
+  positionRotatedSeat(document.querySelector('.player-nuki-area.seat-left'), leftHand, 90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
   positionRotatedSeat(document.querySelector('.player-nuki-area.seat-right'), rightHand, -90, NUKI_LIFT, NUKI_GAP, CPU_HAND_HALF);
+
+  // 上家の副露は「自分から見て右」＝画面では下へ伸びるため、左下にある
+  // 自分のアイコン（.jt-seat-self）と重なることがある（2026-09-08に実機で確認）。
+  // 副露の位置は動かさず、重なったときだけアイコンと、その右に置いている
+  // 「AIに聞く」を、副露の右端より右へ逃がす。
+  // 重なっていなければCSSの既定位置（left:12%）のままにする。
+  var selfSeatEl = document.querySelector('.jt-seat.jt-seat-self');
+  var aiBtnEl    = document.querySelector('.jt-ai-beside-self');
+  if (selfSeatEl) {
+    // 逃がした位置を基準に測ると鳴くたびに右へずれていくので、
+    // 必ず既定位置へ戻してから測り直す
+    selfSeatEl.style.removeProperty('left');
+    if (aiBtnEl) aiBtnEl.style.removeProperty('left');
+
+    var leftMeldEl = document.querySelector('.player-meld-area.seat-left');
+    if (leftMeldEl && leftMeldEl.offsetWidth) {
+      var sr = selfSeatEl.getBoundingClientRect();
+      var mr = leftMeldEl.getBoundingClientRect();
+      var sL = toLocalX(sr.left),  sR = toLocalX(sr.right);
+      var sT = toLocalY(sr.top),   sB = toLocalY(sr.bottom);
+      var mL = toLocalX(mr.left),  mR = toLocalX(mr.right);
+      var mT = toLocalY(mr.top),   mB = toLocalY(mr.bottom);
+      var AVOID_GAP = 12;
+      var overlapsY = sB > mT && sT < mB;
+      var overlapsX = sL < mR + AVOID_GAP && sR > mL;
+      if (overlapsY && overlapsX) {
+        var shift = Math.round(mR + AVOID_GAP - sL);
+        // 逃がしすぎて自分の手牌に乗らないよう、卓の中央より左で止める
+        var maxLeft = localBoundsR / 2 - (sR - sL);
+        var newLeft = Math.min(sL + shift, maxLeft);
+        if (newLeft > sL) {
+          selfSeatEl.style.setProperty('left', Math.round(newLeft) + 'px', 'important');
+          if (aiBtnEl) {
+            var ar = aiBtnEl.getBoundingClientRect();
+            var aL = toLocalX(ar.left);
+            aiBtnEl.style.setProperty('left', Math.round(aL + (newLeft - sL)) + 'px', 'important');
+          }
+        }
+      }
+    }
+  }
 
   // 残り時間は、自分の抜き北の「左上」に置く。
   // 抜き北のエリアは北を1枚も抜いていないと存在しないので、位置は
