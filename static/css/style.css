@@ -7190,3 +7190,31 @@ body.is-battle-page .jt-table {
 
 .chapter-tier.tier-advanced .chapter-tier-label,
 .chapter-tier.tier-test .chapter-tier-label { color: #a8c8b0; }
+
+/* ============================================================
+   スマホだけ手牌と河を大きくする
+   ============================================================
+   雀卓は1400x700の設計サイズで組んで、画面に収まるよう丸ごと縮めている
+   （fitBattleTable）。そのためPCと同じzoomでも、スマホでは縮小率のぶん
+   だけ小さく見える。2026-09-08にゆーしんが実機で見て「少し小さい」と
+   判断したため、タッチ端末のときだけ上げる。PCの見た目は変えない。
+
+   幅の判定（max-width:760px）ではなくタッチ端末で判定するのは、スマホの
+   横画面は760pxを超える機種があり、その端末に当たらないため。
+   縦画面は対局画面自体を隠して「横にしてください」を出すので対象外。 */
+@media (hover: none) and (pointer: coarse) {
+  /* 手牌・ツモ牌：0.85 → 0.95（14枚並べても設計幅1400pxには余裕がある） */
+  .jt-hand-in-table .mj-sorted-tiles .tile,
+  .jt-hand-in-table .mj-drew-area .tile {
+    zoom: 0.95 !important;
+  }
+  .jt-hand-in-table .mj-hand-sep {
+    height: 67px !important;
+  }
+
+  /* 河：0.50（幅760px以下の端末では0.42）→ 0.56。
+     4方向とも同じにする。河は6列4段まで伸びるので上げすぎない */
+  .disc-river .river-tile {
+    zoom: 0.56 !important;
+  }
+}
