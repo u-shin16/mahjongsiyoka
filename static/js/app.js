@@ -5401,15 +5401,22 @@ var App = {
       var actionHtml = '';
       if (s.phase==='player_turn' || s.phase==='naki_discard') {
         var showRiichiBtn0 = canRiichi && !isRiichi;
-        actionHtml = '<div class="jt-battle-actions">' +
-          (showRiichiBtn0 ? '<button class="btn-battle btn-riichi'+(riichiArmed ? ' active' : '')+'" id="btnRiichi">'+(riichiArmed ? '🎯 リーチ中断' : '🎯 リーチ')+'</button>' : '') +
-          '<span style="color:#8ab89c;font-size:0.85rem">' +
-            (riichiArmed ? '🔴印の牌をタップで待ち確認、ダブルタップ/上スワイプで切る' :
-             canRiichi   ? 'リーチできます！ボタンを押してください' :
-             isRiichi    ? 'ツモ切り：引いた牌をダブルタップ' :
-                           '牌をダブルタップ or 上スワイプで切る') +
-          '</span>' +
-        '</div>';
+        // 操作の説明（「牌をダブルタップ or 上スワイプで切る」）は2026-09-08に外した。
+        // 手牌の下に常に1行居座り、そのぶん手牌を上へ押し上げていたため。
+        // 説明が無くても、PCは1クリック・スマホは選んでもう一度タップで切れる。
+        // 残しているのは状況の案内（リーチできる・リーチ中・リーチ武装中）だけで、
+        // これは操作説明ではないので消さない。
+        var actionMsg0 =
+          riichiArmed ? '🔴印の牌をタップで待ち確認、ダブルタップ/上スワイプで切る' :
+          canRiichi   ? 'リーチできます！ボタンを押してください' :
+          isRiichi    ? 'ツモ切り：引いた牌をダブルタップ' : '';
+        // 出すものが何も無いときは枠ごと出さない（空の行でも手牌が持ち上がるため）
+        if (showRiichiBtn0 || actionMsg0) {
+          actionHtml = '<div class="jt-battle-actions">' +
+            (showRiichiBtn0 ? '<button class="btn-battle btn-riichi'+(riichiArmed ? ' active' : '')+'" id="btnRiichi">'+(riichiArmed ? '🎯 リーチ中断' : '🎯 リーチ')+'</button>' : '') +
+            (actionMsg0 ? '<span style="color:#8ab89c;font-size:0.85rem">'+actionMsg0+'</span>' : '') +
+          '</div>';
+        }
       } else if (s.phase==='pending_call') {
         // 鳴き選択中はヒントのみ（ボタンは callFloatHtml に移動済み）
         actionHtml = '<div class="jt-battle-actions"><span style="color:#f0c060;font-size:0.82rem">鳴けます！右上で選択してください</span></div>';
