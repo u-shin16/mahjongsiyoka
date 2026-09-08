@@ -5940,7 +5940,11 @@ var App = {
       if (btnSkipCall) btnSkipCall.addEventListener('click', function() {
         clearBattleAdvice();
         Battle.skipCall();
-        renderGame();
+        // skipCallの中でCPUの手番が進むので、そこで山が尽きれば流局、
+        // CPUがツモればアガリで局が終わる。renderGame()だけだと局が
+        // 終わったことに気づかず、そのまま雀卓を描き直してしまい
+        // 「流局しない」状態に見えていた。局の終わりも見るafterDiscardに任せる。
+        afterDiscard();
       });
 
       // 暗カンボタン
