@@ -311,7 +311,7 @@ function chMgTitles(id) {
 
 // ===== Mini-game Intro Data =====
 var CH_INTROS = {
-  // Chapter 1
+  // 第2章
   ch2_0: {
     tiles: [1, 2, 3],
     points: [
@@ -342,7 +342,7 @@ var CH_INTROS = {
     example: '手牌13枚を見て、\n「どれを引いたら14枚でアガリになるか」\nを4つの候補から選ぼう',
     tip: '💡 残っている2枚組（ターツ）に何を足すと3枚セットになるか見よう！',
   },
-  // Chapter 2
+  // 第3章
   ch3_0: {
     icon: '🎨',
     points: [
@@ -2229,7 +2229,7 @@ var App = {
     engine(main, ch, startMg);
   },
 
-  // ===== CHAPTER 1 =====
+  // ===== 第2章 =====
   _ch2: function(main, ch, startMg) {
     var mgs = [Chapters.ch2.mg1, Chapters.ch2.mg2, Chapters.ch2.mg3];
     var mgIdx = Math.min(Math.max(0, (startMg||1)-1), mgs.length-1), qIdx = 0, correct = 0, showingFb = false, selected = [];
@@ -2242,7 +2242,7 @@ var App = {
       // イントロ表示
       if (qIdx === 0 && !introShown[mgIdx]) {
         introShown[mgIdx] = true;
-        var introKey = 'ch1_' + mgIdx;
+        var introKey = 'ch2_' + mgIdx;
         if (CH_INTROS[introKey]) { showMgIntro(main, '第2章 数字だけの麻雀', mg.title, CH_INTROS[introKey], render); return; }
       }
 
@@ -2378,7 +2378,7 @@ var App = {
       var mg = mgs[mgIdx];
       if (qIdx === 0 && !introShown[mgIdx]) {
         introShown[mgIdx] = true;
-        var introKey = 'ch2_' + mgIdx;
+        var introKey = 'ch3_' + mgIdx;
         if (CH_INTROS[introKey]) { showMgIntro(main, '第3章 色付き牌', mg.title, CH_INTROS[introKey], render); return; }
       }
       if (mgIdx >= mgs.length) { showClear(3,3); return; }
@@ -2436,7 +2436,7 @@ var App = {
       var mg = mgs[mgIdx]; var pct = Math.round(mgIdx/mgs.length*100);
       if (qIdx === 0 && !introShown[mgIdx]) {
         introShown[mgIdx] = true;
-        var introKey = 'ch3_' + mgIdx;
+        var introKey = 'ch4_' + mgIdx;
         if (CH_INTROS[introKey]) { showMgIntro(main, '第4章 本物の麻雀牌', mg.title, CH_INTROS[introKey], render); return; }
       }
       if (mgIdx === 0) {
@@ -2493,7 +2493,7 @@ var App = {
       var pct = Math.round(mgIdx/mgs.length*100);
       if (qIdx === 0 && !introShown[mgIdx]) {
         introShown[mgIdx] = true;
-        var introKey = 'ch4_' + mgIdx;
+        var introKey = 'ch5_' + mgIdx;
         var mg4 = mgs[mgIdx];
         if (CH_INTROS[introKey]) { showMgIntro(main, '第5章 字牌を覚えよう', mg4.title, CH_INTROS[introKey], render); return; }
       }
@@ -2595,7 +2595,7 @@ var App = {
       var pct=Math.round(mgIdx/mgs.length*100);
       if(qIdx===0&&!introShown[mgIdx]){
         introShown[mgIdx]=true;
-        var introKey='ch5_'+mgIdx;
+        var introKey='ch6_'+mgIdx;
         var mg5=mgs[mgIdx];
         if(CH_INTROS[introKey]){showMgIntro(main,'第6章 役牌を作ろう',mg5.title,CH_INTROS[introKey],render);return;}
       }
@@ -2678,7 +2678,7 @@ var App = {
       var pct = Math.round(mgIdx / mgs.length * 100);
       if (qIdx === 0 && !introShown[mgIdx]) {
         introShown[mgIdx] = true;
-        var introKey = 'ch6_' + mgIdx;
+        var introKey = 'ch7_' + mgIdx;
         if (CH_INTROS[introKey]) { showMgIntro(main, '第7章 鳴きを覚えよう', mg.title, CH_INTROS[introKey], render); return; }
       }
 
