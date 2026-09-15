@@ -2,7 +2,7 @@
 
 const Chapters = (() => {
   // ===== Chapter 1: Number tiles only =====
-  const ch2 = {
+  const ch1 = {
     mg1: {
       title: 'ミニゲーム①　3枚セットを見つけよう',
       instruction: '<strong>3枚でセット</strong>になる牌を選ぼう！<br>同じ数字3枚、または数字が続く3枚がセット。',
@@ -39,7 +39,7 @@ const Chapters = (() => {
 
   // ===== Chapter 2: Colored tiles =====
   const COLOR_NAMES = { red: '赤', blue: '青', green: '緑' };
-  const ch3 = {
+  const ch2 = {
     mg1: {
       title: 'ミニゲーム①　これはセット？',
       instruction: '<strong>同じ色</strong>の数字が続くか、<strong>同じ色・同じ数字</strong>3枚ならセット！',
@@ -87,7 +87,7 @@ const Chapters = (() => {
   // ===== Chapter 3: Real suit tiles =====
   const SUITS = ['man','pin','sou'];
   const SUIT_LABELS = { man: '萬子', pin: '筒子', sou: '索子' };
-  const ch4 = {
+  const ch3 = {
     mg1: {
       title: 'ミニゲーム①　牌の種類を当てよう',
       instruction: 'この牌は<strong>萬子（マンズ）・筒子（ピンズ）・索子（ソーズ）</strong>のどれ？',
@@ -138,13 +138,13 @@ const Chapters = (() => {
     {suit:'dragon',num:1},{suit:'dragon',num:2},{suit:'dragon',num:3},
   ];
   const HONOR_NAMES = ['東','南','西','北','白','發','中'];
-  const ch5 = {
+  const ch4 = {
     mg1: {
       title: 'ミニゲーム①　字牌の見た目を覚えよう',
       instruction: '裏向きの牌をめくって<strong>同じ字牌2枚</strong>を揃えよう！',
     },
     // 2026-09-04：「字牌は順子になる？」から読み方クイズへ差し替えた。
-    // 順子の話は第2章・第3章で扱っており重複していた一方、
+    // 順子の話は第1章・第2章で扱っており重複していた一方、
     // 字牌の読み方はミニゲーム①で一覧を見せるだけで練習が無かった。
     mg2: {
       title: 'ミニゲーム②　字牌の読み方を覚えよう',
@@ -165,7 +165,7 @@ const Chapters = (() => {
   // ===== Chapter 5: Yakuhai =====
   // 役牌は「役牌（三元牌）」「役牌（風牌）」の2つの役として扱う。
   // answer: 'dragon'=役牌（三元牌）／'wind'=役牌（風牌）／'none'=役牌でない
-  const ch6 = {
+  const ch5 = {
     // 2026-09-04：三元牌と風牌を別々に学べるよう、3つに分けた。
     // 1つの問題で3択にしていたため、どちらのルールでつまずいたのか
     // 分からなかった。①三元牌だけ ②風牌だけ ③まとめ、の順にする。
@@ -373,12 +373,13 @@ const Chapters = (() => {
     ],
   };
 
-  // ===== Chapter 1: 対局のルール =====
+  // ===== Chapter 6: 対局のルール =====
   // 2026-09-07：役とアガリ形は教えているのに、一局をどう回すかを教える場所が
   // どこにも無かった。フリテン・役なし・配牌・流局は12章のどこにも出てこず、
   // フリテンは用語集に1行あるだけだった。対局画面には「役なし」「ツモのみ」の
-  // 印が出るのに意味を知る場所が無い状態だったので、いちばん最初の章にした。
-  const ch1 = {
+  // 印が出るのに意味を知る場所が無い状態だったので、章として追加した。
+  // 2026-09-15：必修の最初から最後（6章目）に移動した。
+  const ch6 = {
     mgs: [
       {
         type: 'choice',
@@ -936,5 +937,5 @@ const Chapters = (() => {
     ],
   };
 
-  return { ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10, ch11, ch12, ch13, HONOR_NAMES, COLOR_NAMES, SUIT_LABELS };
+  return { ch6, ch1, ch2, ch3, ch4, ch5, ch7, ch8, ch9, ch10, ch11, ch12, ch13, HONOR_NAMES, COLOR_NAMES, SUIT_LABELS };
 })();

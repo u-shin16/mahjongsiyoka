@@ -16,13 +16,14 @@ var GameData = (function() {
   //   practice … 実戦。覚えると強くなる
   //   advanced … 発展。知らなくても打てる
   //   test     … 腕試し
+  // 2026-09-15：必修内の並びを変更。「対局のルール」を1章目から6章目（必修の最後）に移動した。
   var CHAPTERS = [
-    { id:1,  tier:'core',     title:'対局のルールを\n覚えよう', short:'対局のルール', diff:1, min:5, topics:['対局の進め方','ロンとツモ'] },
-    { id:2,  tier:'core',     title:'一種類の数字だけで\nアガってみよう', short:'数字セット入門', diff:1, min:5, topics:['3枚セット','頭（2枚）','アガリ形'] },
-    { id:3,  tier:'core',     title:'3種類の色の数字で\nアガってみよう', short:'色付き牌', diff:1, min:7, topics:['色が違うと別の牌','同じ色のみ順子OK','アガリ形完成'] },
-    { id:4,  tier:'core',     title:'筒子・索子・萬子で\nアガってみよう', short:'本物の麻雀牌', diff:2, min:8, topics:['筒子・索子・萬子の見た目','牌の種類判定','本物風アガリ'] },
-    { id:5,  tier:'core',     title:'字牌を覚えよう', short:'字牌', diff:2, min:8, topics:['字牌は順子にならない','神経衰弱','刻子を作る'] },
-    { id:6,  tier:'core',     title:'役牌を作ってみよう', short:'役牌', diff:2, min:4, topics:['三元牌（白・發・中）','風牌','役牌の判定'] },
+    { id:1,  tier:'core',     title:'一種類の数字だけで\nアガってみよう', short:'数字セット入門', diff:1, min:5, topics:['3枚セット','頭（2枚）','アガリ形'] },
+    { id:2,  tier:'core',     title:'3種類の色の数字で\nアガってみよう', short:'色付き牌', diff:1, min:7, topics:['色が違うと別の牌','同じ色のみ順子OK','アガリ形完成'] },
+    { id:3,  tier:'core',     title:'筒子・索子・萬子で\nアガってみよう', short:'本物の麻雀牌', diff:2, min:8, topics:['筒子・索子・萬子の見た目','牌の種類判定','本物風アガリ'] },
+    { id:4,  tier:'core',     title:'字牌を覚えよう', short:'字牌', diff:2, min:8, topics:['字牌は順子にならない','神経衰弱','刻子を作る'] },
+    { id:5,  tier:'core',     title:'役牌を作ってみよう', short:'役牌', diff:2, min:4, topics:['三元牌（白・發・中）','風牌','役牌の判定'] },
+    { id:6,  tier:'core',     title:'対局のルールを\n覚えよう', short:'対局のルール', diff:1, min:5, topics:['対局の進め方','ロンとツモ'] },
     { id:7,  tier:'practice', title:'鳴きを使ってみよう', short:'ポン・チー・カン', diff:3, min:6, topics:['ポン・チーの判定','鳴けない場合の判定','カンの判定'] },
     { id:8,  tier:'practice', title:'初心者向けの役', short:'基本の役', diff:3, min:28, topics:['役が無いとアガれない','フリテン','立直','タンヤオ','平和','一発'] },
     { id:9,  tier:'practice', title:'翻を数えてみよう', short:'翻とドラと点数', diff:3, min:10, topics:['翻数','ドラ','点数'] },
@@ -86,7 +87,7 @@ var GameData = (function() {
       id:'yakuhai_dragon', name:'役牌（三元牌）', reading:'ヤクハイ（サンゲンパイ）', han:1, hanOpen:1,
       condition:'白・發・中（三元牌）を3枚揃える役。',
       mistake:'三元牌は場風・自風に関係なく、いつでも役牌になる。',
-      chapter:5,
+      chapter:4,
       example:[_m(1),_m(2),_m(3),_p(4),_p(5),_p(6),_s(7),_s(8),_s(9),_d(3),_d(3),_d(3),_m(5),_m(5)],
       winTile:_m(5), winNote:'中（中）の刻子で役牌（三元牌）成立'
     },
@@ -94,7 +95,7 @@ var GameData = (function() {
       id:'yakuhai_wind', name:'役牌（風牌）', reading:'ヤクハイ（フォンパイ）', han:1, hanOpen:1,
       condition:'場の風・自分の風の牌を3枚揃える役。',
       mistake:'自風でも場風でもない風牌の刻子は役にならない。',
-      chapter:5,
+      chapter:4,
       example:[_m(1),_m(2),_m(3),_p(4),_p(5),_p(6),_s(7),_s(8),_s(9),_w(1),_w(1),_w(1),_m(5),_m(5)],
       winTile:_m(5), winNote:'東（場風）の刻子で役牌（風牌）成立'
     },
@@ -143,7 +144,7 @@ var GameData = (function() {
       id:'renpuhai', name:'連風牌', reading:'レンプウハイ', han:2, hanOpen:2,
       condition:'場風と自風が同じとき（例：東場の東家のダブ東）、その風牌の刻子は役牌が2つ重なり2翻になる。',
       mistake:'場風か自風どちらか一方だけなら通常の役牌で1翻。',
-      chapter:5,
+      chapter:4,
       example:[_w(1),_w(1),_w(1),_m(2),_m(3),_m(4),_p(5),_p(6),_p(7),_s(3),_s(4),_s(5),_p(9),_p(9)],
       winTile:_s(5), winNote:'東場の東家で東の刻子（ダブ東）'
     },
