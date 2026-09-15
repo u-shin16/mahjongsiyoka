@@ -2072,7 +2072,6 @@ var App = {
       { label:'友人戦',        icon:'👥', sub:'6桁IDでオンライン対戦', page:'friend' },
       { label:'役一覧',        icon:'📖', sub:'全役を確認', page:'yaku' },
       { label:'麻雀用語',      icon:'💬', sub:'用語集', page:'terms' },
-      { label:'役満モード',    icon:'🏆', sub:'test（近日公開）', disabled:true },
       { label:'学習進捗',      icon:'📊', sub:'マイページ', page:'progress' },
     ];
     main.innerHTML = '<div class="home-hero"><h2>まーじゃんしよか</h2><p>牌を動かしながら麻雀を覚えよう！</p></div>' +
