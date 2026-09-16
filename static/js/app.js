@@ -2075,7 +2075,7 @@ var App = {
       { label:'チャプター選択', icon:'📚', sub:'好きな章から', page:'chapters' },
       { label:'VS CPU',       icon:'🤖', sub:'4人打ちCPU対局', page:'battle_setup', params:{playerCount:4} },
       { label:'単語クイズ',   icon:'📝', sub:'用語・役をランダム出題', page:'quiz_select' },
-      { label:'AI先生',        icon:'💡', sub:'質問・手牌相談', page:'ai_coach' },
+      { label:'AI先生',        icon:'💡', sub:'ルール・役を質問', page:'ai_coach' },
       { label:'友人戦',        icon:'👥', sub:'6桁IDでオンライン対戦', page:'friend' },
       { label:'役一覧',        icon:'📖', sub:'全役を確認', page:'yaku' },
       { label:'麻雀用語',      icon:'💬', sub:'用語集', page:'terms' },
@@ -4611,32 +4611,27 @@ var App = {
 
   // ===== AI Coach =====
   _renderAICoach: function(main) {
-    // 2026-09-16：手牌は山からランダムに配り、ツモも毎回ランダム。
-    // 牌をタップするとその牌を切り、続けて新しい牌をランダムにツモう。
-    // 実際の対局の「ツモって切る」の流れに寄せた。
-    var wall = [];
-    var currentHand;  // 13枚（並び替え済み）
-    var drawnTile;    // ツモった1枚
-
-    var drawOne = function() {
-      if (!wall.length) wall = Tiles.makeFull();
-      var t = wall.shift();
-      return {suit: t.suit, num: t.num};
-    };
-    var dealHand = function() {
-      wall = Tiles.makeFull();
-      currentHand = wall.splice(0, 13).map(function(t) { return {suit: t.suit, num: t.num}; });
-      drawnTile = drawOne();
-    };
-    dealHand();
+    // 2026-09-16：手牌を作って相談する役割はCPU戦の在局中アドバイス（実際の
+    // 対局を見て助言する）と丸かぶりしていたため、AI先生は手牌を持たず、
+    // ルール・役・用語について何でも聞ける質問役にした。
+    var EXAMPLE_QUESTIONS = [
+      'フリテンって何？',
+      '役なしでもアガれる？',
+      'リーチとダマ、どっちがいい？',
+      'タンヤオの条件は？',
+      'ドラと役の違いは？',
+      '鳴くと門前じゃなくなるってどういうこと？',
+    ];
 
     main.innerHTML = '<div class="page-title">AI先生</div>' +
       '<div class="ai-coach-wrap">' +
         '<div class="ai-coach-card">' +
-          '<div class="ai-coach-label">手牌（タップで切る）　' +
-            '<button class="btn btn-secondary" id="btnHandReset" style="font-size:0.72rem;padding:3px 9px">🔀 配り直す</button>' +
+          '<div class="ai-coach-label">麻雀のルール・役・用語について何でも聞いてください</div>' +
+          '<div class="ai-example-row" id="aiExampleRow">' +
+            EXAMPLE_QUESTIONS.map(function(q) {
+              return '<button type="button" class="ai-example-chip">' + esc(q) + '</button>';
+            }).join('') +
           '</div>' +
-          '<div class="example-hand-row ai-sample-hand" id="aiHandRow"></div>' +
           '<div class="ai-level-row" id="coachLevel">' +
             '<button class="ai-level-btn active" data-lv="beginner">🔰 初心者（やさしい）</button>' +
             '<button class="ai-level-btn" data-lv="advanced">⚡ 上級者（プロ視点）</button>' +
@@ -4644,35 +4639,16 @@ var App = {
           '<div class="ai-level-desc" id="levelDesc" style="font-size:0.78rem;color:#8ab89c;margin-bottom:8px;min-height:32px">' +
             '🔰 麻雀用語を使わず、日常語でやさしく解説します。' +
           '</div>' +
-          '<textarea class="ai-textarea" id="aiCoachInput" rows="4" placeholder="例：この手牌なら何を切る？ タンヤオを狙える？ リーチとポンどっちがいい？"></textarea>' +
-          '<div class="btn-row"><button class="btn btn-primary" id="btnCoachAsk">質問する</button><button class="btn btn-secondary" id="btnCoachDiscard">この手牌の打牌相談</button></div>' +
+          '<textarea class="ai-textarea" id="aiCoachInput" rows="4" placeholder="例：フリテンって何？ リーチとダマ、どっちがいい？"></textarea>' +
+          '<div class="btn-row"><button class="btn btn-primary" id="btnCoachAsk">質問する</button></div>' +
         '</div>' +
         '<div class="ai-panel ai-coach-response"><div class="ai-panel-title"><span>🤖</span> AIの返答</div><div id="aiCoachResp" class="ai-response">質問を送るとここに表示されます。</div></div>' +
       '</div>';
 
-    var renderHand = function() {
-      currentHand = Tiles.sortTiles(currentHand);
-      var row = document.getElementById('aiHandRow');
-      row.innerHTML = currentHand.map(function(t, i) {
-        return '<span class="ai-hand-tile-wrap" data-kind="hand" data-idx="' + i + '">' + renderDefTile(t, { small: true }) + '</span>';
-      }).join('') +
-        '<span class="ai-hand-tile-wrap battle-drew-tile" data-kind="drawn">' + renderDefTile(drawnTile, { small: true }) + '</span>';
-      document.querySelectorAll('#aiHandRow .ai-hand-tile-wrap').forEach(function(el) {
-        el.addEventListener('click', function() {
-          if (el.dataset.kind === 'hand') {
-            currentHand.splice(parseInt(el.dataset.idx, 10), 1);
-            currentHand.push(drawnTile);
-          }
-          drawnTile = drawOne();
-          renderHand();
-        });
+    document.querySelectorAll('#aiExampleRow .ai-example-chip').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.getElementById('aiCoachInput').value = btn.textContent;
       });
-    };
-    renderHand();
-
-    document.getElementById('btnHandReset').addEventListener('click', function() {
-      dealHand();
-      renderHand();
     });
 
     var LEVEL_DESCS = {
@@ -4691,11 +4667,7 @@ var App = {
     });
     document.getElementById('btnCoachAsk').addEventListener('click', function() {
       var q = document.getElementById('aiCoachInput').value.trim() || '麻雀で最初に意識するとよいことを教えてください。';
-      askAI(currentHand.concat([drawnTile]), q, level, document.getElementById('aiCoachResp'));
-    });
-    document.getElementById('btnCoachDiscard').addEventListener('click', function() {
-      var q = document.getElementById('aiCoachInput').value.trim();
-      askAI(currentHand.concat([drawnTile]), (q ? q + '。' : '') + 'この手牌なら何を切るのがおすすめですか？理由も短く教えてください。', level, document.getElementById('aiCoachResp'));
+      askAI([], q, level, document.getElementById('aiCoachResp'), 'rule');
     });
   },
 
