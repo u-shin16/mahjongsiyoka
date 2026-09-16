@@ -4613,18 +4613,11 @@ var App = {
   _renderAICoach: function(main) {
     // 2026-09-16：固定サンプル1つだと代わり映えしないため、山からランダムに
     // 13枚配る形にした。「更新」ボタンでいつでも新しい手に配り直せる。
-    var MAX_HAND = 14;
+    // 牌を選んで追加するパレットは不要と言われたため置かず、削除のみできる。
     var makeRandomHand = function() {
       return Tiles.makeFull().slice(0, 13).map(function(t) { return {suit: t.suit, num: t.num}; });
     };
     var currentHand = makeRandomHand();
-
-    var PALETTE = [];
-    for (var pn = 1; pn <= 9; pn++) PALETTE.push({suit:'man', num:pn});
-    for (var pn = 1; pn <= 9; pn++) PALETTE.push({suit:'pin', num:pn});
-    for (var pn = 1; pn <= 9; pn++) PALETTE.push({suit:'sou', num:pn});
-    [1,2,3,4].forEach(function(pn){ PALETTE.push({suit:'wind', num:pn}); });
-    [1,2,3].forEach(function(pn){ PALETTE.push({suit:'dragon', num:pn}); });
 
     main.innerHTML = '<div class="page-title">AI先生</div>' +
       '<div class="ai-coach-wrap">' +
@@ -4633,9 +4626,6 @@ var App = {
             '<button class="btn btn-secondary" id="btnHandReset" style="font-size:0.72rem;padding:3px 9px">🔀 更新</button>' +
           '</div>' +
           '<div class="example-hand-row ai-sample-hand" id="aiHandRow"></div>' +
-          '<div class="tiles-row ai-tile-palette" id="aiTilePalette">' +
-            PALETTE.map(function(t) { return renderDefTile(t, { small: true }); }).join('') +
-          '</div>' +
           '<div class="ai-level-row" id="coachLevel">' +
             '<button class="ai-level-btn active" data-lv="beginner">🔰 初心者（やさしい）</button>' +
             '<button class="ai-level-btn" data-lv="advanced">⚡ 上級者（プロ視点）</button>' +
@@ -4650,13 +4640,14 @@ var App = {
       '</div>';
 
     var renderHand = function() {
+      currentHand = Tiles.sortTiles(currentHand);
       var row = document.getElementById('aiHandRow');
       row.innerHTML = currentHand.length
         ? currentHand.map(function(t) {
             return '<span class="ai-hand-tile-wrap">' + renderDefTile(t, { small: true }) + '</span>';
           }).join('')
-        : '<span style="color:#8ab89c;font-size:0.8rem">手牌が空です。下の一覧から牌を選んでください</span>';
-      document.getElementById('aiHandCount').textContent = currentHand.length + ' / ' + MAX_HAND + '枚';
+        : '<span style="color:#8ab89c;font-size:0.8rem">手牌が空です。「更新」で配り直してください</span>';
+      document.getElementById('aiHandCount').textContent = currentHand.length + '枚';
       document.querySelectorAll('#aiHandRow .ai-hand-tile-wrap').forEach(function(el, i) {
         el.addEventListener('click', function() {
           currentHand.splice(i, 1);
@@ -4666,14 +4657,6 @@ var App = {
     };
     renderHand();
 
-    document.querySelectorAll('#aiTilePalette .tile').forEach(function(el) {
-      el.addEventListener('click', function() {
-        if (currentHand.length >= MAX_HAND) { showToast('手牌は' + MAX_HAND + '枚までです'); return; }
-        var num = parseInt(el.dataset.num, 10);
-        currentHand.push({suit: el.dataset.suit, num: num});
-        renderHand();
-      });
-    });
     document.getElementById('btnHandReset').addEventListener('click', function() {
       currentHand = makeRandomHand();
       renderHand();
