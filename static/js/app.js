@@ -5056,7 +5056,9 @@ var App = {
           '<div class="ai-response ai-error">' + esc(battleAdviceError) + '</div></div>';
       }
       if (!battleAdvice) return '';
-      var oneLine = (battleAdvice.tileName || battleAdvice.discard) + '切り。' + (battleAdvice.reason || '形がいちばん残るから');
+      var oneLine = battleAdvice.alreadyWon
+        ? (battleAdvice.reason || 'この手はもう和了できる形です。')
+        : (battleAdvice.tileName || battleAdvice.discard) + '切り。' + (battleAdvice.reason || '形がいちばん残るから');
       return '<div class="ai-panel battle-ai-card">' +
         '<div class="battle-ai-recommend ai-one-line">' + esc(oneLine) + '</div>' +
       '</div>';
@@ -5087,6 +5089,12 @@ var App = {
       }).then(function(res) {
         battleAdviceLoading = false;
         var d = res.data || {};
+        if (d.alreadyWon) {
+          battleAdvice = d;
+          battleAdviceTileId = '';
+          renderGame();
+          return;
+        }
         if (!res.ok || d.error || !d.discard) {
           battleAdviceError = d.message || 'アドバイスを取得できませんでした。';
           renderGame();

@@ -345,6 +345,91 @@ def clean_advice_response(obj, allowed_tiles):
         'warning': str(obj.get('warning') or '')[:160],
     }
 
+# ============================================================
+#  和了判定（AIアドバイスを呼ぶ前に「もう和了している」を検出する）
+#
+#  2026-09-16：完成形の手（対々和＋混老頭など）を渡しても、Geminiが
+#  それに気づかず「役満を狙うために対子を切る」のような的外れな
+#  助言を返すことがあった。和了判定はAIまかせにせず、こちらで先に
+#  構造だけ（4面子+雀頭・七対子・国士無双）を機械的に確認する。
+#  役の有無・点数計算はしない（あくまで「打牌の助言が要らない場面か」の判定用）。
+# ============================================================
+KOKUSHI_TILE_IDS = {
+    '1m', '9m', '1p', '9p', '1s', '9s',
+    'east', 'south', 'west', 'north', 'white', 'green', 'red',
+}
+
+def _parse_tile_for_shape(tile_id):
+    if tile_id in ('east', 'south', 'west', 'north', 'white', 'green', 'red'):
+        return ('honor', tile_id)
+    return (tile_id[-1], int(tile_id[:-1]))
+
+def _is_chiitoitsu_shape(tile_ids):
+    if len(tile_ids) != 14:
+        return False
+    counts = {}
+    for t in tile_ids:
+        counts[t] = counts.get(t, 0) + 1
+    return len(counts) == 7 and all(v == 2 for v in counts.values())
+
+def _is_kokushi_shape(tile_ids):
+    if len(tile_ids) != 14:
+        return False
+    counts = {}
+    for t in tile_ids:
+        if t not in KOKUSHI_TILE_IDS:
+            return False
+        counts[t] = counts.get(t, 0) + 1
+    return len(counts) == 13
+
+def _remove_melds(counts, needed_sets):
+    if needed_sets == 0:
+        return all(c == 0 for c in counts.values())
+    remaining = [k for k, c in counts.items() if c > 0]
+    if not remaining:
+        return False
+    v = min(remaining)
+    if counts[v] >= 3:
+        counts[v] -= 3
+        ok = _remove_melds(counts, needed_sets - 1)
+        counts[v] += 3
+        if ok:
+            return True
+    suit, num = v
+    if suit in ('m', 'p', 's') and num <= 7:
+        v2, v3 = (suit, num + 1), (suit, num + 2)
+        if counts.get(v2, 0) > 0 and counts.get(v3, 0) > 0:
+            counts[v] -= 1; counts[v2] -= 1; counts[v3] -= 1
+            ok = _remove_melds(counts, needed_sets - 1)
+            counts[v] += 1; counts[v2] += 1; counts[v3] += 1
+            if ok:
+                return True
+    return False
+
+def _is_standard_shape(tile_ids, needed_sets):
+    counts = {}
+    for t in tile_ids:
+        k = _parse_tile_for_shape(t)
+        counts[k] = counts.get(k, 0) + 1
+    for v in sorted(counts.keys()):
+        if counts[v] >= 2:
+            counts[v] -= 2
+            if _remove_melds(dict(counts), needed_sets):
+                return True
+            counts[v] += 2
+    return False
+
+def is_complete_hand(tile_ids, num_open_melds=0):
+    """closed_hand（tile_ids）＋副露（num_open_melds）が、もう和了できる形かどうか。
+    役の有無は見ない。形だけの判定。"""
+    needed_sets = 4 - num_open_melds
+    if len(tile_ids) != needed_sets * 3 + 2:
+        return False
+    if num_open_melds == 0:
+        if _is_chiitoitsu_shape(tile_ids) or _is_kokushi_shape(tile_ids):
+            return True
+    return _is_standard_shape(tile_ids, needed_sets)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -484,6 +569,25 @@ def mahjong_advice():
     hand = normalize_tile_list(data.get('hand'), limit=18)
     if not hand:
         return jsonify({'message': 'アドバイスを取得できませんでした。'}), 400
+
+    calls_data = data.get('calls', {})
+    self_calls = calls_data.get('self') if isinstance(calls_data, dict) else None
+    num_open_melds = len(self_calls) if isinstance(self_calls, list) else 0
+
+    # AIに聞くまでもなく、もう和了できる形なら先に知らせる（Geminiに渡すと
+    # 完成形に気づかず崩す助言を返すことがあったため）。
+    if is_complete_hand(hand, num_open_melds):
+        return jsonify({
+            'discard': '',
+            'tileName': '',
+            'reason': 'この手はもう和了できる形です。ツモを宣言しましょう。',
+            'detailedReason': {'efficiency': '', 'value': '', 'risk': ''},
+            'nextAdvice': '',
+            'confidence': 1.0,
+            'candidates': [],
+            'warning': '',
+            'alreadyWon': True,
+        })
 
     api_key, model = get_gemini_settings()
     if not api_key:
