@@ -4633,7 +4633,6 @@ var App = {
             '<button class="btn btn-secondary" id="btnHandReset" style="font-size:0.72rem;padding:3px 9px">🔀 更新</button>' +
           '</div>' +
           '<div class="example-hand-row ai-sample-hand" id="aiHandRow"></div>' +
-          '<div class="ai-coach-label">下から選んで手牌に追加</div>' +
           '<div class="tiles-row ai-tile-palette" id="aiTilePalette">' +
             PALETTE.map(function(t) { return renderDefTile(t, { small: true }); }).join('') +
           '</div>' +
