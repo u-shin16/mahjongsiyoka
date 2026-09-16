@@ -4611,19 +4611,30 @@ var App = {
 
   // ===== AI Coach =====
   _renderAICoach: function(main) {
-    // 2026-09-16：固定サンプル1つだと代わり映えしないため、山からランダムに
-    // 13枚配る形にした。「更新」ボタンでいつでも新しい手に配り直せる。
-    // 牌を選んで追加するパレットと、牌をタップしての削除は不要と言われたため置かない。
-    var makeRandomHand = function() {
-      return Tiles.makeFull().slice(0, 13).map(function(t) { return {suit: t.suit, num: t.num}; });
+    // 2026-09-16：手牌は山からランダムに配り、ツモも毎回ランダム。
+    // 牌をタップするとその牌を切り、続けて新しい牌をランダムにツモう。
+    // 実際の対局の「ツモって切る」の流れに寄せた。
+    var wall = [];
+    var currentHand;  // 13枚（並び替え済み）
+    var drawnTile;    // ツモった1枚
+
+    var drawOne = function() {
+      if (!wall.length) wall = Tiles.makeFull();
+      var t = wall.shift();
+      return {suit: t.suit, num: t.num};
     };
-    var currentHand = makeRandomHand();
+    var dealHand = function() {
+      wall = Tiles.makeFull();
+      currentHand = wall.splice(0, 13).map(function(t) { return {suit: t.suit, num: t.num}; });
+      drawnTile = drawOne();
+    };
+    dealHand();
 
     main.innerHTML = '<div class="page-title">AI先生</div>' +
       '<div class="ai-coach-wrap">' +
         '<div class="ai-coach-card">' +
-          '<div class="ai-coach-label">手牌　<span id="aiHandCount"></span>　' +
-            '<button class="btn btn-secondary" id="btnHandReset" style="font-size:0.72rem;padding:3px 9px">🔀 更新</button>' +
+          '<div class="ai-coach-label">手牌（タップで切る）　' +
+            '<button class="btn btn-secondary" id="btnHandReset" style="font-size:0.72rem;padding:3px 9px">🔀 配り直す</button>' +
           '</div>' +
           '<div class="example-hand-row ai-sample-hand" id="aiHandRow"></div>' +
           '<div class="ai-level-row" id="coachLevel">' +
@@ -4642,15 +4653,25 @@ var App = {
     var renderHand = function() {
       currentHand = Tiles.sortTiles(currentHand);
       var row = document.getElementById('aiHandRow');
-      row.innerHTML = currentHand.map(function(t) {
-        return renderDefTile(t, { small: true, noHover: true });
-      }).join('');
-      document.getElementById('aiHandCount').textContent = currentHand.length + '枚';
+      row.innerHTML = currentHand.map(function(t, i) {
+        return '<span class="ai-hand-tile-wrap" data-kind="hand" data-idx="' + i + '">' + renderDefTile(t, { small: true }) + '</span>';
+      }).join('') +
+        '<span class="ai-hand-tile-wrap battle-drew-tile" data-kind="drawn">' + renderDefTile(drawnTile, { small: true }) + '</span>';
+      document.querySelectorAll('#aiHandRow .ai-hand-tile-wrap').forEach(function(el) {
+        el.addEventListener('click', function() {
+          if (el.dataset.kind === 'hand') {
+            currentHand.splice(parseInt(el.dataset.idx, 10), 1);
+            currentHand.push(drawnTile);
+          }
+          drawnTile = drawOne();
+          renderHand();
+        });
+      });
     };
     renderHand();
 
     document.getElementById('btnHandReset').addEventListener('click', function() {
-      currentHand = makeRandomHand();
+      dealHand();
       renderHand();
     });
 
@@ -4670,12 +4691,11 @@ var App = {
     });
     document.getElementById('btnCoachAsk').addEventListener('click', function() {
       var q = document.getElementById('aiCoachInput').value.trim() || '麻雀で最初に意識するとよいことを教えてください。';
-      askAI(currentHand, q, level, document.getElementById('aiCoachResp'));
+      askAI(currentHand.concat([drawnTile]), q, level, document.getElementById('aiCoachResp'));
     });
     document.getElementById('btnCoachDiscard').addEventListener('click', function() {
-      if (!currentHand.length) { showToast('手牌が空です。牌を追加してください'); return; }
       var q = document.getElementById('aiCoachInput').value.trim();
-      askAI(currentHand, (q ? q + '。' : '') + 'この手牌なら何を切るのがおすすめですか？理由も短く教えてください。', level, document.getElementById('aiCoachResp'));
+      askAI(currentHand.concat([drawnTile]), (q ? q + '。' : '') + 'この手牌なら何を切るのがおすすめですか？理由も短く教えてください。', level, document.getElementById('aiCoachResp'));
     });
   },
 
