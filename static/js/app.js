@@ -4611,46 +4611,13 @@ var App = {
 
   // ===== AI Coach =====
   _renderAICoach: function(main) {
-    // 2026-09-16：サンプル手牌が毎回同じで代わり映えしなかったため、
-    // 見せたい場面が違う手をいくつか用意し、開くたびにランダムで1つ選ぶ。
-    var SAMPLE_HANDS = [
-      // テンパイ・役牌の対子あり（6萬/9萬待ち）
-      [
-        {suit:'man',num:2},{suit:'man',num:3},{suit:'man',num:4},
-        {suit:'pin',num:3},{suit:'pin',num:4},{suit:'pin',num:5},
-        {suit:'sou',num:6},{suit:'sou',num:7},{suit:'sou',num:8},
-        {suit:'man',num:7},{suit:'man',num:8},{suit:'dragon',num:3},{suit:'dragon',num:3}
-      ],
-      // 1シャンテン（2つの両面候補と浮き牌）
-      [
-        {suit:'sou',num:1},{suit:'sou',num:2},{suit:'sou',num:3},
-        {suit:'pin',num:4},{suit:'pin',num:5},{suit:'pin',num:6},
-        {suit:'man',num:2},{suit:'man',num:2},
-        {suit:'man',num:5},{suit:'man',num:6},
-        {suit:'sou',num:7},{suit:'sou',num:8},
-        {suit:'man',num:9}
-      ],
-      // 七対子に寄った形（対子5つ＋浮き牌2つ）
-      [
-        {suit:'man',num:1},{suit:'man',num:1},
-        {suit:'pin',num:5},{suit:'pin',num:5},
-        {suit:'sou',num:9},{suit:'sou',num:9},
-        {suit:'wind',num:1},{suit:'wind',num:1},
-        {suit:'dragon',num:1},{suit:'dragon',num:1},
-        {suit:'man',num:3},{suit:'pin',num:7},{suit:'sou',num:2}
-      ],
-      // テンパイ・タンヤオ寄り（役牌なし、6索/9索待ち）
-      [
-        {suit:'man',num:2},{suit:'man',num:3},{suit:'man',num:4},
-        {suit:'pin',num:5},{suit:'pin',num:6},{suit:'pin',num:7},
-        {suit:'sou',num:3},{suit:'sou',num:4},{suit:'sou',num:5},
-        {suit:'sou',num:6},{suit:'sou',num:6},
-        {suit:'sou',num:7},{suit:'sou',num:8}
-      ],
-    ];
-    var DEFAULT_HAND = SAMPLE_HANDS[Math.floor(Math.random() * SAMPLE_HANDS.length)];
+    // 2026-09-16：固定サンプル1つだと代わり映えしないため、山からランダムに
+    // 13枚配る形にした。「更新」ボタンでいつでも新しい手に配り直せる。
     var MAX_HAND = 14;
-    var currentHand = DEFAULT_HAND.slice();
+    var makeRandomHand = function() {
+      return Tiles.makeFull().slice(0, 13).map(function(t) { return {suit: t.suit, num: t.num}; });
+    };
+    var currentHand = makeRandomHand();
 
     var PALETTE = [];
     for (var pn = 1; pn <= 9; pn++) PALETTE.push({suit:'man', num:pn});
@@ -4662,9 +4629,10 @@ var App = {
     main.innerHTML = '<div class="page-title">AI先生</div>' +
       '<div class="ai-coach-wrap">' +
         '<div class="ai-coach-card">' +
-          '<div class="ai-coach-label">手牌（タップで削除）　<span id="aiHandCount"></span></div>' +
+          '<div class="ai-coach-label">手牌（タップで削除）　<span id="aiHandCount"></span>　' +
+            '<button class="btn btn-secondary" id="btnHandReset" style="font-size:0.72rem;padding:3px 9px">🔀 更新</button>' +
+          '</div>' +
           '<div class="example-hand-row ai-sample-hand" id="aiHandRow"></div>' +
-          '<button class="btn btn-secondary" id="btnHandReset" style="margin-bottom:12px;font-size:0.75rem;padding:5px 10px">サンプル手牌に戻す</button>' +
           '<div class="ai-coach-label">下から選んで手牌に追加</div>' +
           '<div class="tiles-row ai-tile-palette" id="aiTilePalette">' +
             PALETTE.map(function(t) { return renderDefTile(t, { small: true }); }).join('') +
@@ -4708,7 +4676,7 @@ var App = {
       });
     });
     document.getElementById('btnHandReset').addEventListener('click', function() {
-      currentHand = DEFAULT_HAND.slice();
+      currentHand = makeRandomHand();
       renderHand();
     });
 
