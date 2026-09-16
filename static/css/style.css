@@ -1203,6 +1203,13 @@ button { font-family: inherit; cursor: pointer; }
 .ai-sample-hand {
   margin-bottom: 12px;
   justify-content: flex-start;
+  min-height: 54px;
+}
+.ai-hand-tile-wrap { display: inline-flex; }
+.ai-tile-palette {
+  justify-content: flex-start;
+  gap: 5px;
+  margin-bottom: 14px;
 }
 .ai-textarea {
   width: 100%;

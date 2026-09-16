@@ -4611,19 +4611,64 @@ var App = {
 
   // ===== AI Coach =====
   _renderAICoach: function(main) {
-    var sampleHand = [
-      {suit:'man',num:2},{suit:'man',num:3},{suit:'man',num:4},
-      {suit:'pin',num:3},{suit:'pin',num:4},{suit:'pin',num:5},
-      {suit:'sou',num:6},{suit:'sou',num:7},{suit:'sou',num:8},
-      {suit:'man',num:7},{suit:'man',num:8},{suit:'dragon',num:3},{suit:'dragon',num:3}
+    // 2026-09-16：サンプル手牌が毎回同じで代わり映えしなかったため、
+    // 見せたい場面が違う手をいくつか用意し、開くたびにランダムで1つ選ぶ。
+    var SAMPLE_HANDS = [
+      // テンパイ・役牌の対子あり（6萬/9萬待ち）
+      [
+        {suit:'man',num:2},{suit:'man',num:3},{suit:'man',num:4},
+        {suit:'pin',num:3},{suit:'pin',num:4},{suit:'pin',num:5},
+        {suit:'sou',num:6},{suit:'sou',num:7},{suit:'sou',num:8},
+        {suit:'man',num:7},{suit:'man',num:8},{suit:'dragon',num:3},{suit:'dragon',num:3}
+      ],
+      // 1シャンテン（2つの両面候補と浮き牌）
+      [
+        {suit:'sou',num:1},{suit:'sou',num:2},{suit:'sou',num:3},
+        {suit:'pin',num:4},{suit:'pin',num:5},{suit:'pin',num:6},
+        {suit:'man',num:2},{suit:'man',num:2},
+        {suit:'man',num:5},{suit:'man',num:6},
+        {suit:'sou',num:7},{suit:'sou',num:8},
+        {suit:'man',num:9}
+      ],
+      // 七対子に寄った形（対子5つ＋浮き牌2つ）
+      [
+        {suit:'man',num:1},{suit:'man',num:1},
+        {suit:'pin',num:5},{suit:'pin',num:5},
+        {suit:'sou',num:9},{suit:'sou',num:9},
+        {suit:'wind',num:1},{suit:'wind',num:1},
+        {suit:'dragon',num:1},{suit:'dragon',num:1},
+        {suit:'man',num:3},{suit:'pin',num:7},{suit:'sou',num:2}
+      ],
+      // テンパイ・タンヤオ寄り（役牌なし、6索/9索待ち）
+      [
+        {suit:'man',num:2},{suit:'man',num:3},{suit:'man',num:4},
+        {suit:'pin',num:5},{suit:'pin',num:6},{suit:'pin',num:7},
+        {suit:'sou',num:3},{suit:'sou',num:4},{suit:'sou',num:5},
+        {suit:'sou',num:6},{suit:'sou',num:6},
+        {suit:'sou',num:7},{suit:'sou',num:8}
+      ],
     ];
+    var DEFAULT_HAND = SAMPLE_HANDS[Math.floor(Math.random() * SAMPLE_HANDS.length)];
+    var MAX_HAND = 14;
+    var currentHand = DEFAULT_HAND.slice();
+
+    var PALETTE = [];
+    for (var pn = 1; pn <= 9; pn++) PALETTE.push({suit:'man', num:pn});
+    for (var pn = 1; pn <= 9; pn++) PALETTE.push({suit:'pin', num:pn});
+    for (var pn = 1; pn <= 9; pn++) PALETTE.push({suit:'sou', num:pn});
+    [1,2,3,4].forEach(function(pn){ PALETTE.push({suit:'wind', num:pn}); });
+    [1,2,3].forEach(function(pn){ PALETTE.push({suit:'dragon', num:pn}); });
+
     main.innerHTML = '<div class="page-title">AI先生</div>' +
       '<div class="ai-coach-wrap">' +
         '<div class="ai-coach-card">' +
-          '<div class="ai-coach-label">サンプル手牌</div>' +
-          '<div class="example-hand-row ai-sample-hand">' + sampleHand.map(function(t) {
-            return renderDefTile(t, { noHover: true, small: true });
-          }).join('') + '</div>' +
+          '<div class="ai-coach-label">手牌（タップで削除）　<span id="aiHandCount"></span></div>' +
+          '<div class="example-hand-row ai-sample-hand" id="aiHandRow"></div>' +
+          '<button class="btn btn-secondary" id="btnHandReset" style="margin-bottom:12px;font-size:0.75rem;padding:5px 10px">サンプル手牌に戻す</button>' +
+          '<div class="ai-coach-label">下から選んで手牌に追加</div>' +
+          '<div class="tiles-row ai-tile-palette" id="aiTilePalette">' +
+            PALETTE.map(function(t) { return renderDefTile(t, { small: true }); }).join('') +
+          '</div>' +
           '<div class="ai-level-row" id="coachLevel">' +
             '<button class="ai-level-btn active" data-lv="beginner">🔰 初心者（やさしい）</button>' +
             '<button class="ai-level-btn" data-lv="advanced">⚡ 上級者（プロ視点）</button>' +
@@ -4636,6 +4681,36 @@ var App = {
         '</div>' +
         '<div class="ai-panel ai-coach-response"><div class="ai-panel-title"><span>🤖</span> AIの返答</div><div id="aiCoachResp" class="ai-response">質問を送るとここに表示されます。</div></div>' +
       '</div>';
+
+    var renderHand = function() {
+      var row = document.getElementById('aiHandRow');
+      row.innerHTML = currentHand.length
+        ? currentHand.map(function(t) {
+            return '<span class="ai-hand-tile-wrap">' + renderDefTile(t, { small: true }) + '</span>';
+          }).join('')
+        : '<span style="color:#8ab89c;font-size:0.8rem">手牌が空です。下の一覧から牌を選んでください</span>';
+      document.getElementById('aiHandCount').textContent = currentHand.length + ' / ' + MAX_HAND + '枚';
+      document.querySelectorAll('#aiHandRow .ai-hand-tile-wrap').forEach(function(el, i) {
+        el.addEventListener('click', function() {
+          currentHand.splice(i, 1);
+          renderHand();
+        });
+      });
+    };
+    renderHand();
+
+    document.querySelectorAll('#aiTilePalette .tile').forEach(function(el) {
+      el.addEventListener('click', function() {
+        if (currentHand.length >= MAX_HAND) { showToast('手牌は' + MAX_HAND + '枚までです'); return; }
+        var num = parseInt(el.dataset.num, 10);
+        currentHand.push({suit: el.dataset.suit, num: num});
+        renderHand();
+      });
+    });
+    document.getElementById('btnHandReset').addEventListener('click', function() {
+      currentHand = DEFAULT_HAND.slice();
+      renderHand();
+    });
 
     var LEVEL_DESCS = {
       beginner: '🔰 麻雀用語を使わず、日常語でやさしく解説します。',
@@ -4653,11 +4728,12 @@ var App = {
     });
     document.getElementById('btnCoachAsk').addEventListener('click', function() {
       var q = document.getElementById('aiCoachInput').value.trim() || '麻雀で最初に意識するとよいことを教えてください。';
-      askAI([], q, level, document.getElementById('aiCoachResp'));
+      askAI(currentHand, q, level, document.getElementById('aiCoachResp'));
     });
     document.getElementById('btnCoachDiscard').addEventListener('click', function() {
+      if (!currentHand.length) { showToast('手牌が空です。牌を追加してください'); return; }
       var q = document.getElementById('aiCoachInput').value.trim();
-      askAI(sampleHand, (q ? q + '。' : '') + 'この手牌なら何を切るのがおすすめですか？理由も短く教えてください。', level, document.getElementById('aiCoachResp'));
+      askAI(currentHand, (q ? q + '。' : '') + 'この手牌なら何を切るのがおすすめですか？理由も短く教えてください。', level, document.getElementById('aiCoachResp'));
     });
   },
 
