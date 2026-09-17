@@ -2107,7 +2107,7 @@ var App = {
     var TIERS = [
       { key:'core',     label:'必修',   sub:'これだけで麻雀が打てる' },
       { key:'practice', label:'実戦',   sub:'覚えると強くなる' },
-      { key:'advanced', label:'発展',   sub:'知らなくても打てる' },
+      { key:'advanced', label:'発展',   sub:'別のルールで遊ぶ' },
       { key:'test',     label:'腕試し', sub:'ここまでの確認' },
     ];
     var card = function(c) {
