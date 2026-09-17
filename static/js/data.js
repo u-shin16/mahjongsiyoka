@@ -13,6 +13,9 @@ var GameData = (function() {
   // 12章あるのを見た時点で諦めてしまう作りだった。
   // tier で4つに分け、必修（1〜6章）を終えれば打てると言い切れるようにした。
   //   core     … 必修。これだけで麻雀が打てる
+  // 2026-09-17：必修を1〜6章から1〜8章へ広げた。
+  // 6章までだと「役が無いとアガれない」も立直もタンヤオも知らないまま
+  // 対局に出ることになり、「これだけで打てる」と言えなかった。
   //   practice … 実戦。覚えると強くなる
   //   advanced … 発展。知らなくても打てる
   //   test     … 腕試し
@@ -24,8 +27,8 @@ var GameData = (function() {
     { id:4,  tier:'core',     title:'字牌を覚えよう', short:'字牌', diff:2, min:8, topics:['字牌は順子にならない','神経衰弱','刻子を作る'] },
     { id:5,  tier:'core',     title:'役牌を作ってみよう', short:'役牌', diff:2, min:4, topics:['三元牌（白・發・中）','風牌','役牌の判定'] },
     { id:6,  tier:'core',     title:'対局のルールを\n覚えよう', short:'対局のルール', diff:1, min:5, topics:['対局の進め方','ロンとツモ'] },
-    { id:7,  tier:'practice', title:'鳴きを使ってみよう', short:'ポン・チー・カン', diff:3, min:6, topics:['ポン・チーの判定','鳴けない場合の判定','カンの判定'] },
-    { id:8,  tier:'practice', title:'初心者向けの役', short:'基本の役', diff:3, min:28, topics:['役が無いとアガれない','フリテン','立直','タンヤオ','平和','一発'] },
+    { id:7,  tier:'core',     title:'鳴きを使ってみよう', short:'ポン・チー・カン', diff:3, min:6, topics:['ポン・チーの判定','鳴けない場合の判定','カンの判定'] },
+    { id:8,  tier:'core',     title:'初心者向けの役', short:'基本の役', diff:3, min:28, topics:['役が無いとアガれない','フリテン','立直','タンヤオ','平和','一発'] },
     { id:9,  tier:'practice', title:'翻を数えてみよう', short:'翻とドラと点数', diff:3, min:10, topics:['翻数','ドラ','点数'] },
     { id:10, tier:'test',     title:'復習テスト\n道場チャレンジ', short:'道場チャレンジ', diff:2, min:10, topics:['全章復習','10問テスト','段位評価'] },
     { id:11, tier:'advanced', title:'中級者向けの役', short:'中級役', diff:3, min:40, topics:['一盃口','三色同順','三色同刻','対々和','一気通貫','三暗刻'] },
