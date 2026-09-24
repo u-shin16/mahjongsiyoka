@@ -1,10 +1,10 @@
 # ============================================================
-#  AIアドバイス用の計算（シャンテン数・受け入れ枚数・安全牌）
+#  対局中アドバイスの計算（シャンテン数・受け入れ枚数・つながりやすさ）
 #
 #  2026-09-24：これまでは手牌と捨て牌をそのままGeminiに渡し、
-#  「何を切るか」をAIの感覚に任せていた。AIは見えている牌を
-#  数え間違えるため、捨て牌を渡しても受け入れ枚数に活きていなかった。
-#  数えられるものはここで数え、AIには「どれを切るか」と理由だけを任せる。
+#  「何を切るか」をAIの感覚に任せていた。AIは見えている牌を数え間違え、
+#  受け入れ枚数が同点の牌から字牌を残して9萬を切らせることもあった。
+#  「従えば最も早く上がれる」を基準に、切る牌はここで決める。
 # ============================================================
 from functools import lru_cache
 
@@ -110,8 +110,11 @@ def dora_from_indicator(tile_id):
     return TILE_ORDER[31 + (i - 31 + 1) % 3]
 
 
+WIND_NAME_TO_ID = {'東': 'east', '南': 'south', '西': 'west', '北': 'north'}
+
+
 def analyze_discards(situation):
-    """切る牌ごとに、切った後のシャンテン数・受け入れ枚数・安全かどうかを出す。
+    """切る牌ごとに、切った後のシャンテン数・受け入れ枚数・つながりやすさを出す。
 
     受け入れ枚数は「4枚 − 見えている枚数」で数える。見えている牌は
     自分の手牌・全員の捨て牌・全員の鳴いた牌・ドラ表示牌。
@@ -134,8 +137,13 @@ def analyze_discards(situation):
             return 0
         return max(0, 4 - visible_counts[i])
 
-    riichi_seats = [s for s, on in situation['riichi'].items() if on and s != 'self']
     doras = {dora_from_indicator(t) for t in situation.get('doraIndicators') or []}
+    # 役牌（三元牌・場風・自風）は2枚そろえば鳴いて役になるので、オタ風より残す
+    yakuhai = {'white', 'green', 'red'}
+    for key in ('roundWind', 'playerWind'):
+        wind = WIND_NAME_TO_ID.get(situation.get(key) or '')
+        if wind:
+            yakuhai.add(wind)
 
     hand_counts = _counts(hand)
     results = []
@@ -156,28 +164,46 @@ def analyze_discards(situation):
             if improves:
                 ukeire_tiles.append(TILE_ORDER[j])
                 ukeire += left
+        # つながりやすさ：この牌の近く（同じ色の±2）にまだ残っている枚数。
+        # 受け入れ枚数が同点のとき、つながりにくい牌から切るために使う。
+        if i < 27:
+            lo, hi = i - i % 9, i - i % 9 + 8
+            neighbors = [k for k in range(max(lo, i - 2), min(hi, i + 2) + 1)]
+        else:
+            neighbors = [i]
+        connect = sum(remaining(k) for k in neighbors)
         results.append({
             'tile': tile,
             'shanten': base,
             'ukeire': ukeire,
             'ukeireTiles': ukeire_tiles,
+            'connect': connect,
+            'isHonor': i >= 27,
+            'isYakuhai': tile in yakuhai,
             'isDora': tile in doras,
-            # 現物（リーチした人全員がすでに捨てている牌）なら、その人たちには当たらない
-            'safeAgainstRiichi': bool(riichi_seats) and all(
-                tile in situation['discards'].get(s, []) for s in riichi_seats),
         })
-    return results, riichi_seats
+    return results
 
 
-def pick_best(analysis, riichi_seats):
-    """AIを使わずに選ぶときのおすすめ。AIの答えが使えないときの代わりにも使う。"""
-    def attack_key(c):
-        return (c['shanten'], -c['ukeire'], c['isDora'])
+def pick_best(analysis):
+    """いちばん早く上がれる打牌を選ぶ。
+    1. 切った後のシャンテン数が小さい
+    2. 受け入れ枚数が多い
+    3. つながりにくい牌（字牌・端の牌）から切る
+    4. 同じなら役牌・ドラは残す
+    """
+    return min(analysis, key=lambda c: (
+        c['shanten'], -c['ukeire'], c['connect'] + (1 if c['isYakuhai'] else 0), c['isDora']))
 
-    best = min(analysis, key=attack_key)
-    # 誰かがリーチしていて、自分がまだ遠い（2シャンテン以上）なら安全牌を優先する
-    if riichi_seats and best['shanten'] >= 2:
-        safe = [c for c in analysis if c['safeAgainstRiichi']]
-        if safe:
-            return min(safe, key=attack_key), 'defense'
-    return best, 'attack'
+
+def advice_reason(best, analysis):
+    """おすすめの理由を、初心者にも読める短い一文にする。"""
+    if best['shanten'] == 0:
+        return f'テンパイ。待ちは残り{best["ukeire"]}枚'
+    tied = [c for c in analysis
+            if (c['shanten'], c['ukeire']) == (best['shanten'], best['ukeire'])]
+    if len(tied) == 1:
+        return f'進める牌が{best["ukeire"]}枚で最多'
+    if best['isHonor']:
+        return '字牌はつながらず使いにくい'
+    return 'ほかの牌とつながりにくい'

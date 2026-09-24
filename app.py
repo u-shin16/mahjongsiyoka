@@ -1,11 +1,10 @@
-import json
 import os
 from datetime import datetime
 from xml.sax.saxutils import escape
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 
-from advice_calc import analyze_discards, pick_best
+from advice_calc import analyze_discards, pick_best, advice_reason
 
 load_dotenv()
 
@@ -170,59 +169,6 @@ TILE_ID_NAMES = {
     'red': '中',
 }
 
-ADVICE_SYSTEM_PROMPT = MAHJONG_KNOWLEDGE + """
-
-あなたは初心者向け麻雀アプリ「まーじゃんしよか」の最強の麻雀AIアドバイザーです。
-土田浩翔プロのデジタル打法を思考の核とし、手牌、ツモ牌、捨て牌、ドラ、副露、立直状況、
-残り山、局情報から、和了期待値を最大化し、失点リスクを最小化する次の一手（何切る）を提示してください。
-
-思考の基本原則:
-1. 中盤までは一人麻雀
-・序盤から中盤は他家の動きに過剰反応せず、自分の手牌を最短・最速で完成させる。
-・ただし立直、副露、ドラ周辺の危険サインが見えた時はリスク評価に反映する。
-
-2. 打点より形を優先
-・無理な高打点より、和了しやすい形と速度を優先する。
-・テンパイ効率だけでなく、最終的に和了できる確率、待ちの強さ、山に残っていそうな牌を重視する。
-・孤立牌はくっつきの強さ、役への発展性、ドラや赤牌との相性で厳密に比較する。
-・ツキや流れなどのオカルトは使わず、統計的・論理的な期待値で判断する。
-
-3. 三麻と四麻を切り替える
-・gameMode が sanma の時は三人麻雀として扱い、四麻とは別ゲームとしてスピードを最重視する。
-・三麻では攻めを強く評価し、七対子を攻守の要として積極的に候補に入れる。
-・三麻の親番では安手でも早い和了と連荘を高く評価する。
-・三麻では字牌やスジ牌も危険牌になり得るため、安全牌として過信しない。
-・三麻の一色手は作りやすいが読まれやすく遅くなる場合があるので、速度と打点を比較する。
-・gameMode が yonma の時は四人麻雀として、立直、断么九、平和など基本役を軸にバランスよく進める。
-
-4. 役の構築
-・1飜: 門前清自摸和、立直、一発、断么九、平和、一盃口、役牌、槍槓、嶺上開花、海底、河底。
-・2飜: ダブル立直、七対子、連風牌、対々和、三暗刻、三色同刻、三色同順、混老頭、一気通貫、チャンタ、小三元、三槓子。
-・3飜以上: 混一色、純チャン、二盃口、流し満貫、清一色。
-・役満: 天和、地和、人和、緑一色、大三元、小四喜、大四喜、字一色、国士無双、九蓮宝燈、四暗刻、清老頭、四槓子など。
-・役満や清一色は配牌と場況が明確に向いている時だけ評価し、無理に追わない。
-
-5. 捨て牌読みとリスク管理
-・尖張牌（3・7）の早出、役牌の連続切り、ドラ隣の早出、副露、立直から他家の速度と危険度を推測する。
-・赤牌やドラ周辺は打点上昇の価値が高いので、安易に手放さない。
-・受け入れ枚数・シャンテン数・現物は discardAnalysis に計算済みなので、その数字だけを使う。
-・自分で枚数を数え直したり、discardAnalysis に無い数字を作ったりしない。
-
-出力条件:
-・日本式リーチ麻雀として考える。
-・判断は強く実戦的に、文章は初心者にも読める短さにする。
-・手牌に存在する牌だけを discard に選ぶ。
-・手牌にない牌は絶対に選ばない。
-・断定しすぎず、「おすすめ」として説明する。
-・返答はJSONのみ。
-・Markdownは禁止。
-・コードブロックは禁止。
-
-返答JSONの意味:
-・reason は「受けが広いから」「安全牌だから」のように20文字前後の理由だけ。
-・長い解説、他候補、次の方針は書かない。
-"""
-
 def get_gemini_settings():
     api_key = os.environ.get('GEMINI_API_KEY')
     model = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
@@ -284,68 +230,6 @@ def normalize_tile_list(values, limit=80):
       if tile:
           result.append(tile)
     return result
-
-def extract_json_object(text):
-    """Geminiが余分な文字を返しても、最初のJSONオブジェクトだけ読む。"""
-    raw = (text or '').strip()
-    if raw.startswith('```'):
-        raw = raw.replace('```json', '').replace('```', '').strip()
-    start = raw.find('{')
-    end = raw.rfind('}')
-    if start < 0 or end < start:
-        raise ValueError('json object not found')
-    return json.loads(raw[start:end + 1])
-
-def clean_advice_response(obj, allowed_tiles):
-    """AIが手牌にない牌を選んだ場合は失敗扱いにする。"""
-    allowed = set(allowed_tiles)
-    discard = normalize_tile_id(obj.get('discard'))
-    if not discard or discard not in allowed:
-        return None
-
-    candidates = []
-    seen = set()
-    for c in obj.get('candidates', []) if isinstance(obj.get('candidates'), list) else []:
-        tile = normalize_tile_id(c.get('tile') if isinstance(c, dict) else None)
-        if not tile or tile not in allowed or tile in seen:
-            continue
-        seen.add(tile)
-        candidates.append({
-            'tile': tile,
-            'tileName': str(c.get('tileName') or tile_display_name(tile))[:20],
-            'reason': str(c.get('reason') or '')[:30],
-        })
-        if len(candidates) >= 3:
-            break
-    if discard not in seen:
-        candidates.insert(0, {
-            'tile': discard,
-            'tileName': str(obj.get('tileName') or tile_display_name(discard))[:20],
-            'reason': str(obj.get('reason') or '')[:30],
-        })
-
-    try:
-        confidence = float(obj.get('confidence', 0.5))
-    except (TypeError, ValueError):
-        confidence = 0.5
-
-    return {
-        'discard': discard,
-        'tileName': str(obj.get('tileName') or tile_display_name(discard))[:20],
-        # 「一言で、どの牌を切るか・なんでかだけ」という要望のため、
-        # プロンプト側で20文字前後を指示していてもLLMが長く書くことがあるので、
-        # ここでも短く切り詰めてハードに担保する。
-        'reason': str(obj.get('reason') or '')[:30],
-        'detailedReason': {
-            'efficiency': str((obj.get('detailedReason') or {}).get('efficiency') or '')[:260],
-            'value': str((obj.get('detailedReason') or {}).get('value') or '')[:260],
-            'risk': str((obj.get('detailedReason') or {}).get('risk') or '')[:260],
-        },
-        'nextAdvice': str(obj.get('nextAdvice') or '')[:260],
-        'confidence': max(0.0, min(1.0, confidence)),
-        'candidates': candidates[:3],
-        'warning': str(obj.get('warning') or '')[:160],
-    }
 
 # ============================================================
 #  和了判定（AIアドバイスを呼ぶ前に「もう和了している」を検出する）
@@ -591,12 +475,7 @@ def mahjong_advice():
             'alreadyWon': True,
         })
 
-    api_key, model = get_gemini_settings()
-    if not api_key:
-        return jsonify({'message': 'AI機能を使うにはGEMINI_API_KEYを.envに設定してください。'}), 500
-
-    # 後からシャンテン数・受け入れ枚数・安全牌評価を足せるよう、
-    # 対局状況はフロントから受けたJSONを牌IDへ正規化してGeminiに渡す。
+    # 対局状況はフロントから受けたJSONを牌IDへ正規化してから数える。
     situation = {
         'round': str(data.get('round') or '東1局')[:20],
         'honba': int(data.get('honba') or 0),
@@ -622,99 +501,23 @@ def mahjong_advice():
         situation['calls'][seat] = calls.get(seat) if isinstance(calls.get(seat), list) else []
         situation['riichi'][seat] = bool(riichi.get(seat))
 
-    # 数えられるもの（シャンテン数・受け入れ枚数・現物）はプログラムで数え、
-    # AIには「どれを切るか」と理由だけを任せる。
-    analysis, riichi_seats = analyze_discards(situation)
-    fallback, fallback_mode = pick_best(analysis, riichi_seats)
-    analysis_for_ai = [{
-        'tile': c['tile'],
-        'shantenAfter': c['shanten'],
-        'ukeire': c['ukeire'],
-        'ukeireTiles': c['ukeireTiles'],
-        'isDora': c['isDora'],
-        'safeAgainstRiichi': c['safeAgainstRiichi'],
-    } for c in sorted(analysis, key=lambda c: (c['shanten'], -c['ukeire']))]
-
-    prompt = (
-        '以下の対局状況を見て、今おすすめの打牌を1つ選んでください。\n'
-        '必ず allowedDiscards に含まれる牌IDだけを discard に入れてください。\n'
-        'discardAnalysis は切る牌ごとにプログラムで数えた結果です。\n'
-        'shantenAfter はその牌を切った後のシャンテン数（0がテンパイ）、\n'
-        'ukeire は見えている牌を除いて数えた受け入れ枚数、\n'
-        'safeAgainstRiichi はリーチ者全員の現物かどうかです。\n'
-        'シャンテン数や枚数は自分で数え直さず、必ずこの数字を使ってください。\n'
-        '誰もリーチしていなければ、原則 shantenAfter が最小で ukeire が多い牌から選んでください。\n'
-        'reason は「受けが広いから」「安全牌だから」のように20文字前後で、理由だけを書いてください。\n'
-        '長い解説、候補比較、次の方針は不要です。\n'
-        '返答はJSONオブジェクトのみです。\n\n'
-        'allowedDiscards:\n'
-        + json.dumps(hand, ensure_ascii=False)
-        + '\n\n対局状況JSON:\n'
-        + json.dumps(situation, ensure_ascii=False)
-        + '\n\ndiscardAnalysis:\n'
-        + json.dumps(analysis_for_ai, ensure_ascii=False)
-        + '\n\n返答形式:\n'
-        + json.dumps({
-            'discard': '牌ID',
-            'tileName': '表示用の牌名',
-            'reason': '理由だけを20文字前後',
-            'detailedReason': {},
-            'nextAdvice': '',
-            'confidence': 0.0,
-            'candidates': [],
-            'warning': '',
-        }, ensure_ascii=False)
-    )
-
-    try:
-        text, model = generate_gemini_text(
-            prompt,
-            ADVICE_SYSTEM_PROMPT,
-            max_output_tokens=220,
-            temperature=0.25,
-            response_json=True,
-        )
-        parsed = extract_json_object(text)
-        cleaned = clean_advice_response(parsed, hand)
-    except Exception:
-        # Geminiが止まっても（月額上限など）、数えた結果だけでおすすめを出す
-        app.logger.exception('Mahjong advice request failed')
-        return jsonify(fallback_advice(fallback, fallback_mode))
-    if not cleaned:
-        return jsonify(fallback_advice(fallback, fallback_mode))
-    # 数えた結果と食い違う答えは採用しない
-    #  ・誰もリーチしていないのに、形を崩す（シャンテン数が戻る）牌を選んだ
-    #  ・リーチを受けて自分が遠い（守る場面）のに、現物でない牌を選んだ
-    chosen = next((c for c in analysis if c['tile'] == cleaned['discard']), None)
-    if chosen and not riichi_seats and chosen['shanten'] > fallback['shanten']:
-        return jsonify(fallback_advice(fallback, fallback_mode))
-    if chosen and fallback_mode == 'defense' and not chosen['safeAgainstRiichi']:
-        return jsonify(fallback_advice(fallback, fallback_mode))
-    # AIが牌IDのまま（9pなど）返すことがあるので、表示名はこちらで付ける
-    cleaned['tileName'] = tile_display_name(cleaned['discard'])
-    cleaned['model'] = model
-    return jsonify(cleaned)
-
-
-def fallback_advice(best, mode):
-    """AIの答えが使えないときに、数えた結果だけで作るおすすめ。"""
-    if mode == 'defense':
-        reason = 'リーチの現物で安全だから'
-    elif best['shanten'] == 0:
-        reason = f'テンパイで待ち{best["ukeire"]}枚'
-    else:
-        reason = f'受け入れ{best["ukeire"]}枚で最多'
-    return {
+    # 2026-09-24：「このアドバイスに従えば最も早く上がれる」ようにするため、
+    # 切る牌はAIに選ばせずプログラムで決める（シャンテン数→受け入れ枚数→
+    # つながりやすさの順）。AIに選ばせると、受け入れ枚数が同点の牌から
+    # 手牌の並び順で9萬を選ぶなど、字牌を残す誤りが出ていた。
+    analysis = analyze_discards(situation)
+    best = pick_best(analysis)
+    return jsonify({
         'discard': best['tile'],
         'tileName': tile_display_name(best['tile']),
-        'reason': reason,
+        'reason': advice_reason(best, analysis),
         'detailedReason': {'efficiency': '', 'value': '', 'risk': ''},
         'nextAdvice': '',
-        'confidence': 0.5,
+        'confidence': 1.0,
         'candidates': [],
         'warning': '',
         'model': 'calc',
-    }
+    })
 
 @app.route('/api/ai-models', methods=['GET'])
 def list_models():

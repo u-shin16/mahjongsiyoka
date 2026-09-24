@@ -7,7 +7,6 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-os.environ.setdefault('GEMINI_API_KEY', 'test')
 
 import advice_calc as calc  # noqa: E402
 import app as app_module  # noqa: E402
@@ -61,69 +60,47 @@ check('北のドラ表示は東', calc.dora_from_indicator('north'), 'east')
 check('中のドラ表示は白', calc.dora_from_indicator('red'), 'white')
 
 # ── 受け入れ枚数は見えている牌を引く ──
-a, _ = calc.analyze_discards(situation('123m 456p 789s 11s 23m 9p', discards={'left': '1m 4m'}))
+a = calc.analyze_discards(situation('123m 456p 789s 11s 23m 9p', discards={'left': '1m 4m'}))
 nine = next(c for c in a if c['tile'] == '9p')
 check('9筒切りでテンパイ', nine['shanten'], 0)
 check('1-4萬待ちは見えている分を引いて5枚', nine['ukeire'], 5)
 check('受け入れの種類', nine['ukeireTiles'], ['1m', '4m'])
-best, mode = calc.pick_best(a, [])
-check('テンパイを取る牌を選ぶ', best['tile'], '9p')
+check('テンパイを取る牌を選ぶ', calc.pick_best(a)['tile'], '9p')
+check('テンパイの理由', calc.advice_reason(calc.pick_best(a), a), 'テンパイ。待ちは残り5枚')
 
 # ── 三人麻雀では2萬〜8萬を数えない ──
-a, _ = calc.analyze_discards(situation('123p 456p 789s 11s 34s 9p', game_mode='sanma'))
+a = calc.analyze_discards(situation('123p 456p 789s 11s 34s 9p', game_mode='sanma'))
 nine = next(c for c in a if c['tile'] == '9p')
 check('三麻の2-5索待ちは8枚', nine['ukeire'], 8)
 
-# ── リーチ者がいて自分が遠いときは現物を選ぶ ──
-a, seats = calc.analyze_discards(situation(
-    '1m 5m 9m 2p 6p 9p 3s 7s east south white green red north',
-    discards={'left': 'north 9p'}, riichi=['left']))
-best, mode = calc.pick_best(a, seats)
-check('守りに切り替える', mode, 'defense')
-check('現物を選ぶ', best['safeAgainstRiichi'], True)
+# ── 受け入れ枚数が同点なら、つながりにくい字牌から切る ──
+# 2026-09-24：9萬・1筒・南・西が同点で、並び順の先頭の9萬をすすめていた
+hand = '1m 3m 3m 4m 6m 9m 1p 4p 5p 7p 8s south west 5s'
+s1 = situation(hand)
+s1['roundWind'], s1['playerWind'] = '東', '南'
+a = calc.analyze_discards(s1)
+best = calc.pick_best(a)
+check('同点なら字牌から切る', best['isHonor'], True)
+check('自風の南は残してオタ風の西を切る', best['tile'], 'west')
+check('同点の理由', calc.advice_reason(best, a), '字牌はつながらず使いにくい')
 
 # ── /api/mahjong/advice ──
-app_module.app.logger.disabled = True  # 「AIが止まった」ときの例外ログを出さない
 client = app_module.app.test_client()
-payload = {
-    'hand': tiles('123m 456p 789s 11s 23m 9p'),
-    'discards': {'left': ['1m']}, 'calls': {}, 'riichi': {},
-    'doraIndicators': [], 'gameMode': 'yonma',
-}
 
 
-def ask(fake_reply):
-    def fake(*args, **kwargs):
-        if isinstance(fake_reply, Exception):
-            raise fake_reply
-        return fake_reply, 'gemini-test'
-    app_module.generate_gemini_text = fake
-    return client.post('/api/mahjong/advice', json=payload).get_json()
+def ask(hand_text, **extra):
+    body = {'hand': tiles(hand_text), 'discards': {}, 'calls': {}, 'riichi': {},
+            'doraIndicators': [], 'gameMode': 'yonma'}
+    body.update(extra)
+    return client.post('/api/mahjong/advice', json=body).get_json()
 
 
-d = ask('{"discard":"9p","tileName":"9筒","reason":"テンパイになるから"}')
-check('AIの答えをそのまま使う', (d['discard'], d['model']), ('9p', 'gemini-test'))
-
-d = ask('{"discard":"1s","tileName":"1索","reason":"なんとなく"}')
-check('形を崩す答えは計算結果に差し替える', (d['discard'], d['model']), ('9p', 'calc'))
-
-d = ask(RuntimeError('quota'))
-check('AIが止まっても計算結果で答える', (d['discard'], d['reason']), ('9p', 'テンパイで待ち6枚'))
-
-check('牌の名前は表示名にする', ask('{"discard":"9p","tileName":"9p"}')['tileName'], '9筒')
-
-d = ask('{"discard":"7z"}')
-check('手牌に無い牌は計算結果に差し替える', d['discard'], '9p')
-
-payload = {
-    'hand': tiles('1m 5m 9m 2p 6p 9p 3s 7s east south white green red north'),
-    'discards': {'left': ['north', '9p']}, 'calls': {}, 'riichi': {'left': True},
-    'doraIndicators': [], 'gameMode': 'yonma',
-}
-d = ask('{"discard":"5m","tileName":"5萬","reason":"形"}')
-check('守る場面で危ない牌は現物に差し替える', d['discard'] in ('north', '9p'), True)
-d = ask('{"discard":"9p","tileName":"9筒","reason":"現物だから"}')
-check('守る場面で現物ならAIの答えを使う', (d['discard'], d['model']), ('9p', 'gemini-test'))
+d = ask('123m 456p 789s 11s 23m 9p', discards={'left': ['1m']})
+check('テンパイを取る', (d['discard'], d['tileName'], d['reason']), ('9p', '9筒', 'テンパイ。待ちは残り6枚'))
+d = ask(hand, roundWind='東', playerWind='南')
+check('画面のケースで西を切る', d['discard'], 'west')
+d = ask('123m 456p 789s 11s 234m')
+check('和了形はツモをすすめる', d.get('alreadyWon'), True)
 
 print(f'AIアドバイス計算  成功: {passed}  失敗: {len(fails)}')
 for f in fails:
