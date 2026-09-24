@@ -38,6 +38,13 @@ run_suite api_test.js   "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK
 run_suite waitmark_test.js "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK/battle.js"
 run_suite quiz_test.js     "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK/data.js" "$WORK/chapters.js"
 
+# AIアドバイスの計算（Python）。.venv があればそちらを使う
+PY=python3
+[ -x "$ROOT/.venv/bin/python" ] && PY="$ROOT/.venv/bin/python"
+_out=$("$PY" "$ROOT/tests/advice_calc_test.py" 2>&1)
+echo "$_out"
+echo "$_out" | grep -q '失敗: 0' || FAILED=1
+
 echo ""
 if [ "$FAILED" -eq 0 ]; then echo "すべて通過しました。"; else echo "失敗したテストがあります。"; fi
 exit $FAILED

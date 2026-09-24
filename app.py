@@ -5,6 +5,8 @@ from xml.sax.saxutils import escape
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 
+from advice_calc import analyze_discards, pick_best
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -203,8 +205,8 @@ ADVICE_SYSTEM_PROMPT = MAHJONG_KNOWLEDGE + """
 5. 捨て牌読みとリスク管理
 ・尖張牌（3・7）の早出、役牌の連続切り、ドラ隣の早出、副露、立直から他家の速度と危険度を推測する。
 ・赤牌やドラ周辺は打点上昇の価値が高いので、安易に手放さない。
-・見えている牌から概算できる場合は受け入れ枚数や有効牌を短く示す。
-・厳密な枚数が確定できない場合は、嘘の数字を作らず「形として」「見えている情報では」と説明する。
+・受け入れ枚数・シャンテン数・現物は discardAnalysis に計算済みなので、その数字だけを使う。
+・自分で枚数を数え直したり、discardAnalysis に無い数字を作ったりしない。
 
 出力条件:
 ・日本式リーチ麻雀として考える。
@@ -620,9 +622,28 @@ def mahjong_advice():
         situation['calls'][seat] = calls.get(seat) if isinstance(calls.get(seat), list) else []
         situation['riichi'][seat] = bool(riichi.get(seat))
 
+    # 数えられるもの（シャンテン数・受け入れ枚数・現物）はプログラムで数え、
+    # AIには「どれを切るか」と理由だけを任せる。
+    analysis, riichi_seats = analyze_discards(situation)
+    fallback, fallback_mode = pick_best(analysis, riichi_seats)
+    analysis_for_ai = [{
+        'tile': c['tile'],
+        'shantenAfter': c['shanten'],
+        'ukeire': c['ukeire'],
+        'ukeireTiles': c['ukeireTiles'],
+        'isDora': c['isDora'],
+        'safeAgainstRiichi': c['safeAgainstRiichi'],
+    } for c in sorted(analysis, key=lambda c: (c['shanten'], -c['ukeire']))]
+
     prompt = (
         '以下の対局状況を見て、今おすすめの打牌を1つ選んでください。\n'
         '必ず allowedDiscards に含まれる牌IDだけを discard に入れてください。\n'
+        'discardAnalysis は切る牌ごとにプログラムで数えた結果です。\n'
+        'shantenAfter はその牌を切った後のシャンテン数（0がテンパイ）、\n'
+        'ukeire は見えている牌を除いて数えた受け入れ枚数、\n'
+        'safeAgainstRiichi はリーチ者全員の現物かどうかです。\n'
+        'シャンテン数や枚数は自分で数え直さず、必ずこの数字を使ってください。\n'
+        '誰もリーチしていなければ、原則 shantenAfter が最小で ukeire が多い牌から選んでください。\n'
         'reason は「受けが広いから」「安全牌だから」のように20文字前後で、理由だけを書いてください。\n'
         '長い解説、候補比較、次の方針は不要です。\n'
         '返答はJSONオブジェクトのみです。\n\n'
@@ -630,6 +651,8 @@ def mahjong_advice():
         + json.dumps(hand, ensure_ascii=False)
         + '\n\n対局状況JSON:\n'
         + json.dumps(situation, ensure_ascii=False)
+        + '\n\ndiscardAnalysis:\n'
+        + json.dumps(analysis_for_ai, ensure_ascii=False)
         + '\n\n返答形式:\n'
         + json.dumps({
             'discard': '牌ID',
@@ -653,13 +676,45 @@ def mahjong_advice():
         )
         parsed = extract_json_object(text)
         cleaned = clean_advice_response(parsed, hand)
-        if not cleaned:
-            return jsonify({'message': 'アドバイスを取得できませんでした。'}), 200
-        cleaned['model'] = model
-        return jsonify(cleaned)
     except Exception:
+        # Geminiが止まっても（月額上限など）、数えた結果だけでおすすめを出す
         app.logger.exception('Mahjong advice request failed')
-        return jsonify({'message': 'アドバイスを取得できませんでした。'}), 500
+        return jsonify(fallback_advice(fallback, fallback_mode))
+    if not cleaned:
+        return jsonify(fallback_advice(fallback, fallback_mode))
+    # 数えた結果と食い違う答えは採用しない
+    #  ・誰もリーチしていないのに、形を崩す（シャンテン数が戻る）牌を選んだ
+    #  ・リーチを受けて自分が遠い（守る場面）のに、現物でない牌を選んだ
+    chosen = next((c for c in analysis if c['tile'] == cleaned['discard']), None)
+    if chosen and not riichi_seats and chosen['shanten'] > fallback['shanten']:
+        return jsonify(fallback_advice(fallback, fallback_mode))
+    if chosen and fallback_mode == 'defense' and not chosen['safeAgainstRiichi']:
+        return jsonify(fallback_advice(fallback, fallback_mode))
+    # AIが牌IDのまま（9pなど）返すことがあるので、表示名はこちらで付ける
+    cleaned['tileName'] = tile_display_name(cleaned['discard'])
+    cleaned['model'] = model
+    return jsonify(cleaned)
+
+
+def fallback_advice(best, mode):
+    """AIの答えが使えないときに、数えた結果だけで作るおすすめ。"""
+    if mode == 'defense':
+        reason = 'リーチの現物で安全だから'
+    elif best['shanten'] == 0:
+        reason = f'テンパイで待ち{best["ukeire"]}枚'
+    else:
+        reason = f'受け入れ{best["ukeire"]}枚で最多'
+    return {
+        'discard': best['tile'],
+        'tileName': tile_display_name(best['tile']),
+        'reason': reason,
+        'detailedReason': {'efficiency': '', 'value': '', 'risk': ''},
+        'nextAdvice': '',
+        'confidence': 0.5,
+        'candidates': [],
+        'warning': '',
+        'model': 'calc',
+    }
 
 @app.route('/api/ai-models', methods=['GET'])
 def list_models():
