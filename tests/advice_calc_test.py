@@ -102,6 +102,32 @@ check('画面のケースで西を切る', d['discard'], 'west')
 d = ask('123m 456p 789s 11s 234m')
 check('和了形はツモをすすめる', d.get('alreadyWon'), True)
 
+# --- 安全度（2026-09-25） ---
+from advice_calc import tile_safety, safety_report
+
+check('現物', tile_safety('3m', ['3m', '1p']), 'genbutsu')
+check('4mは1mだけではスジにならない', tile_safety('4m', ['1m']), 'unknown')
+check('4mは1mと7mの両方でスジ', tile_safety('4m', ['1m', '7m']), 'suji')
+check('1mは4mが切れていればスジ', tile_safety('1m', ['4m']), 'suji')
+check('字牌にスジは無い', tile_safety('east', ['1m', '4m', '7m']), 'unknown')
+
+sit = {'discards': {'left': ['3m', '1m', '7m'], 'top': [], 'right': []},
+       'riichi': {'left': True, 'top': False, 'right': False},
+       'hand': tiles('345m 9s') + ['east']}
+check('リーチ者の現物を見つける', safety_report('3m', sit)['level'], 'genbutsu')
+check('スジを見分ける', safety_report('4m', sit)['level'], 'suji')
+check('無スジを見分ける', safety_report('5m', sit)['level'], 'unknown')
+check('手の中の安全牌を出す', safety_report('5m', sit)['safeTiles'], ['3m'])
+check('リーチがいなければ何も出さない',
+      safety_report('5m', {'discards': {}, 'riichi': {}, 'hand': ['5m']})['level'], '')
+
+d = ask('123m 456p 789s 11s 23m 9p', discards={'left': ['1m', '9p']},
+        riichi={'left': True})
+check('通っている牌なら通っていると出す',
+      d['detailedReason']['risk'], 'この牌はリーチしている人に通っています。')
+d = ask('123m 456p 789s 11s 23m 9p', discards={'left': ['1m']})
+check('リーチがいなければ空', d['detailedReason']['risk'], '')
+
 print(f'AIアドバイス計算  成功: {passed}  失敗: {len(fails)}')
 for f in fails:
     print('  ✗ ' + f)

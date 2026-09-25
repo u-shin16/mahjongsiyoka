@@ -5069,8 +5069,11 @@ var App = {
       var oneLine = battleAdvice.alreadyWon
         ? (battleAdvice.reason || 'この手はもう和了できる形です。')
         : (battleAdvice.tileName || battleAdvice.discard) + '切り。' + (battleAdvice.reason || '形がいちばん残るから');
+      // 2026-09-25：リーチしている人がいるときだけ、通っているかを2行目に出す。
+      var risk = (battleAdvice.detailedReason && battleAdvice.detailedReason.risk) || '';
       return '<div class="ai-panel battle-ai-card">' +
         '<div class="battle-ai-recommend ai-one-line">' + esc(oneLine) + '</div>' +
+        (risk ? '<div class="battle-ai-risk">' + esc(risk) + '</div>' : '') +
       '</div>';
     };
 

@@ -4184,6 +4184,14 @@ body.is-battle-page .app-main.battle-main {
   min-height: 0;
   line-height: 1.45;
 }
+/* 2026-09-25：リーチ者に通っているかの一行。おすすめより控えめにする */
+.battle-ai-risk {
+  color: #cfe3d6;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.45;
+  margin-top: 4px;
+}
 .battle-ai-section { margin-top: 8px; }
 .battle-ai-label {
   color: #8ab89c;

@@ -4,7 +4,7 @@ from xml.sax.saxutils import escape
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 
-from advice_calc import analyze_discards, pick_best, advice_reason
+from advice_calc import analyze_discards, pick_best, advice_reason, safety_report
 
 load_dotenv()
 
@@ -449,6 +449,29 @@ def ai_advice():
         app.logger.exception('Gemini advice request failed')
         return jsonify({'advice': 'アドバイスを取得できませんでした。しばらくしてから再試行してください。'}), 500
 
+def safety_message(tile, situation):
+    """切る牌がリーチ者に通っているかを、初心者に読める一文にする。
+
+    リーチしている人がいなければ空文字を返し、画面には何も出さない。
+    """
+    report = safety_report(tile, situation)
+    level = report['level']
+    if not level:
+        return ''
+    who = 'リーチしている人' if report['riichiCount'] == 1 else 'リーチしている人全員'
+    if level == 'genbutsu':
+        return f'この牌は{who}に通っています。'
+    safe = report['safeTiles']
+    if level == 'suji':
+        head = f'この牌はスジですが、{who}に通っているわけではありません。'
+    else:
+        head = f'この牌は{who}に通っていません。'
+    if safe:
+        names = '・'.join(tile_display_name(t) for t in safe[:3])
+        return head + f'通っているのは {names} です。'
+    return head + '通っている牌は手の中にありません。'
+
+
 @app.route('/api/mahjong/advice', methods=['POST'])
 def mahjong_advice():
     data = request.get_json(silent=True) or {}
@@ -507,11 +530,14 @@ def mahjong_advice():
     # 手牌の並び順で9萬を選ぶなど、字牌を残す誤りが出ていた。
     analysis = analyze_discards(situation)
     best = pick_best(analysis)
+    # 2026-09-25：リーチしている人がいるときだけ、その牌が通っているかを添える。
+    # 見えている捨て牌だけで決まるので推定は入らない。放銃率の%は出さない。
     return jsonify({
         'discard': best['tile'],
         'tileName': tile_display_name(best['tile']),
         'reason': advice_reason(best, analysis),
-        'detailedReason': {'efficiency': '', 'value': '', 'risk': ''},
+        'detailedReason': {'efficiency': '', 'value': '',
+                           'risk': safety_message(best['tile'], situation)},
         'nextAdvice': '',
         'confidence': 1.0,
         'candidates': [],

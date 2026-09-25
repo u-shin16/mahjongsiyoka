@@ -207,3 +207,66 @@ def advice_reason(best, analysis):
     if best['isHonor']:
         return '字牌はつながらず使いにくい'
     return 'ほかの牌とつながりにくい'
+
+
+# ============================================================
+#  安全度の判定（2026-09-25）
+#
+#  リーチしている人に対して、その牌が「通っているか」を見る。
+#  見えている捨て牌だけで決まるので、推定が入らない。
+#  放銃率の%は出さない。出すなら数え上げて根拠を示す必要がある。
+# ============================================================
+
+# 数牌のスジ。同じ色の中の位置（0〜8）で持つ。
+# 4・5・6は両側が捨てられて初めて「スジ」。片側だけでは通っていない。
+SUJI_PAIRS = {0: [3], 1: [4], 2: [5], 3: [0, 6], 4: [1, 7],
+              5: [2, 8], 6: [3], 7: [4], 8: [5]}
+
+
+def tile_safety(tile, discards):
+    """その捨て牌の持ち主に対して、tileがどれだけ通っているか。
+
+    'genbutsu' … その人の捨て牌にある。ロンされない（フリテンのため）
+    'suji'     … スジ。両面待ちでは当たらないが、それ以外では当たる
+    'unknown'  … 通っていない
+    """
+    discarded = set(discards)
+    if tile in discarded:
+        return 'genbutsu'
+    i = TILE_INDEX.get(tile)
+    if i is None or i >= 27:
+        return 'unknown'      # 字牌にスジは無い
+    lo = i - i % 9
+    needed = SUJI_PAIRS[i - lo]
+    if all(TILE_ORDER[lo + k] in discarded for k in needed):
+        return 'suji'
+    return 'unknown'
+
+
+def riichi_seats(situation):
+    """リーチしている相手の席。自分は含めない。"""
+    riichi = situation.get('riichi') or {}
+    return [s for s in ('left', 'top', 'right') if riichi.get(s)]
+
+
+def safety_report(tile, situation):
+    """切ろうとしている牌の安全度と、手牌の中の安全牌を返す。
+
+    リーチしている人が1人もいなければ level は '' を返し、画面には何も出さない。
+    """
+    seats = riichi_seats(situation)
+    if not seats:
+        return {'level': '', 'safeTiles': [], 'riichiCount': 0}
+
+    levels = [tile_safety(tile, situation['discards'].get(s) or []) for s in seats]
+    if all(v == 'genbutsu' for v in levels):
+        level = 'genbutsu'
+    elif all(v in ('genbutsu', 'suji') for v in levels):
+        level = 'suji'
+    else:
+        level = 'unknown'
+
+    safe = [t for t in dict.fromkeys(situation.get('hand') or [])
+            if all(tile_safety(t, situation['discards'].get(s) or []) == 'genbutsu'
+                   for s in seats)]
+    return {'level': level, 'safeTiles': safe, 'riichiCount': len(seats)}
