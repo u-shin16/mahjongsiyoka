@@ -2070,8 +2070,26 @@ var App = {
   // ===== Home =====
   _renderHome: function(main) {
     var self = this;
+    // 2026-09-30：進捗があれば「続きから」にして次の未クリア章へ飛ばす。
+    // それまでは常に第1章へ飛んでいて、第3章まで進んだ人が翌日来ても第1章からになっていた。
+    // 一番小さい未クリア章は、1つ前がクリア済みなので必ずロックされていない。
+    var chs = GameData.CHAPTERS.slice().sort(function(a, b) { return a.id - b.id; });
+    var next = chs.find(function(c) { return !Progress.isCleared(c.id); });
+    var started = chs.some(function(c) { return Progress.isCleared(c.id); });
+    var coreLeft = chs.filter(function(c) { return c.tier === 'core' && !Progress.isCleared(c.id); });
+    var coreMin = coreLeft.reduce(function(s, c) { return s + c.min; }, 0);
+    var startCard;
+    if (!started) {
+      startCard = { label:'はじめる', icon:'🎮', sub:'数字セット入門から学ぼう', page:'chapter', params:{id:1}, cls:'primary' };
+    } else if (next) {
+      startCard = { label:'続きから', icon:'🎮', page:'chapter', params:{id:next.id}, cls:'primary',
+        sub:'第'+next.id+'章 '+esc(next.short) +
+          (coreLeft.length ? '<br>打ち始めるまで あと'+coreLeft.length+'章・約'+coreMin+'分' : '') };
+    } else {
+      startCard = { label:'復習する', icon:'🎮', sub:'全章クリア！好きな章をもう一度', page:'chapters', cls:'primary' };
+    }
     var cards = [
-      { label:'はじめる',     icon:'🎮', sub:'数字セット入門から学ぼう', page:'chapter', params:{id:1}, cls:'primary' },
+      startCard,
       { label:'チャプター選択', icon:'📚', sub:'好きな章から', page:'chapters' },
       { label:'VS CPU',       icon:'🤖', sub:'4人打ちCPU対局', page:'battle_setup', params:{playerCount:4} },
       { label:'単語クイズ',   icon:'📝', sub:'用語・役をランダム出題', page:'quiz_select' },
