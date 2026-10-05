@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SC4DSP2KCF"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-SC4DSP2KCF');
+  </script>
+
+  <!-- 進捗があるブラウザは、紹介文を見せずにそのままアプリへ進める -->
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem('mj_progress');
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        if (data && data.stars && Object.keys(data.stars).length > 0) {
+          location.replace('/app');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>まーじゃんしよか｜数字の牌からはじめる麻雀学習</title>
+  <meta name="description" content="麻雀を一度も触ったことがなくても、第1章は数字だけの牌から始まります。本物の牌・役・点数まで13章で段階的に進める学習アプリ「まーじゃんしよか」。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://mahjong.webtool-labs.com/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="まーじゃんしよか｜数字の牌からはじめる麻雀学習">
+  <meta property="og:description" content="麻雀を一度も触ったことがなくても、第1章は数字だけの牌から始まります。本物の牌・役・点数まで13章で段階的に進める学習アプリです。">
+  <meta property="og:url" content="https://mahjong.webtool-labs.com/">
+  <meta property="og:site_name" content="まーじゃんしよか">
+  <meta property="og:image" content="https://mahjong.webtool-labs.com/static/icons/icon-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="まーじゃんしよか｜数字の牌からはじめる麻雀学習">
+  <meta name="twitter:description" content="第1章は数字だけの牌から始まる、麻雀が初めての人向けの学習アプリです。">
+  <meta name="twitter:image" content="https://mahjong.webtool-labs.com/static/icons/icon-512.png">
+
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='icons/favicon-16x16.png') }}?v=20260918">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/favicon-32x32.png') }}?v=20260918">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}?v=20260918">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}?v=20260918">
+  <meta name="theme-color" content="#1a3a2a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "まーじゃんしよか",
+    "url": "https://mahjong.webtool-labs.com/",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web browser",
+    "inLanguage": "ja",
+    "description": "第1章は数字だけの牌から始まり、本物の牌・字牌・役・点数まで13章で段階的に進める麻雀学習Webアプリ。",
+    "image": "https://mahjong.webtool-labs.com/static/icons/icon-512.png"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "本当に麻雀を全く知らなくても大丈夫ですか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "はい。第1章は「1」「2」「3」のような数字だけの牌から始まり、牌の種類や役は後の章で少しずつ出てきます。最初から本物の牌を覚える必要はありません。" }
+      },
+      {
+        "@type": "Question",
+        "name": "全部終えるのにどれくらい時間がかかりますか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "対局に必要な必修8章だけならおよそ70分です。役や点数を含む実戦・腕試し・発展まで含めた13章すべてでは、合計およそ3時間です。" }
+      },
+      {
+        "@type": "Question",
+        "name": "途中で閉じても、続きから再開できますか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "はい。進捗は自動で保存され、次に開いたときは前回の続きの章から再開します。ログインすると別の端末からも同じ進捗で続けられます。" }
+      },
+      {
+        "@type": "Question",
+        "name": "スマートフォンでも操作できますか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "スマートフォンのブラウザでも、牌を選ぶ操作や対局ができるように作られています。" }
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    :root {
+      --green-dark: #1a3a2a;
+      --green-mid: #2c6e49;
+      --green-light: #4a9e6b;
+      --gold: #e8b84b;
+      --gold-dark: #b88a1a;
+      --cream: #faf8f0;
+      --cream-dark: #ede9d4;
+      --text-light: #f0ede0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--cream);
+      color: #1a2a20;
+      line-height: 1.75;
+    }
+    a { color: var(--green-mid); }
+    .container { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+
+    header.site-header {
+      background: var(--green-dark);
+      color: var(--text-light);
+      position: sticky; top: 0; z-index: 10;
+      border-bottom: 2px solid var(--gold-dark);
+    }
+    .header-inner {
+      max-width: 880px; margin: 0 auto; padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 8px; color: var(--text-light); text-decoration: none; font-weight: 700; }
+    .brand img { width: 28px; height: 28px; border-radius: 6px; }
+    nav.site-nav { display: flex; align-items: center; gap: 16px; }
+    nav.site-nav a { color: var(--text-light); text-decoration: none; font-size: 0.9rem; }
+    nav.site-nav a.cta {
+      background: var(--gold); color: #3a2a06; padding: 8px 14px; border-radius: 8px; font-weight: 700;
+    }
+
+    .hero {
+      background: linear-gradient(160deg, var(--green-dark), var(--green-mid));
+      color: var(--text-light); padding: 48px 16px 40px; text-align: center;
+    }
+    .hero h1 { font-size: 1.6rem; margin: 0 0 14px; line-height: 1.5; }
+    .hero p.lead { font-size: 1rem; max-width: 560px; margin: 0 auto 24px; color: var(--text-light); opacity: 0.95; }
+    .hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: 12px 24px; border-radius: 10px; text-decoration: none;
+      font-weight: 700; font-size: 0.95rem;
+    }
+    .btn-primary { background: var(--gold); color: #3a2a06; }
+    .btn-secondary { background: transparent; color: var(--text-light); border: 1px solid var(--text-light); }
+
+    .tile-row { display: flex; gap: 10px; justify-content: center; margin: 28px 0 4px; }
+    .tile {
+      width: 44px; height: 60px; background: linear-gradient(160deg, #fffdf5, #f0ead8);
+      border: 1px solid #d4b896; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; font-weight: 900; color: #1a3a2a;
+    }
+
+    section { padding: 40px 0; }
+    section.alt { background: var(--cream-dark); }
+    h2 { font-size: 1.25rem; color: var(--green-dark); border-left: 5px solid var(--gold); padding-left: 10px; margin: 0 0 18px; }
+    h3 { font-size: 1.02rem; color: var(--green-mid); margin: 0 0 6px; }
+
+    .flow-group { margin-bottom: 20px; }
+    .flow-tag {
+      display: inline-block; font-size: 0.8rem; font-weight: 700; color: #fff;
+      background: var(--green-mid); border-radius: 999px; padding: 3px 12px; margin-bottom: 8px;
+    }
+    .flow-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .flow-list li {
+      background: var(--cream); border: 1px solid var(--cream-dark); border-radius: 8px;
+      padding: 10px 14px; font-size: 0.92rem; display: flex; justify-content: space-between; gap: 10px;
+    }
+    .flow-list .ch-min { color: #6b6b5a; font-size: 0.82rem; white-space: nowrap; }
+
+    ul.plain { padding-left: 1.2em; margin: 0; }
+    ul.plain li { margin-bottom: 8px; }
+
+    .faq-item { border-bottom: 1px solid var(--cream-dark); padding: 14px 0; }
+    .faq-item summary { font-weight: 700; cursor: pointer; color: var(--green-dark); }
+    .faq-item p { margin: 10px 0 0; color: #3a3a30; }
+
+    .cta-card {
+      background: var(--green-dark); color: var(--text-light); border-radius: 14px;
+      padding: 32px 20px; text-align: center; margin: 0 16px;
+    }
+    .cta-card h2 { color: var(--text-light); border-left: none; padding-left: 0; }
+
+    footer.site-footer { background: var(--green-dark); color: var(--text-light); padding: 24px 16px; margin-top: 40px; }
+    .footer-links { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; font-size: 0.85rem; }
+    .footer-links a { color: var(--text-light); }
+    .copyright { text-align: center; font-size: 0.78rem; opacity: 0.8; margin-top: 14px; }
+
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 1.35rem; }
+      nav.site-nav { gap: 10px; }
+      nav.site-nav a:not(.cta) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/">
+        <img src="{{ url_for('static', filename='icons/icon-192.png') }}" alt="">
+        まーじゃんしよか
+      </a>
+      <nav class="site-nav">
+        <a href="#flow">学習の進み方</a>
+        <a href="#faq">よくある質問</a>
+        <a href="/app" class="cta">アプリを開く</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>麻雀を知らなくても、数字の牌から始められます</h1>
+        <p class="lead">
+          「まーじゃんしよか」は、牌も役も分からない人のための麻雀学習アプリです。
+          第1章は本物の牌ではなく、数字だけが書かれた牌から始まります。
+        </p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="/app">第1章からはじめる</a>
+          <a class="btn btn-secondary" href="#flow">学習の進み方を見る</a>
+        </div>
+        <div class="tile-row" aria-hidden="true">
+          <div class="tile">1</div>
+          <div class="tile">2</div>
+          <div class="tile">3</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="why">
+      <div class="container">
+        <h2>最初から本物の牌だと、覚える前につまずく</h2>
+        <p>
+          麻雀が難しく感じる理由の多くは、牌の見た目・種類・役・点数を一度に覚えようとすることにあります。
+          「まーじゃんしよか」では、まず<strong>数字だけの牌で「3枚セット＋2枚の頭」という形</strong>を覚え、
+          それから色付きの牌、本物の牌（筒子・索子・萬子）、字牌、役、点数へと、1つずつ段階を進みます。
+        </p>
+        <p>
+          どの章から始めても迷わないように、各章には目安の時間と、覚える内容が短くまとまっています。
+          一度に全部を理解しなくても、次の章に進めば自然に積み重なっていく作りです。
+        </p>
+      </div>
+    </section>
+
+    <section class="alt" id="flow">
+      <div class="container">
+        <h2>学習の進み方（全13章）</h2>
+
+        <div class="flow-group">
+          <span class="flow-tag">必修・これだけで対局できる｜約70分</span>
+          <ul class="flow-list">
+            <li><span>第1章　一種類の数字だけでアガってみよう</span><span class="ch-min">5分</span></li>
+            <li><span>第2章　3種類の色の数字でアガってみよう</span><span class="ch-min">7分</span></li>
+            <li><span>第3章　筒子・索子・萬子でアガってみよう</span><span class="ch-min">8分</span></li>
+            <li><span>第4章　字牌を覚えよう</span><span class="ch-min">8分</span></li>
+            <li><span>第5章　役牌を作ってみよう</span><span class="ch-min">4分</span></li>
+            <li><span>第6章　対局のルールを覚えよう</span><span class="ch-min">5分</span></li>
+            <li><span>第7章　鳴きを使ってみよう</span><span class="ch-min">6分</span></li>
+            <li><span>第8章　初心者向けの役</span><span class="ch-min">28分</span></li>
+          </ul>
+        </div>
+
+        <div class="flow-group">
+          <span class="flow-tag">実戦・覚えると強くなる｜約85分</span>
+          <ul class="flow-list">
+            <li><span>第9章　翻を数えてみよう（翻・ドラ・点数）</span><span class="ch-min">10分</span></li>
+            <li><span>第11章　中級者向けの役</span><span class="ch-min">40分</span></li>
+            <li><span>第12章　上級者向けの役</span><span class="ch-min">35分</span></li>
+          </ul>
+        </div>
+
+        <div class="flow-group">
+          <span class="flow-tag">腕試し｜約10分</span>
+          <ul class="flow-list">
+            <li><span>第10章　復習テスト（道場チャレンジ）</span><span class="ch-min">10分</span></li>
+          </ul>
+        </div>
+
+        <div class="flow-group">
+          <span class="flow-tag">発展・別のルールで遊ぶ｜約12分</span>
+          <ul class="flow-list">
+            <li><span>第13章　三人麻雀入門</span><span class="ch-min">12分</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="more">
+      <div class="container">
+        <h2>覚えたら、そのまま試せます</h2>
+        <ul class="plain">
+          <li><strong>CPU対局：</strong>4人打ち・三人麻雀を、CPU相手に練習できます。</li>
+          <li><strong>友人戦：</strong>6桁のIDを共有して、友人とオンライン対局ができます。</li>
+          <li><strong>AI先生：</strong>ルールや手牌について、個人情報を入れずに質問できます。</li>
+          <li><strong>クイズ・役一覧：</strong>覚えた用語や役を、短いクイズと一覧で復習できます。</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="alt" id="recommend">
+      <div class="container">
+        <h2>こんな人に向いています</h2>
+        <ul class="plain">
+          <li>麻雀に誘われたけれど、ルールを何も知らない人</li>
+          <li>本やサイトの説明を読んでも、牌の形が結びつかなかった人</li>
+          <li>対局に出る前に、短い時間で基礎だけ確認したい人</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="container">
+        <h2>よくある質問</h2>
+        <details class="faq-item">
+          <summary>本当に麻雀を全く知らなくても大丈夫ですか？</summary>
+          <p>はい。第1章は「1」「2」「3」のような数字だけの牌から始まり、牌の種類や役は後の章で少しずつ出てきます。最初から本物の牌を覚える必要はありません。</p>
+        </details>
+        <details class="faq-item">
+          <summary>全部終えるのにどれくらい時間がかかりますか？</summary>
+          <p>対局に必要な必修8章だけならおよそ70分です。役や点数を含む実戦・腕試し・発展まで含めた13章すべてでは、合計およそ3時間です。</p>
+        </details>
+        <details class="faq-item">
+          <summary>途中で閉じても、続きから再開できますか？</summary>
+          <p>はい。進捗は自動で保存され、次に開いたときは前回の続きの章から再開します。ログインすると別の端末からも同じ進捗で続けられます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>スマートフォンでも操作できますか？</summary>
+          <p>スマートフォンのブラウザでも、牌を選ぶ操作や対局ができるように作られています。</p>
+        </details>
+      </div>
+    </section>
+
+    <section>
+      <div class="cta-card">
+        <h2>第1章は、数字の牌を並べるだけです</h2>
+        <p>迷ったらここから。5分で1章が終わります。</p>
+        <a class="btn btn-primary" href="/app">まーじゃんしよかをはじめる</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="/app">アプリを開く</a>
+      <a href="/terms">利用規約</a>
+      <a href="/privacy">プライバシーポリシー</a>
+      <a href="https://webtool-labs.com/services/mahjong/" target="_blank" rel="noopener noreferrer">詳しい機能紹介（RakuYade）</a>
+    </div>
+    <p class="copyright">&copy; 2026 まーじゃんしよか</p>
+  </footer>
+
+</body>
+</html>

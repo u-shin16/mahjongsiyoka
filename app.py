@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from xml.sax.saxutils import escape
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, make_response
 from dotenv import load_dotenv
 
 from advice_calc import analyze_discards, pick_best, advice_reason, safety_report
@@ -316,9 +316,17 @@ def is_complete_hand(tile_ids, num_open_melds=0):
             return True
     return _is_standard_shape(tile_ids, needed_sets)
 
+# SEO: 2026-10-05にトップを紹介ページ化。アプリ本体は/appへ移した
+# （はよおきんかい等と同じ構成。トップが薄いSPAのままクロールされなかったため）
 @app.route('/')
+def landing():
+    return render_template('landing.html')
+
+@app.route('/app')
 def index():
-    return render_template('index.html')
+    resp = make_response(render_template('index.html'))
+    resp.headers['Cache-Control'] = 'no-store, max-age=0'
+    return resp
 
 @app.route('/privacy')
 def privacy():
@@ -345,7 +353,8 @@ Sitemap: https://mahjong.webtool-labs.com/sitemap.xml
 # SEO: サイトマップ（公開ページのみ。APIは含めない）
 SITE_URL = 'https://mahjong.webtool-labs.com'
 PUBLIC_SITEMAP_PAGES = [
-    {'path': '/',        'template': 'index.html',   'priority': '1.0'},
+    {'path': '/',        'template': 'landing.html', 'priority': '1.0'},
+    {'path': '/app',     'template': 'index.html',   'priority': '0.9'},
     {'path': '/terms',   'template': 'terms.html',   'priority': '0.5'},
     {'path': '/privacy', 'template': 'privacy.html', 'priority': '0.5'},
 ]
