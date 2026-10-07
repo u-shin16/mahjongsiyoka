@@ -358,8 +358,39 @@ var Battle = (function() {
     return Math.max(0, needed - sets - 1);
   }
 
+  // 難易度「Sorekiri」で、重みの読み込みが済んでいる四人麻雀のとき
+  function sorekiriActive() {
+    return state.difficulty === 'sorekiri' && typeof Sorekiri !== 'undefined' &&
+           Sorekiri.ready() && !state.isSanma;
+  }
+
+  // アプリがチーで使う2枚（牌ID）。cpuExecuteCallが最初に見つける組み合わせと同じにする
+  function firstChiUseIds(hand, tile) {
+    var suit = tile.suit, num = tile.num;
+    for (var off = -2; off <= 0; off++) {
+      var trio = [num + off, num + off + 1, num + off + 2];
+      if (trio[0] < 1 || trio[2] > 9) continue;
+      var need = trio.filter(function(n) { return n !== num; });
+      var used = [], ok = true;
+      for (var ni = 0; ni < need.length; ni++) {
+        var fi = hand.findIndex(function(t, idx) {
+          return used.indexOf(idx) < 0 && t.suit === suit && t.num === need[ni];
+        });
+        if (fi < 0) { ok = false; break; }
+        used.push(fi);
+      }
+      if (ok) return used.map(function(i) { return Sorekiri._tileId(hand[i]); });
+    }
+    return null;
+  }
+
   function cpuChooseDiscard(pidx) {
     var hand = state.hands[pidx];
+    if (sorekiriActive()) {
+      if (state.riichi[pidx]) return hand.length - 1;   // リーチ後はツモ切り
+      var si = Sorekiri.chooseDiscardIndex(state, pidx);
+      if (si >= 0) return si;
+    }
     if (state.difficulty === 'easy' && Math.random() < 0.35) {
       return Math.floor(Math.random() * hand.length);
     }
@@ -572,7 +603,7 @@ var Battle = (function() {
 
       // CPU 暗カンチェック
       var cpuAnkans = cpuCheckAnkan(pidx);
-      if (cpuAnkans.length > 0 && Math.random() < 0.6) {
+      if (cpuAnkans.length > 0 && !sorekiriActive() && Math.random() < 0.6) {
         cpuExecuteAnkan(pidx, cpuAnkans[0]);
         if (state.phase === 'ryukyoku') return;
         // 嶺上ツモ
@@ -879,6 +910,15 @@ var Battle = (function() {
   function cpuDecideCall(pidx, tile, fromPlayerIdx) {
     if (!state) return null;
     var hand = state.hands[pidx];
+
+    // Sorekiri：役の見込みがあり、鳴くとシャンテン数が進むときだけ鳴く（カンはしない）
+    if (sorekiriActive()) {
+      var upstreamIdx = pidx === 0 ? state.playerCount - 1 : pidx - 1;
+      var chiUse = (fromPlayerIdx === upstreamIdx && tile.suit !== 'wind' && tile.suit !== 'dragon')
+        ? firstChiUseIds(hand, tile) : null;
+      var decided = Sorekiri.decideCall(state, pidx, tile, fromPlayerIdx, chiUse);
+      if (decided !== undefined) return decided;
+    }
 
     // 大明カン (3枚持ち)
     var same = hand.filter(function(t) { return Tiles.isSame(t, tile); });

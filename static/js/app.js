@@ -4960,7 +4960,7 @@ var App = {
       '<div class="setup-opt active" data-v="tonpu">東風戦</div><div class="setup-opt" data-v="hanchan">半荘戦</div>' +
       '</div></div>' +
       '<div class="setup-section"><h3>CPU難易度</h3><div class="setup-options" id="optDiff">' +
-      '<div class="setup-opt active" data-v="easy">やさしい</div><div class="setup-opt" data-v="normal">ふつう</div><div class="setup-opt" data-v="hard">つよい</div>' +
+      '<div class="setup-opt active" data-v="easy">やさしい</div><div class="setup-opt" data-v="normal">ふつう</div><div class="setup-opt" data-v="hard">つよい</div><div class="setup-opt" data-v="sorekiri">Sorekiri（自作AI・4人麻雀）</div>' +
       '</div></div>' +
       '<div class="btn-row" style="margin-top:20px"><button class="btn btn-primary btn-large" id="btnStartBattle">対局開始！</button></div></div>';
 
@@ -4985,11 +4985,15 @@ var App = {
     });
     document.querySelectorAll('#optDiff .setup-opt').forEach(function(el) {
       el.addEventListener('click', function() {
-        document.querySelectorAll('#optDiff .setup-opt').forEach(function(x){x.classList.remove('active');}); el.classList.add('active'); difficulty=el.dataset.v;});
+        document.querySelectorAll('#optDiff .setup-opt').forEach(function(x){x.classList.remove('active');}); el.classList.add('active'); difficulty=el.dataset.v;
+        if (difficulty === 'sorekiri' && typeof Sorekiri !== 'undefined') Sorekiri.load();});
     });
     document.getElementById('btnStartBattle').addEventListener('click', function() {
       sendEvent('cpu_battle_start', { difficulty: difficulty, game_type: gameType, player_count: playerCount });
-      self.navigate('battle', { difficulty: difficulty, gameType: gameType, playerCount: playerCount });
+      var go = function() { self.navigate('battle', { difficulty: difficulty, gameType: gameType, playerCount: playerCount }); };
+      // Sorekiriは重み（約2.5MB）を読み込んでから始める。読めなかったときは従来のCPUの判断で進む
+      if (difficulty === 'sorekiri' && typeof Sorekiri !== 'undefined') Sorekiri.load().then(go, go);
+      else go();
     });
   },
 
