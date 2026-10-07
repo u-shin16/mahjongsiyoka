@@ -1,5 +1,13 @@
 'use strict';
 
+// ===== GA4イベント送信 =====
+// 章の到達状況などが1つも送られていなかった（2026-09-26に判明）ため追加。
+// 個人を識別する情報は渡さない（章番号・モードなどの数字・固定値だけ）。
+// gtagが読み込めていない場合（広告ブロッカー等）でも操作を止めない。
+function sendEvent(name, params) {
+  try { if (typeof gtag === 'function') gtag('event', name, params || {}); } catch (e) {}
+}
+
 // ===== Progress =====
 var Progress = {
   _data: null,
@@ -1036,6 +1044,7 @@ function showFeedback(ok, msg, onNext) {
 // ===== AI Advice helper =====
 function askAI(hand, context, level, targetEl, mode) {
   if (!targetEl) return;
+  sendEvent('ai_ask', { mode: mode || 'general', level: level || 'beginner' });
   targetEl.innerHTML = '<div class="ai-loading">🤖 AI先生が考えています...</div>';
   var payload = {
     hand: hand || [],
@@ -2242,6 +2251,7 @@ var App = {
       document.getElementById('btnGoChs').addEventListener('click', function() { App.navigate('chapters'); });
       return;
     }
+    sendEvent('chapter_open_' + id, { chapter: id });
     // 添字＝章番号。null の章は _chQuiz（mgs を順に出す共通の作り）が担当する。
     // 2026-09-07に章を組み替え、2026-09-15に対局のルールを必修の最後（第6章）へ移動したため、
     // 第6章（対局のルール）と第8・9・11〜13章が共通、第1〜5・7章と第10章（道場）が専用のエンジンになっている。
@@ -3323,6 +3333,7 @@ var App = {
       });
       var startBtn = document.getElementById('btnFrStart');
       if (startBtn) startBtn.addEventListener('click', function() {
+        sendEvent('friend_battle_start', { player_count: room.playerCount });
         FriendGame.startGame()['catch'](setErr);
       });
       document.getElementById('btnFrLeave').addEventListener('click', function() {
@@ -4977,6 +4988,7 @@ var App = {
         document.querySelectorAll('#optDiff .setup-opt').forEach(function(x){x.classList.remove('active');}); el.classList.add('active'); difficulty=el.dataset.v;});
     });
     document.getElementById('btnStartBattle').addEventListener('click', function() {
+      sendEvent('cpu_battle_start', { difficulty: difficulty, game_type: gameType, player_count: playerCount });
       self.navigate('battle', { difficulty: difficulty, gameType: gameType, playerCount: playerCount });
     });
   },
@@ -6287,6 +6299,7 @@ function showClear(chId, stars) {
   var titleMap = {1:'はじめてのアガリ',5:'役牌マスター',6:'ルールを覚えた',7:'鳴きデビュー',8:'役デビュー',9:'点数計算入門',11:'中級役マスター',12:'上級役マスター',13:'三麻デビュー'};
   Progress.setStars(chId, stars);
   if (titleMap[chId]) Progress.addTitle(titleMap[chId]);
+  sendEvent('chapter_clear_' + chId, { chapter: chId, stars: stars });
   showOverlay('<div style="text-align:center"><div style="font-size:3rem;margin-bottom:12px">🏆</div>' +
     '<h2>第'+chId+'章クリア！</h2><div style="font-size:1.8rem;margin:10px 0">'+starsHtml(stars)+'</div>' +
     '<p style="color:#a8d8b0;line-height:1.7;margin-bottom:20px">'+(msgs[chId]||'よくできました！')+'</p>' +
