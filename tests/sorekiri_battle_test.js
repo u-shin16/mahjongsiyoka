@@ -64,15 +64,15 @@ function playRounds(difficulty) {
 }
 
 let failed = false;
-['sorekiri', 'hard', 'easy'].forEach((d) => {
+['sorekiri_hard', 'sorekiri_normal', 'sorekiri_easy', 'hard', 'easy'].forEach((d) => {
   const { result, calls } = playRounds(d);
   const pct = (n) => (100 * n / result.rounds).toFixed(1) + '%';
   console.log(`${d.padEnd(9)} ${result.rounds}局  CPUがアガった ${pct(result.cpuWin)}  流局 ${pct(result.ryukyoku)}  ` +
     `CPUが鳴いた局 ${pct(result.cpuCalled)}  終わらなかった ${result.stuck}  ` +
     `（Sorekiri呼び出し 打牌${calls.discard}回・鳴き${calls.call}回）`);
   if (result.stuck > 0) failed = true;
-  if (d === 'sorekiri' && calls.discard === 0) { console.log('Sorekiriが使われていない'); failed = true; }
-  if (d !== 'sorekiri' && (calls.discard || calls.call)) { console.log('他の難易度でSorekiriが使われている'); failed = true; }
+  if (d.startsWith('sorekiri') && calls.discard === 0) { console.log('Sorekiriが使われていない'); failed = true; }
+  if (!d.startsWith('sorekiri') && (calls.discard || calls.call)) { console.log('他の難易度でSorekiriが使われている'); failed = true; }
 });
 if (failed) { console.log('失敗'); process.exit(1); }
 console.log('成功');

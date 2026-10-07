@@ -358,9 +358,14 @@ var Battle = (function() {
     return Math.max(0, needed - sets - 1);
   }
 
+  // 難易度「Sorekiri」の強さ。値は「でたらめに切る確率」（0なら本来の強さ）。
+  // 対戦で測った強さ：つよい＝CPU戦「つよい」の約10倍の平均点、ふつう＝その約1/3、
+  // やさしい＝CPU戦「つよい」とほぼ同じ（制作物/sorekiri/結果.md）
+  var SOREKIRI_EPSILON = { sorekiri_hard: 0, sorekiri_normal: 0.25, sorekiri_easy: 0.5, sorekiri: 0 };
+
   // 難易度「Sorekiri」で、重みの読み込みが済んでいる四人麻雀のとき
   function sorekiriActive() {
-    return state.difficulty === 'sorekiri' && typeof Sorekiri !== 'undefined' &&
+    return SOREKIRI_EPSILON[state.difficulty] !== undefined && typeof Sorekiri !== 'undefined' &&
            Sorekiri.ready() && !state.isSanma;
   }
 
@@ -388,6 +393,7 @@ var Battle = (function() {
     var hand = state.hands[pidx];
     if (sorekiriActive()) {
       if (state.riichi[pidx]) return hand.length - 1;   // リーチ後はツモ切り
+      if (Math.random() < SOREKIRI_EPSILON[state.difficulty]) return Math.floor(Math.random() * hand.length);
       var si = Sorekiri.chooseDiscardIndex(state, pidx);
       if (si >= 0) return si;
     }
