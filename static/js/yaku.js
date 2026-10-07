@@ -334,6 +334,13 @@ var Yaku = (function() {
     return yaku;
   }
 
+  // 役満が1つでもあるときは、役満だけを数える（立直・ドラなど他の役は点数にも表示にも入れない）。
+  // 役満が複数あるときは、その数だけの倍役満になる（calcPointsが数える）。
+  function onlyYakuman(yakuList) {
+    var yakuman = yakuList.filter(function(y) { return y.yakuman; });
+    return yakuman.length > 0 ? yakuman : yakuList;
+  }
+
   // 役の内訳(yakuList)から翻数・点数・表示ラベルを求める（積み満貫方式）
   // isDealer を渡すと親の点数（子の1.5倍）で返す。
   // 4翻以下は1.5倍ちょうどではない（子2翻2000点に対し親2翻は2900点）ため、
@@ -382,5 +389,6 @@ var Yaku = (function() {
     buildHandGroups: buildHandGroups,
     computeShapeYaku: computeShapeYaku,
     calcPoints: calcPoints,
+    onlyYakuman: onlyYakuman,
   };
 })();

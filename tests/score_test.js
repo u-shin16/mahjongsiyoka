@@ -142,6 +142,30 @@ eq('東2局（親=席1）に席0が初手ツモ→地和（天和ではない）
 eq('東2局（親=席1）に席1が初手ツモ→天和',
   firstTurnTsumo(1,1).indexOf('天和') >= 0, true);
 
+// ---- 役満：立直・ドラは数えない。役満が重なれば倍役満 ----
+function yakumanScore(riichi, tsumo){
+  Battle.init({playerCount: 4, gameType:'tonpu'});
+  var st = Battle.getState();
+  // 大三元（白發中の刻子）＋ 1萬の対子 ＋ 2筒の刻子。最後の2筒でアガる（1萬と2筒のシャンポン待ち）
+  st.hands[1] = [d(1),d(1),d(1), d(2),d(2),d(2), d(3),d(3),d(3), m(1),m(1), p(2),p(2),p(2)];
+  for (var i=0;i<4;i++){ st.melds[i]=[]; st.discards[i]=[m(9)]; }
+  st.riichi=[false, !!riichi, false, false]; st.ippatsuActive=[false,false,false,false]; st.riichiDouble=[false,false,false,false];
+  st.rinshanPending=false;
+  st.doraIndicator = p(1); st.uraDoraIndicator = p(1); st.kanDoraIndicators = [];   // 2筒がドラ
+  st.dealerSeat = 0;
+  st.winner = 1; st.winType = tsumo ? 'tsumo' : 'ron'; st.loser = tsumo ? -1 : 2;
+  st.winTile = st.hands[1][13];
+  return Battle.calcScore();
+}
+(function(){
+  var sc = yakumanScore(true, false);
+  var names = sc.yaku.map(function(y){return y.name;});
+  eq('役満があれば立直・ドラを役に数えない', names.indexOf('立直') < 0 && names.indexOf('ドラ') < 0 && names.indexOf('裏ドラ') < 0, true);
+  eq('ロンの大三元（ロンなので四暗刻にならない）は役満32000点', sc.label + ' ' + sc.pts + ' ' + sc.han, '役満 32000 13');
+  var t = yakumanScore(true, true);
+  eq('ツモなら大三元＋四暗刻で二倍役満64000点', t.label + ' ' + t.pts + ' ' + t.han, '2倍役満 64000 26');
+})();
+
 print('');
 print('=== 点数の精算テスト ===');
 print('通過: ' + pass + ' / 失敗: ' + fail);

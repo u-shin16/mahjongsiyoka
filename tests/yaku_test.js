@@ -221,6 +221,34 @@ check('七対子として読むほうが高い手は七対子のまま', c4, {wi
   check('7種類そろった形は七対子になる', h6, { winTile: last(h6) }, ['七対子'], 2);
 })();
 
+// ---- 役満の数え方：役満だけを数える。重なったら倍役満 ----
+(function() {
+  function eqv(title, actual, expected) {
+    if (actual === expected) { pass++; return; }
+    fail++; fails.push(title + '\n    実際: ' + actual + '\n    正解: ' + expected);
+  }
+  var mix = [{ name: '大三元', han: Yaku.YAKUMAN_HAN, yakuman: true },
+             { name: '立直', han: 1 }, { name: 'ドラ', han: 4 }];
+  var only = Yaku.onlyYakuman(mix);
+  eqv('役満があれば他の役は除かれる', only.map(function(y){return y.name;}).join('・'), '大三元');
+  var pt = Yaku.calcPoints(only, false);
+  eqv('役満＋立直＋ドラでも13翻・役満32000点', pt.han + '翻 ' + pt.label + ' ' + pt.pts + '点', '13翻 役満 32000点');
+
+  var dbl = Yaku.onlyYakuman([{ name: '字一色', han: Yaku.YAKUMAN_HAN, yakuman: true },
+    { name: '大三元', han: Yaku.YAKUMAN_HAN, yakuman: true }, { name: '立直', han: 1 }, { name: 'ドラ', han: 3 }]);
+  var pd = Yaku.calcPoints(dbl, false);
+  eqv('役満が2つで二倍役満（64000点）', pd.han + '翻 ' + pd.label + ' ' + pd.pts + '点', '26翻 2倍役満 64000点');
+  var pdd = Yaku.calcPoints(dbl, true);
+  eqv('親の二倍役満は96000点', pdd.pts, 96000);
+
+  var triple = Yaku.onlyYakuman([{ name: '四暗刻単騎', han: Yaku.YAKUMAN_HAN * 2, yakuman: true },
+    { name: '字一色', han: Yaku.YAKUMAN_HAN, yakuman: true }, { name: '門前清自摸和', han: 1 }]);
+  eqv('ダブル役満＋役満で三倍役満', Yaku.calcPoints(triple, false).label, '3倍役満');
+
+  var normal = [{ name: '立直', han: 1 }, { name: 'ドラ', han: 2 }];
+  eqv('役満が無ければ役を除かない', Yaku.onlyYakuman(normal).length, 2);
+})();
+
 print('');
 print('=== 役判定テスト ===');
 print('通過: ' + pass + ' / 失敗: ' + fail);

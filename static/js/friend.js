@@ -1032,6 +1032,7 @@ var FriendGame = (function() {
 
     var dealerSeatForPay = (state.round - 1) % state.playerCount;
     var isDealerWin = winner === dealerSeatForPay;
+    yaku = Yaku.onlyYakuman(yaku);   // 役満があれば役満だけを数える
     var points = Yaku.calcPoints(yaku, isDealerWin);
     var han = points.han;
     var pts = points.pts;

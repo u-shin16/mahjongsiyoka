@@ -1141,6 +1141,7 @@ var Battle = (function() {
     if (uraDora > 0) yaku.push({ name: '裏ドラ',   han: uraDora });
     if (nuki > 0)    yaku.push({ name: '抜き北',   han: nuki });
 
+    yaku = Yaku.onlyYakuman(yaku);   // 役満があれば役満だけを数える
     var points = Yaku.calcPoints(yaku, w === state.dealerSeat);
     var ippatsu = !!(state.ippatsuActive && state.ippatsuActive[w]);
 
