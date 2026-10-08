@@ -23,12 +23,14 @@ function makeContext() {
     vm.runInContext(fs.readFileSync(path.join(root, 'static/js', f), 'utf8'), ctx, { filename: f });
   });
   vm.runInContext('globalThis.Tiles = Tiles; globalThis.Battle = Battle; globalThis.Sorekiri = Sorekiri;', ctx);
-  const buf = fs.readFileSync(path.join(root, 'static/models/sorekiri_v1.bin'));
-  ctx.Sorekiri.setWeights(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength));
+  [['yonma', 'sorekiri_v1.bin'], ['sanma', 'sorekiri_v1s.bin']].forEach(([mode, f]) => {
+    const buf = fs.readFileSync(path.join(root, 'static/models', f));
+    ctx.Sorekiri.setWeights(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength), mode);
+  });
   return ctx;
 }
 
-function playRounds(difficulty) {
+function playRounds(difficulty, playerCount) {
   const ctx = makeContext();
   const { Battle, Sorekiri } = ctx;
   const calls = { discard: 0, call: 0 };
@@ -39,11 +41,13 @@ function playRounds(difficulty) {
 
   const result = { rounds: 0, cpuWin: 0, playerWin: 0, ryukyoku: 0, stuck: 0, cpuCalled: 0 };
   for (let r = 0; r < rounds; r++) {
-    Battle.init({ difficulty, gameType: 'tonpu', playerCount: 4 });
+    Battle.init({ difficulty, gameType: 'tonpu', playerCount });
     const st = Battle.getState();
     let guard = 0;
     while (!['end', 'ryukyoku', 'match_end'].includes(st.phase) && guard++ < 400) {
       if (st.phase === 'player_turn') {
+        // 三人麻雀：北を引いたら抜く（抜かないと進まない場面を避ける）
+        if (playerCount === 3 && Battle.canNuki && Battle.canNuki()) { Battle.playerNuki(); continue; }
         if (Battle.canTsumo()) { Battle.playerTsumo(); continue; }
         Battle.playerDiscard(st.hands[0].length - 1);
       } else if (st.phase === 'pending_ron') {
@@ -58,21 +62,24 @@ function playRounds(difficulty) {
     if (st.phase === 'end') { if (st.winner > 0) result.cpuWin++; else result.playerWin++; }
     else if (st.phase === 'ryukyoku') result.ryukyoku++;
     else result.stuck++;
-    for (let s = 1; s < 4; s++) if (st.melds[s].length) { result.cpuCalled++; break; }
+    for (let s = 1; s < playerCount; s++) if (st.melds[s].length) { result.cpuCalled++; break; }
   }
   return { result, calls };
 }
 
 let failed = false;
-['sorekiri_hard', 'sorekiri_normal', 'sorekiri_easy', 'hard', 'easy'].forEach((d) => {
-  const { result, calls } = playRounds(d);
-  const pct = (n) => (100 * n / result.rounds).toFixed(1) + '%';
-  console.log(`${d.padEnd(9)} ${result.rounds}局  CPUがアガった ${pct(result.cpuWin)}  流局 ${pct(result.ryukyoku)}  ` +
-    `CPUが鳴いた局 ${pct(result.cpuCalled)}  終わらなかった ${result.stuck}  ` +
-    `（Sorekiri呼び出し 打牌${calls.discard}回・鳴き${calls.call}回）`);
-  if (result.stuck > 0) failed = true;
-  if (d.startsWith('sorekiri') && calls.discard === 0) { console.log('Sorekiriが使われていない'); failed = true; }
-  if (!d.startsWith('sorekiri') && (calls.discard || calls.call)) { console.log('他の難易度でSorekiriが使われている'); failed = true; }
+[4, 3].forEach((pc) => {
+  console.log(`--- ${pc === 3 ? '三人麻雀' : '四人麻雀'} ---`);
+  ['sorekiri_hard', 'sorekiri_normal', 'sorekiri_easy', 'hard', 'easy'].forEach((d) => {
+    const { result, calls } = playRounds(d, pc);
+    const pct = (n) => (100 * n / result.rounds).toFixed(1) + '%';
+    console.log(`${d.padEnd(15)} ${result.rounds}局  CPUがアガった ${pct(result.cpuWin)}  流局 ${pct(result.ryukyoku)}  ` +
+      `CPUが鳴いた局 ${pct(result.cpuCalled)}  終わらなかった ${result.stuck}  ` +
+      `（Sorekiri呼び出し 打牌${calls.discard}回・鳴き${calls.call}回）`);
+    if (result.stuck > 0) failed = true;
+    if (d.startsWith('sorekiri') && calls.discard === 0) { console.log('Sorekiriが使われていない'); failed = true; }
+    if (!d.startsWith('sorekiri') && (calls.discard || calls.call)) { console.log('他の難易度でSorekiriが使われている'); failed = true; }
+  });
 });
 if (failed) { console.log('失敗'); process.exit(1); }
 console.log('成功');

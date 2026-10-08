@@ -367,10 +367,10 @@ var Battle = (function() {
   // 親がリーチしているときは、シャンテン数1以上で降りる（親は打点が高い）
   var SOREKIRI_FOLD_DEALER = 1;
 
-  // 難易度「Sorekiri」で、重みの読み込みが済んでいる四人麻雀のとき
+  // 難易度「Sorekiri」で、その人数用の重みの読み込みが済んでいるとき
   function sorekiriActive() {
     return SOREKIRI_EPSILON[state.difficulty] !== undefined && typeof Sorekiri !== 'undefined' &&
-           Sorekiri.ready() && !state.isSanma;
+           Sorekiri.ready(state.isSanma ? 'sanma' : 'yonma');
   }
 
   // アプリがチーで使う2枚（牌ID）。cpuExecuteCallが最初に見つける組み合わせと同じにする
@@ -928,7 +928,7 @@ var Battle = (function() {
     // Sorekiri：役の見込みがあり、鳴くとシャンテン数が進むときだけ鳴く（カンはしない）
     if (sorekiriActive()) {
       var upstreamIdx = pidx === 0 ? state.playerCount - 1 : pidx - 1;
-      var chiUse = (fromPlayerIdx === upstreamIdx && tile.suit !== 'wind' && tile.suit !== 'dragon')
+      var chiUse = (!state.isSanma && fromPlayerIdx === upstreamIdx && tile.suit !== 'wind' && tile.suit !== 'dragon')
         ? firstChiUseIds(hand, tile) : null;
       var decided = Sorekiri.decideCall(state, pidx, tile, fromPlayerIdx, chiUse);
       if (decided !== undefined) return decided;

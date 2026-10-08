@@ -9,7 +9,9 @@
    - 降り：他家がリーチしていて、自分の手がまだ遠いとき（シャンテン数が基準以上）は、
      放銃確率の見積もりがいちばん小さい牌を切る。見積もりはリーチ相手の待ちの形
      （両面・嵌張・辺張・シャンポン・単騎）ごとに、当たる組み合わせ数から出す。
-   - 対象は四人麻雀。重みを読み込めていない間・三人麻雀のときは、従来のCPUの判断を使う。
+   - 四人麻雀用（sorekiri_v1.bin）と三人麻雀用（sorekiri_v1s.bin）の2つの重みを持つ。三人麻雀用は
+     四人麻雀用を出発点に、三人麻雀の対局データで追加学習したもの。
+   - 重みを読み込めていない間は、従来のCPUの判断を使う。
    - 作り方と評価は 制作物/sorekiri/ にある。Pythonで作った特徴量・判断と同じ答えが出るかを
      制作物/sorekiri/tests/parity_test.js で確認している。
    ============================================================ */
@@ -33,11 +35,15 @@ var Sorekiri = (function() {
   var LAYER_SIZES = [FEATURE_SIZE, 512, 512, 256, 34];
   var TERMINAL_INDEXES = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33];
 
-  var layers = null;   // [{w: Float32Array(out*in), b: Float32Array(out), nIn, nOut}]
-  var loading = null;
+  var MODEL_URLS = { yonma: '/static/models/sorekiri_v1.bin', sanma: '/static/models/sorekiri_v1s.bin' };
+  var layersBy = { yonma: null, sanma: null };   // [{w: Float32Array(out*in), b: Float32Array(out), nIn, nOut}]
+  var loadingBy = {};
+
+  function modeOf(state) { return state && state.isSanma ? 'sanma' : 'yonma'; }
 
   // ---------- 重みの読み込み ----------
-  function setWeights(buffer) {
+  function setWeights(buffer, mode) {
+    mode = mode || 'yonma';
     var f = new Float32Array(buffer);
     var pos = 0;
     var out = [];
@@ -49,20 +55,22 @@ var Sorekiri = (function() {
       pos += nIn * nOut + nOut;
     }
     if (pos !== f.length) throw new Error('Sorekiriの重みの大きさが合わない');
-    layers = out;
+    layersBy[mode] = out;
   }
 
-  function load(url) {
-    if (layers) return Promise.resolve(true);
-    if (loading) return loading;
-    loading = fetch(url || '/static/models/sorekiri_v1.bin')
+  // mode：'yonma'（四人麻雀）か 'sanma'（三人麻雀）
+  function load(mode) {
+    mode = mode || 'yonma';
+    if (layersBy[mode]) return Promise.resolve(true);
+    if (loadingBy[mode]) return loadingBy[mode];
+    loadingBy[mode] = fetch(MODEL_URLS[mode])
       .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
-      .then(function(buf) { setWeights(buf); return true; })
-      .catch(function() { loading = null; return false; });
-    return loading;
+      .then(function(buf) { setWeights(buf, mode); return true; })
+      .catch(function() { loadingBy[mode] = null; return false; });
+    return loadingBy[mode];
   }
 
-  function ready() { return !!layers; }
+  function ready(mode) { return !!layersBy[mode || 'yonma']; }
 
   // ---------- 特徴量（features.py と同じ） ----------
   function doraFromIndicator(id) {
@@ -107,7 +115,8 @@ var Sorekiri = (function() {
     return x;
   }
 
-  function forward(x) {
+  function forward(x, mode) {
+    var layers = layersBy[mode || 'yonma'];
     var a = x;
     for (var l = 0; l < layers.length; l++) {
       var L = layers[l];
@@ -124,8 +133,8 @@ var Sorekiri = (function() {
   }
 
   // 場面（手牌・河・副露など）から、切る牌のIDを返す
-  function chooseDiscardFromSample(sample) {
-    var logits = forward(encode(sample));
+  function chooseDiscardFromSample(sample, mode) {
+    var logits = forward(encode(sample), mode);
     var inHand = {};
     sample.hand.forEach(function(t) { inHand[TILE_INDEX[t]] = true; });
     var best = -1, bestV = -Infinity;
@@ -272,6 +281,11 @@ var Sorekiri = (function() {
       sample.calls[rel].forEach(function(m) { m.tiles.forEach(add); });
     });
     sample.doraIndicators.forEach(add);
+    if (sample.gameMode === 'sanma') {
+      // 三人麻雀：2〜8萬は無く、北は抜くので誰の手にも入らない（＝全部見えている扱い）
+      for (var k = 1; k <= 7; k++) v[k] = 4;
+      v[TILE_INDEX.north] = 4;
+    }
     return v;
   }
 
@@ -353,7 +367,7 @@ var Sorekiri = (function() {
   // battle.js の state と席番号から、Pythonの「場面」と同じ形のデータを作る
   function sampleFromState(state, pidx) {
     var n = state.playerCount;
-    var rels = { self: 0, right: 1, top: 2, left: 3 };
+    var rels = n === 3 ? { self: 0, right: 1, top: 2 } : { self: 0, right: 1, top: 2, left: 3 };
     function seatOf(rel) { return (pidx + rels[rel]) % n; }
     function ids(arr) { return (arr || []).map(tileId); }
     var discards = {}, calls = {}, riichi = {};
@@ -363,6 +377,9 @@ var Sorekiri = (function() {
       calls[rel] = (state.melds[s] || []).map(function(m) { return { type: m.type, tiles: ids(m.tiles) }; });
       if (rel !== 'self') riichi[rel] = !!state.riichi[s];
     });
+    if (n === 3) {   // 三人麻雀には「左」の席が無い。特徴量が4人分を前提にしているので空で埋める
+      discards.left = []; calls.left = []; riichi.left = false;
+    }
     var indicators = [state.doraIndicator].concat(state.kanDoraIndicators || []).filter(Boolean);
     return {
       hand: ids(state.hands[pidx]),
@@ -373,12 +390,13 @@ var Sorekiri = (function() {
       roundWind: WINDS[state.roundWind],
       playerWind: WINDS[(pidx - state.dealerSeat + n) % n],
       dealer: Object.keys(rels).filter(function(rel) { return seatOf(rel) === state.dealerSeat; })[0],
+      gameMode: n === 3 ? 'sanma' : 'yonma',
     };
   }
 
   // 降りる場面なら、切る牌の手牌内の位置を返す。降りない・使えないときは-1
   function defenseIndex(state, pidx, foldShanten, foldDealer) {
-    if (!layers || state.isSanma || state.playerCount !== 4) return -1;
+    if (!layersBy[modeOf(state)]) return -1;
     var sample = sampleFromState(state, pidx);
     var safe = defensePickFromSample(sample, foldShanten, foldDealer);
     return safe === null ? -1 : sample.hand.indexOf(safe);
@@ -386,16 +404,17 @@ var Sorekiri = (function() {
 
   // 切る牌の手牌内の位置を返す。使えないときは-1（従来のCPUに任せる）
   function chooseDiscardIndex(state, pidx) {
-    if (!layers || state.isSanma || state.playerCount !== 4) return -1;
+    var mode = modeOf(state);
+    if (!layersBy[mode]) return -1;
     var sample = sampleFromState(state, pidx);
-    var target = chooseDiscardFromSample(sample);
+    var target = chooseDiscardFromSample(sample, mode);
     return sample.hand.indexOf(target);
   }
 
   // 鳴き：'pon' / 'chi' / null。使えないときは undefined（従来のCPUに任せる）
   // chiUse：アプリがチーで使う2枚の牌ID（できないならnull）
   function decideCall(state, pidx, tile, fromIdx, chiUse) {
-    if (!layers || state.isSanma || state.playerCount !== 4) return undefined;
+    if (!layersBy[modeOf(state)]) return undefined;
     if (state.riichi[pidx]) return null;
     var sample = sampleFromState(state, pidx);
     var id = tileId(tile);
