@@ -7,7 +7,8 @@
      先生（シャンテン数と受け入れ枚数で切る牌を決める自作エンジン）の判断を真似て学習した。
    - 鳴くか：先生と同じ規則（役の見込みがあり、鳴くとシャンテン数が進むときだけ鳴く）。
    - 降り：他家がリーチしていて、自分の手がまだ遠いとき（シャンテン数が基準以上）は、
-     いちばん安全な牌（現物・スジ・見えている字牌の順）を切る。
+     放銃確率の見積もりがいちばん小さい牌を切る。見積もりはリーチ相手の待ちの形
+     （両面・嵌張・辺張・シャンポン・単騎）ごとに、当たる組み合わせ数から出す。
    - 対象は四人麻雀。重みを読み込めていない間・三人麻雀のときは、従来のCPUの判断を使う。
    - 作り方と評価は 制作物/sorekiri/ にある。Pythonで作った特徴量・判断と同じ答えが出るかを
      制作物/sorekiri/tests/parity_test.js で確認している。
@@ -256,51 +257,54 @@ var Sorekiri = (function() {
     return best;
   }
 
-  // ---------- 降り（policies.py の defense_pick と同じ） ----------
-  var SUJI_PAIRS = { 0: [3], 1: [4], 2: [5], 3: [0, 6], 4: [1, 7], 5: [2, 8], 6: [3], 7: [4], 8: [5] };
+  // ---------- 降り（policies.py の defense_pick / danger.py と同じ） ----------
+  // 放銃の危なさ：リーチ相手の待ちを 両面・嵌張・辺張・シャンポン・単騎 に分け、
+  // その牌が当たる組み合わせ数（場に見えていない枚数から数える）に、学習した重みを掛けて確率にする。
+  // 論文：栗田・保木「麻雀における他家の手牌と待ちの予測に基づく放銃確率推定」(情報処理学会 2017)
+  var DANGER_WEIGHTS = [0.00310, 0.00275, 0.00454, 0.00491, 0.00910];   // 両面・嵌張・辺張・シャンポン・単騎
 
-  function tileSafety(tile, discards) {
-    if (discards.indexOf(tile) >= 0) return 'genbutsu';
-    var i = TILE_INDEX[tile];
-    if (i >= 27) return 'unknown';
-    var lo = i - i % 9;
-    var needed = SUJI_PAIRS[i - lo];
-    var ok = needed.every(function(k) { return discards.indexOf(TILE_ORDER[lo + k]) >= 0; });
-    return ok ? 'suji' : 'unknown';
-  }
-
-  function visibleCount(tile, sample) {
-    var n = sample.hand.filter(function(t) { return t === tile; }).length;
-    Object.keys(sample.discards).forEach(function(rel) {
-      n += sample.discards[rel].filter(function(t) { return t === tile; }).length;
-    });
+  function visibleCounts(sample) {
+    var v = new Array(34).fill(0);
+    function add(t) { v[TILE_INDEX[t]] += 1; }
+    sample.hand.forEach(add);
+    Object.keys(sample.discards).forEach(function(rel) { sample.discards[rel].forEach(add); });
     Object.keys(sample.calls).forEach(function(rel) {
-      sample.calls[rel].forEach(function(m) { n += m.tiles.filter(function(t) { return t === tile; }).length; });
+      sample.calls[rel].forEach(function(m) { m.tiles.forEach(add); });
     });
-    return n;
+    sample.doraIndicators.forEach(add);
+    return v;
   }
 
-  // リーチしている全員に対する危なさ。小さいほど安全（現物0 < 見えている字牌 < スジ < 端 < 2・8 < 真ん中）
-  function tileRisk(tile, sample, riichiRels) {
-    var worst = 0;
+  function formCounts(tile, discards, visible) {
+    var i = TILE_INDEX[tile];
+    var out = [0, 0, 0, 0, 0];
+    var d = {};
+    discards.forEach(function(t) { d[TILE_INDEX[t]] = true; });
+    if (d[i]) return out;
+    var unseen = visible.map(function(c) { return Math.max(0, 4 - c); });
+    var u = unseen[i];
+    out[3] = u * (u - 1) / 2;
+    out[4] = u;
+    if (i >= 27) return out;
+    var base = i - i % 9, p = i - base;
+    if (p + 3 <= 8 && !d[base + p + 3]) out[0] += unseen[base + p + 1] * unseen[base + p + 2];
+    if (p - 3 >= 0 && !d[base + p - 3]) out[0] += unseen[base + p - 2] * unseen[base + p - 1];
+    if (p >= 1 && p <= 7) out[1] = unseen[base + p - 1] * unseen[base + p + 1];
+    if (p === 2) out[2] = unseen[base] * unseen[base + 1];
+    else if (p === 6) out[2] = unseen[base + 7] * unseen[base + 8];
+    return out;
+  }
+
+  // リーチしている全員に対して、その牌を切ったときの放銃確率の見積もり
+  function ronProbability(tile, sample, riichiRels, visible) {
+    var safe = 1;
     riichiRels.forEach(function(rel) {
-      var st = tileSafety(tile, sample.discards[rel] || []);
-      var r;
-      if (st === 'genbutsu') r = 0;
-      else if (st === 'suji') r = 2;
-      else {
-        var i = TILE_INDEX[tile];
-        if (i >= 27) {
-          var seen = visibleCount(tile, sample);
-          r = seen >= 3 ? 1.5 : (seen === 2 ? 2.5 : 3.5);
-        } else {
-          var n = i % 9;
-          r = (n === 0 || n === 8) ? 4 : ((n === 1 || n === 7) ? 5 : 6);
-        }
-      }
-      worst = Math.max(worst, r);
+      var x = formCounts(tile, sample.discards[rel] || [], visible);
+      var s = 0;
+      for (var k = 0; k < 5; k++) s += DANGER_WEIGHTS[k] * x[k];
+      safe *= Math.exp(-s);
     });
-    return worst;
+    return 1 - safe;
   }
 
   // 他家のリーチがあり、自分のシャンテン数が foldShanten 以上なら、いちばん安全な牌を返す。降りないならnull
@@ -319,9 +323,11 @@ var Sorekiri = (function() {
     });
     var minSh = Math.min.apply(null, order.map(function(t) { return cands[t]; }));
     if (minSh < foldShanten) return null;
+    var visible = visibleCounts(sample);
     var best = null, bestKey = null;
     order.forEach(function(t) {
-      var key = [tileRisk(t, sample, riichiRels), cands[t], TILE_INDEX[t]];
+      var risk = Math.round(ronProbability(t, sample, riichiRels, visible) * 1e6) / 1e6;
+      var key = [risk, cands[t], TILE_INDEX[t]];
       if (bestKey === null || key[0] < bestKey[0] ||
           (key[0] === bestKey[0] && (key[1] < bestKey[1] || (key[1] === bestKey[1] && key[2] < bestKey[2])))) {
         best = t; bestKey = key;
