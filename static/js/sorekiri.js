@@ -308,9 +308,13 @@ var Sorekiri = (function() {
   }
 
   // 他家のリーチがあり、自分のシャンテン数が foldShanten 以上なら、いちばん安全な牌を返す。降りないならnull
-  function defensePickFromSample(sample, foldShanten) {
+  // foldDealer：親がリーチしているときだけ使う基準（親は打点が高いので、もっと早く降りる）。省略可
+  function defensePickFromSample(sample, foldShanten, foldDealer) {
     var riichiRels = OTHER_SEATS.filter(function(rel) { return sample.riichi[rel]; });
     if (riichiRels.length === 0) return null;
+    if (foldDealer !== undefined && foldDealer !== null && riichiRels.indexOf(sample.dealer) >= 0) {
+      foldShanten = Math.min(foldShanten, foldDealer);
+    }
     var openN = sample.calls.self.length;
     var cands = {};
     var order = [];
@@ -368,14 +372,15 @@ var Sorekiri = (function() {
       riichi: riichi,
       roundWind: WINDS[state.roundWind],
       playerWind: WINDS[(pidx - state.dealerSeat + n) % n],
+      dealer: Object.keys(rels).filter(function(rel) { return seatOf(rel) === state.dealerSeat; })[0],
     };
   }
 
   // 降りる場面なら、切る牌の手牌内の位置を返す。降りない・使えないときは-1
-  function defenseIndex(state, pidx, foldShanten) {
+  function defenseIndex(state, pidx, foldShanten, foldDealer) {
     if (!layers || state.isSanma || state.playerCount !== 4) return -1;
     var sample = sampleFromState(state, pidx);
-    var safe = defensePickFromSample(sample, foldShanten);
+    var safe = defensePickFromSample(sample, foldShanten, foldDealer);
     return safe === null ? -1 : sample.hand.indexOf(safe);
   }
 
