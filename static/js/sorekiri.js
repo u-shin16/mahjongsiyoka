@@ -6,6 +6,8 @@
    - 何を切るか：学習済みのニューラルネット（重みは static/models/sorekiri_v1.bin）が選ぶ。
      先生（シャンテン数と受け入れ枚数で切る牌を決める自作エンジン）の判断を真似て学習した。
    - 鳴くか：先生と同じ規則（役の見込みがあり、鳴くとシャンテン数が進むときだけ鳴く）。
+   - 降り：他家がリーチしていて、自分の手がまだ遠いとき（シャンテン数が基準以上）は、
+     いちばん安全な牌（現物・スジ・見えている字牌の順）を切る。
    - 対象は四人麻雀。重みを読み込めていない間・三人麻雀のときは、従来のCPUの判断を使う。
    - 作り方と評価は 制作物/sorekiri/ にある。Pythonで作った特徴量・判断と同じ答えが出るかを
      制作物/sorekiri/tests/parity_test.js で確認している。
@@ -254,6 +256,80 @@ var Sorekiri = (function() {
     return best;
   }
 
+  // ---------- 降り（policies.py の defense_pick と同じ） ----------
+  var SUJI_PAIRS = { 0: [3], 1: [4], 2: [5], 3: [0, 6], 4: [1, 7], 5: [2, 8], 6: [3], 7: [4], 8: [5] };
+
+  function tileSafety(tile, discards) {
+    if (discards.indexOf(tile) >= 0) return 'genbutsu';
+    var i = TILE_INDEX[tile];
+    if (i >= 27) return 'unknown';
+    var lo = i - i % 9;
+    var needed = SUJI_PAIRS[i - lo];
+    var ok = needed.every(function(k) { return discards.indexOf(TILE_ORDER[lo + k]) >= 0; });
+    return ok ? 'suji' : 'unknown';
+  }
+
+  function visibleCount(tile, sample) {
+    var n = sample.hand.filter(function(t) { return t === tile; }).length;
+    Object.keys(sample.discards).forEach(function(rel) {
+      n += sample.discards[rel].filter(function(t) { return t === tile; }).length;
+    });
+    Object.keys(sample.calls).forEach(function(rel) {
+      sample.calls[rel].forEach(function(m) { n += m.tiles.filter(function(t) { return t === tile; }).length; });
+    });
+    return n;
+  }
+
+  // リーチしている全員に対する危なさ。小さいほど安全（現物0 < 見えている字牌 < スジ < 端 < 2・8 < 真ん中）
+  function tileRisk(tile, sample, riichiRels) {
+    var worst = 0;
+    riichiRels.forEach(function(rel) {
+      var st = tileSafety(tile, sample.discards[rel] || []);
+      var r;
+      if (st === 'genbutsu') r = 0;
+      else if (st === 'suji') r = 2;
+      else {
+        var i = TILE_INDEX[tile];
+        if (i >= 27) {
+          var seen = visibleCount(tile, sample);
+          r = seen >= 3 ? 1.5 : (seen === 2 ? 2.5 : 3.5);
+        } else {
+          var n = i % 9;
+          r = (n === 0 || n === 8) ? 4 : ((n === 1 || n === 7) ? 5 : 6);
+        }
+      }
+      worst = Math.max(worst, r);
+    });
+    return worst;
+  }
+
+  // 他家のリーチがあり、自分のシャンテン数が foldShanten 以上なら、いちばん安全な牌を返す。降りないならnull
+  function defensePickFromSample(sample, foldShanten) {
+    var riichiRels = OTHER_SEATS.filter(function(rel) { return sample.riichi[rel]; });
+    if (riichiRels.length === 0) return null;
+    var openN = sample.calls.self.length;
+    var cands = {};
+    var order = [];
+    sample.hand.forEach(function(t) {
+      if (cands[t] !== undefined) return;
+      var rest = sample.hand.slice();
+      rest.splice(rest.indexOf(t), 1);
+      cands[t] = shanten(countsOf(rest), openN);
+      order.push(t);
+    });
+    var minSh = Math.min.apply(null, order.map(function(t) { return cands[t]; }));
+    if (minSh < foldShanten) return null;
+    var best = null, bestKey = null;
+    order.forEach(function(t) {
+      var key = [tileRisk(t, sample, riichiRels), cands[t], TILE_INDEX[t]];
+      if (bestKey === null || key[0] < bestKey[0] ||
+          (key[0] === bestKey[0] && (key[1] < bestKey[1] || (key[1] === bestKey[1] && key[2] < bestKey[2])))) {
+        best = t; bestKey = key;
+      }
+    });
+    return best;
+  }
+
   // ---------- まーじゃんしよかの対局状態とのつなぎ ----------
   function tileId(t) {
     if (t.suit === 'man') return t.num + 'm';
@@ -289,6 +365,14 @@ var Sorekiri = (function() {
     };
   }
 
+  // 降りる場面なら、切る牌の手牌内の位置を返す。降りない・使えないときは-1
+  function defenseIndex(state, pidx, foldShanten) {
+    if (!layers || state.isSanma || state.playerCount !== 4) return -1;
+    var sample = sampleFromState(state, pidx);
+    var safe = defensePickFromSample(sample, foldShanten);
+    return safe === null ? -1 : sample.hand.indexOf(safe);
+  }
+
   // 切る牌の手牌内の位置を返す。使えないときは-1（従来のCPUに任せる）
   function chooseDiscardIndex(state, pidx) {
     if (!layers || state.isSanma || state.playerCount !== 4) return -1;
@@ -318,10 +402,10 @@ var Sorekiri = (function() {
 
   var api = {
     load: load, ready: ready, setWeights: setWeights,
-    chooseDiscardIndex: chooseDiscardIndex, decideCall: decideCall,
+    chooseDiscardIndex: chooseDiscardIndex, defenseIndex: defenseIndex, decideCall: decideCall,
     // 検証用
     _encode: encode, _forward: forward, _chooseDiscardFromSample: chooseDiscardFromSample,
-    _decideCallFromSample: decideCallFromSample, _shanten: shanten, _countsOf: countsOf,
+    _decideCallFromSample: decideCallFromSample, _defensePickFromSample: defensePickFromSample, _shanten: shanten, _countsOf: countsOf,
     _sampleFromState: sampleFromState, _tileId: tileId,
   };
   return api;

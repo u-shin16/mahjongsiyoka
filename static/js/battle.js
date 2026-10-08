@@ -362,6 +362,8 @@ var Battle = (function() {
   // 対戦で測った強さ：つよい＝CPU戦「つよい」の約10倍の平均点、ふつう＝その約1/3、
   // やさしい＝CPU戦「つよい」とほぼ同じ（制作物/sorekiri/結果.md）
   var SOREKIRI_EPSILON = { sorekiri_hard: 0, sorekiri_normal: 0.25, sorekiri_easy: 0.5, sorekiri: 0 };
+  // 降り：他家がリーチしていて、自分のシャンテン数がこの値以上なら安全牌を切る（やさしいは降りない）
+  var SOREKIRI_FOLD = { sorekiri_hard: 2, sorekiri_normal: 2, sorekiri: 2 };
 
   // 難易度「Sorekiri」で、重みの読み込みが済んでいる四人麻雀のとき
   function sorekiriActive() {
@@ -393,6 +395,10 @@ var Battle = (function() {
     var hand = state.hands[pidx];
     if (sorekiriActive()) {
       if (state.riichi[pidx]) return hand.length - 1;   // リーチ後はツモ切り
+      if (SOREKIRI_FOLD[state.difficulty] !== undefined) {
+        var fi = Sorekiri.defenseIndex(state, pidx, SOREKIRI_FOLD[state.difficulty]);
+        if (fi >= 0) return fi;
+      }
       if (Math.random() < SOREKIRI_EPSILON[state.difficulty]) return Math.floor(Math.random() * hand.length);
       var si = Sorekiri.chooseDiscardIndex(state, pidx);
       if (si >= 0) return si;
