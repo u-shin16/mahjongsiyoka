@@ -98,10 +98,12 @@ def shanten(counts, open_melds=0):
     return result
 
 
-def dora_from_indicator(tile_id):
+def dora_from_indicator(tile_id, sanma=False):
     i = TILE_INDEX.get(tile_id)
     if i is None:
         return None
+    if sanma and i < 9:
+        return '9m' if i == 0 else '1m'      # 三人麻雀：萬子は1と9だけ
     if i < 27:
         base = i - i % 9
         return TILE_ORDER[base + (i % 9 + 1) % 9]
@@ -137,7 +139,7 @@ def analyze_discards(situation):
             return 0
         return max(0, 4 - visible_counts[i])
 
-    doras = {dora_from_indicator(t) for t in situation.get('doraIndicators') or []}
+    doras = {dora_from_indicator(t, sanma) for t in situation.get('doraIndicators') or []}
     # 役牌（三元牌・場風・自風）は2枚そろえば鳴いて役になるので、オタ風より残す
     yakuhai = {'white', 'green', 'red'}
     for key in ('roundWind', 'playerWind'):

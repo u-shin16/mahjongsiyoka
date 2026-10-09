@@ -73,9 +73,10 @@ var Sorekiri = (function() {
   function ready(mode) { return !!layersBy[mode || 'yonma']; }
 
   // ---------- 特徴量（features.py と同じ） ----------
-  function doraFromIndicator(id) {
+  function doraFromIndicator(id, sanma) {
     var i = TILE_INDEX[id];
     if (i === undefined) return null;
+    if (sanma && i < 9) return i === 0 ? '9m' : '1m';     // 三人麻雀：萬子は1と9だけ
     if (i < 27) { var base = i - i % 9; return TILE_ORDER[base + (i % 9 + 1) % 9]; }
     if (i < 31) return TILE_ORDER[27 + (i - 27 + 1) % 4];
     return TILE_ORDER[31 + (i - 31 + 1) % 3];
@@ -104,7 +105,7 @@ var Sorekiri = (function() {
     });
     sample.doraIndicators.forEach(function(ind) {
       visible[TILE_INDEX[ind]] += 1;
-      x[plane(8, doraFromIndicator(ind))] = 1;
+      x[plane(8, doraFromIndicator(ind, sample.gameMode === 'sanma'))] = 1;
     });
     for (var j = 0; j < 34; j++) x[9 * 34 + j] = visible[j] / 4;
 

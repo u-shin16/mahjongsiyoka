@@ -166,6 +166,20 @@ function yakumanScore(riichi, tsumo){
   eq('ツモなら大三元＋四暗刻で二倍役満64000点', t.label + ' ' + t.pts + ' ' + t.han, '2倍役満 64000 26');
 })();
 
+// ---- 三人麻雀：1萬の表示牌のドラは9萬（対局の中でも効く） ----
+(function(){
+  Battle.init({playerCount: 3, gameType:'tonpu'});
+  var st = Battle.getState();
+  st.doraIndicator = m(1);
+  var dora = Battle.getDoraTile();
+  eq('三人麻雀の対局：1萬の表示牌のドラは9萬', dora.suit + dora.num, 'man9');
+  Battle.init({playerCount: 4, gameType:'tonpu'});
+  st = Battle.getState();
+  st.doraIndicator = m(1);
+  dora = Battle.getDoraTile();
+  eq('四人麻雀の対局：1萬の表示牌のドラは2萬', dora.suit + dora.num, 'man2');
+})();
+
 print('');
 print('=== 点数の精算テスト ===');
 print('通過: ' + pass + ' / 失敗: ' + fail);

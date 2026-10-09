@@ -73,6 +73,12 @@ a = calc.analyze_discards(situation('123p 456p 789s 11s 34s 9p', game_mode='sanm
 nine = next(c for c in a if c['tile'] == '9p')
 check('三麻の2-5索待ちは8枚', nine['ukeire'], 8)
 
+# ── 三人麻雀のドラ：萬子は1と9だけなので、1萬の表示牌のドラは9萬 ──
+check('四人麻雀：1萬の表示牌のドラは2萬', calc.dora_from_indicator('1m'), '2m')
+check('三人麻雀：1萬の表示牌のドラは9萬', calc.dora_from_indicator('1m', True), '9m')
+check('三人麻雀：9萬の表示牌のドラは1萬', calc.dora_from_indicator('9m', True), '1m')
+check('三人麻雀でも筒子は普通に次の牌', calc.dora_from_indicator('3p', True), '4p')
+
 # ── 受け入れ枚数が同点なら、つながりにくい字牌から切る ──
 # 2026-09-24：9萬・1筒・南・西が同点で、並び順の先頭の9萬をすすめていた
 hand = '1m 3m 3m 4m 6m 9m 1p 4p 5p 7p 8s south west 5s'

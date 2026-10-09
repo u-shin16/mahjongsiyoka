@@ -249,6 +249,20 @@ check('七対子として読むほうが高い手は七対子のまま', c4, {wi
   eqv('役満が無ければ役を除かない', Yaku.onlyYakuman(normal).length, 2);
 })();
 
+// ---- 三人麻雀のドラ：萬子は1と9だけなので、1萬の表示牌のドラは9萬 ----
+(function() {
+  function eqv(title, actual, expected) {
+    if (actual === expected) { pass++; return; }
+    fail++; fails.push(title + '\n    実際: ' + actual + '\n    正解: ' + expected);
+  }
+  function show(t) { return t.suit + t.num; }
+  eqv('四人麻雀：1萬の表示牌のドラは2萬', show(Yaku.doraFromIndicator(m(1))), 'man2');
+  eqv('三人麻雀：1萬の表示牌のドラは9萬', show(Yaku.doraFromIndicator(m(1), true)), 'man9');
+  eqv('三人麻雀：9萬の表示牌のドラは1萬', show(Yaku.doraFromIndicator(m(9), true)), 'man1');
+  eqv('三人麻雀でも筒子は普通に次の牌', show(Yaku.doraFromIndicator(p(3), true)), 'pin4');
+  eqv('三人麻雀でも北の表示牌は東', show(Yaku.doraFromIndicator(w(4), true)), 'wind1');
+})();
+
 print('');
 print('=== 役判定テスト ===');
 print('通過: ' + pass + ' / 失敗: ' + fail);

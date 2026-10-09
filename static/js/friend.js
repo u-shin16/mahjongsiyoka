@@ -510,7 +510,7 @@ var FriendGame = (function() {
   }
 
   // ドラ本体・一致数のカウントは yaku.js の Yaku に委譲（このアプリ全体で共通）
-  function doraFromInd(ind) { return Yaku.doraFromIndicator(ind); }
+  function doraFromInd(ind, isSanma) { return Yaku.doraFromIndicator(ind, isSanma); }
 
   function sameKind(a, b) {
     return !!(a && b && a.suit === b.suit && a.num === b.num);
@@ -714,7 +714,7 @@ var FriendGame = (function() {
     if (state.drawnId && t.id === state.drawnId) score += 0.8;
     var same = countMatch(hand, t);
     if (same >= 2) score -= 3;
-    var dora = doraFromInd(state.doraInd);
+    var dora = doraFromInd(state.doraInd, state.isSanma);
     if (sameKind(t, dora)) score -= 5;
     return score;
   }
@@ -1016,13 +1016,13 @@ var FriendGame = (function() {
     var yaku = buildYakuBeforeDora(state, winner, winType, fromSeat, resolvedWinTile, isChankan);
 
     var nuki = state.nuki && state.nuki[winner] ? state.nuki[winner].length : 0;
-    var dora = countMatch(scoringTiles, doraFromInd(state.doraInd));
+    var dora = countMatch(scoringTiles, doraFromInd(state.doraInd, state.isSanma));
     var kanDora = 0;
     (state.kanDoraInds || []).forEach(function(ind) {
-      kanDora += countMatch(scoringTiles, doraFromInd(ind));
+      kanDora += countMatch(scoringTiles, doraFromInd(ind, state.isSanma));
     });
     var ura = 0;
-    if (state.riichi[winner]) ura = countMatch(scoringTiles, doraFromInd(state.uraInd));
+    if (state.riichi[winner]) ura = countMatch(scoringTiles, doraFromInd(state.uraInd, state.isSanma));
 
     if (yaku.length === 0) yaku.push({ name: '役あり', han: 1 });
     if (dora > 0) yaku.push({ name: 'ドラ', han: dora });

@@ -5396,7 +5396,7 @@ var App = {
 
       // ── 中央ダイアモンド ──
       // カンが発生してカンドラが増えたら、ドラ表示のすぐ右に追加していく
-      var kanDoraTop = (s.kanDoraIndicators || []).map(function(ind) { return Yaku.doraFromIndicator(ind); });
+      var kanDoraTop = (s.kanDoraIndicators || []).map(function(ind) { return Yaku.doraFromIndicator(ind, s.isSanma); });
       var doraHtml = '<div class="jt-table-dora">ドラ：' +
         (dora ? Tiles.renderTile(dora,{noHover:true,extraClass:'xxs'}) : '─') +
         kanDoraTop.map(function(t) { return Tiles.renderTile(t, {noHover:true, extraClass:'xxs'}); }).join('') +

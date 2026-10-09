@@ -166,12 +166,9 @@ var Battle = (function() {
   }
 
   // 表示牌からドラ本体を求める（9→1、北→東、中→白と一周する）
+  // 三人麻雀では萬子が1と9だけなので、1萬の表示牌のドラは9萬になる（Yaku側で処理）
   function doraFromIndicator(ind) {
-    if (!ind) return null;
-    var s = ind.suit, n = ind.num;
-    if (s === 'wind')   return Tiles.make('wind',   n === 4 ? 1 : n + 1);
-    if (s === 'dragon') return Tiles.make('dragon', n === 3 ? 1 : n + 1);
-    return Tiles.make(s, n === 9 ? 1 : n + 1);
+    return Yaku.doraFromIndicator(ind, !!(state && state.isSanma));
   }
 
   function getDora() {

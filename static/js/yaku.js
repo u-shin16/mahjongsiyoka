@@ -32,9 +32,11 @@ var Yaku = (function() {
   }
 
   // 表示牌からドラ本体を求める（9→1、北→東、中→白と一周する）
-  function doraFromIndicator(ind) {
+  // isSanma：三人麻雀では2〜8萬が無いので、萬子は 1→9・9→1 とする
+  function doraFromIndicator(ind, isSanma) {
     if (!ind) return null;
     var s = ind.suit, n = ind.num;
+    if (isSanma && s === 'man') return Tiles.make('man', n === 1 ? 9 : 1);
     if (s === 'wind')   return Tiles.make('wind',   n === 4 ? 1 : n + 1);
     if (s === 'dragon') return Tiles.make('dragon', n === 3 ? 1 : n + 1);
     return Tiles.make(s, n === 9 ? 1 : n + 1);
