@@ -5111,16 +5111,15 @@ var App = {
       '</div>' +
       (titles.length?'<div class="progress-card"><h3>獲得称号</h3><div class="title-badges">'+titles.map(function(t){return '<span class="title-badge">'+t+'</span>';}).join('')+'</div></div>':'')+
       self._lookPickerHtml() +
-      '<div class="btn-row"><button class="btn btn-secondary" id="btnReset">進捗リセット</button></div></div>';
+      // 2026-10-15：進捗リセットのボタンは外した（ゆーしん「進捗リセットはできなくしよう」）。
+      // 押し間違いで章の星・今日の1問の日数・ごほうびが全部消えるため。
+      '</div>';
     main.querySelectorAll('.look-opt[data-type]').forEach(function(el) {
       el.addEventListener('click', function() {
         if (el.classList.contains('locked')) { showToast('「今日の1問」に答えた日が' + el.getAttribute('data-need') + '日になると使えます'); return; }
         Progress.setLook(el.getAttribute('data-type'), el.getAttribute('data-id'));
         self._renderProgress(main);
       });
-    });
-    document.getElementById('btnReset').addEventListener('click', function() {
-      if (confirm('進捗をリセットしますか？')) { localStorage.removeItem('mj_progress'); Progress.load(); self._renderProgress(main); }
     });
   },
 
