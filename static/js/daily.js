@@ -5,7 +5,7 @@
 // ・ホームを開くと、その日の1問だけが出ている（選ばせない）
 // ・間違えた問題は2日後にもう一度出す（忘れたころに出すほうが身につく）
 // ・答えた日を「合計」で数える。連続日数にはしない（途切れた日にやめる理由になるため）
-// ・合計日数でごほうび（称号・牌の裏の色・卓の色）がもらえる
+// ・合計日数でごほうび（称号・牌の表の色・牌の裏の色・卓の色・背景）がもらえる
 //
 // 画面を持たない計算だけをここに置き、app.js から使う。テストは tests/daily_test.js。
 // ============================================================
@@ -13,15 +13,38 @@ var Daily = (function() {
   var RETRY_AFTER_DAYS = 2;
 
   // 合計日数ごとのごほうび。数字は小さい順に並べる
+  // 2026-10-15：あいだを埋めるように、牌の表（5・20・50日）と背景（10・40日）、50・100日の称号を足した
   var REWARDS = [
-    { days: 1,  type: 'title', id: 'はじめの一歩' },
-    { days: 3,  type: 'back',  id: 'indigo' },
-    { days: 7,  type: 'title', id: '麻雀好き' },
-    { days: 7,  type: 'table', id: 'night' },
-    { days: 14, type: 'back',  id: 'wood' },
-    { days: 30, type: 'title', id: '麻雀の常連' },
-    { days: 30, type: 'table', id: 'wine' },
+    { days: 1,   type: 'title', id: 'はじめの一歩' },
+    { days: 3,   type: 'back',  id: 'indigo' },
+    { days: 5,   type: 'face',  id: 'ivory' },
+    { days: 7,   type: 'title', id: '麻雀好き' },
+    { days: 7,   type: 'table', id: 'night' },
+    { days: 10,  type: 'bg',    id: 'navy' },
+    { days: 14,  type: 'back',  id: 'wood' },
+    { days: 20,  type: 'face',  id: 'sky' },
+    { days: 30,  type: 'title', id: '麻雀の常連' },
+    { days: 30,  type: 'table', id: 'wine' },
+    { days: 40,  type: 'bg',    id: 'sumi' },
+    { days: 50,  type: 'face',  id: 'sakura' },
+    { days: 50,  type: 'title', id: '麻雀の達人' },
+    { days: 100, type: 'title', id: '百日の打ち手' },
   ];
+
+  // 牌の表の色。sheet は本物の牌の画像（白い面だけを色づけしたもの）、a〜c は数字だけの牌（CSSで描く）の面の色
+  var FACES = {
+    'default': { name: '白',   sheet: null, a: '#fffef8', b: '#f6efd9', c: '#e8d7b6' },
+    'ivory':   { name: '象牙', sheet: '/static/img/mahjong-tiles-ivory.jpg',  a: '#fff6e0', b: '#f7e6bf', c: '#e8cf9c' },
+    'sky':     { name: '空色', sheet: '/static/img/mahjong-tiles-sky.jpg',    a: '#f4f9ff', b: '#e1ecfb', c: '#c9d9ee' },
+    'sakura':  { name: '桜',   sheet: '/static/img/mahjong-tiles-sakura.jpg', a: '#fff6f8', b: '#fbe3ea', c: '#efc9d4' },
+  };
+  // アプリ全体の背景色
+  var BGS = {
+    'default': { name: '深緑', color: '#1a3a2a' },
+    'navy':    { name: '紺',   color: '#16263d' },
+    'sumi':    { name: '墨',   color: '#1f2124' },
+  };
+  var LOOK_TYPES = ['face', 'back', 'table', 'bg'];
 
   // 牌の裏の色（a=明るい側, b=中, c=厚みの暗い側）
   var BACKS = {
@@ -178,6 +201,8 @@ var Daily = (function() {
     if (r.type === 'title') return '称号「' + r.id + '」';
     if (r.type === 'back') return '牌の裏「' + BACKS[r.id].name + '」';
     if (r.type === 'table') return '卓「' + TABLES[r.id].name + '」';
+    if (r.type === 'face') return '牌の表「' + FACES[r.id].name + '」';
+    if (r.type === 'bg') return '背景「' + BGS[r.id].name + '」';
     return '';
   }
 
@@ -196,7 +221,8 @@ var Daily = (function() {
   }
 
   return {
-    REWARDS: REWARDS, BACKS: BACKS, TABLES: TABLES, RETRY_AFTER_DAYS: RETRY_AFTER_DAYS,
+    REWARDS: REWARDS, BACKS: BACKS, TABLES: TABLES, FACES: FACES, BGS: BGS, LOOK_TYPES: LOOK_TYPES,
+    RETRY_AFTER_DAYS: RETRY_AFTER_DAYS,
     today: today, addDays: addDays, emptyState: emptyState, normalize: normalize,
     pickKey: pickKey, questionFor: questionFor, answer: answer,
     rewardsBetween: rewardsBetween, nextReward: nextReward, isUnlocked: isUnlocked,

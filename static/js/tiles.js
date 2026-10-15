@@ -162,7 +162,8 @@ const Tiles = (() => {
     return [
       `width:${px(boxW)}`,
       `height:${px(boxH)}`,
-      `background:url(${SPRITE.url}) no-repeat ${px(-pos.x * scaleX)} ${px(-pos.y * scaleY)}/${px(SPRITE.sheetW * scaleX)} ${px(SPRITE.sheetH * scaleY)}`,
+      // 今日の1問の特典で牌の表の色を選ぶと、app.js が window.MJ_TILE_SHEET に色違いの画像を入れる
+      `background:url(${(typeof window !== 'undefined' && window.MJ_TILE_SHEET) || SPRITE.url}) no-repeat ${px(-pos.x * scaleX)} ${px(-pos.y * scaleY)}/${px(SPRITE.sheetW * scaleX)} ${px(SPRITE.sheetH * scaleY)}`,
     ].join(';');
   }
 

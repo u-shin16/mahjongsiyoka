@@ -83,10 +83,10 @@ var Auth = (function() {
       var daily = window.Daily ? Daily.merge(local.daily, cloud.daily) : (local.daily || null);
       // 見た目：この端末で選んでいればそれ、無ければクラウドの選択
       var lookLocal = local.look || {}, lookCloud = cloud.look || {};
-      var look = {
-        back: lookLocal.back && lookLocal.back !== 'default' ? lookLocal.back : (lookCloud.back || 'default'),
-        table: lookLocal.table && lookLocal.table !== 'default' ? lookLocal.table : (lookCloud.table || 'default'),
-      };
+      var look = {};
+      (window.Daily ? Daily.LOOK_TYPES : ['back', 'table']).forEach(function(t) {
+        look[t] = lookLocal[t] && lookLocal[t] !== 'default' ? lookLocal[t] : (lookCloud[t] || 'default');
+      });
 
       local.stars = stars;
       local.titles = titles;

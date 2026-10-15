@@ -77,7 +77,7 @@ check('3日目で牌の裏「藍色」が使える', Daily.isUnlocked('back', 'i
 check('はじめからの見た目はいつでも使える', Daily.isUnlocked('table', 'default', 0));
 var r7 = Daily.rewardsBetween(6, 7).map(function(r) { return r.id; }).join(',');
 check('7日目は称号と夜の卓', r7 === '麻雀好き,night');
-check('次のごほうびが分かる', Daily.nextReward(3).days === 7 && Daily.nextReward(30) === null);
+check('次のごほうびが分かる', Daily.nextReward(3).days === 5 && Daily.nextReward(30).days === 40);
 
 // ログインしたときのまとめ方：日数の多い方を残し、間違えた問題は両方を合わせる
 var m = Daily.merge(
@@ -87,5 +87,16 @@ var m = Daily.merge(
 check('日数は多い方', m.days === 8 && m.last === '2026-10-09');
 check('間違えた問題は両方を合わせ、遅い予定を残す', m.wrong.a.due === '2026-10-14' && m.wrong.b.due === '2026-10-11');
 check('記録が無くても壊れない', Daily.merge(null, undefined).days === 0);
+
+// 牌の表・背景（2026-10-15に足した特典）
+check('5日目で牌の表「象牙」', Daily.isUnlocked('face', 'ivory', 5) && !Daily.isUnlocked('face', 'ivory', 4));
+check('10日目で背景「紺」', Daily.isUnlocked('bg', 'navy', 10) && !Daily.isUnlocked('bg', 'navy', 9));
+check('50日目は牌の表「桜」と称号', Daily.rewardsBetween(49, 50).map(function(r) { return r.id; }).join(',') === 'sakura,麻雀の達人');
+check('100日目の称号', Daily.rewardsBetween(99, 100).length === 1 && Daily.nextReward(100) === null);
+check('特典の名前', Daily.rewardName({ type: 'face', id: 'sky' }) === '牌の表「空色」' && Daily.rewardName({ type: 'bg', id: 'sumi' }) === '背景「墨」');
+var allNamed = Daily.REWARDS.every(function(r) { return Daily.rewardName(r).length > 0; });
+check('すべての特典に名前がある', allNamed);
+var ordered = Daily.REWARDS.every(function(r, i, a) { return i === 0 || a[i - 1].days <= r.days; });
+check('特典は日数の小さい順', ordered);
 
 print('通過: ' + __pass + ' / 失敗: ' + __fail);

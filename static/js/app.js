@@ -41,7 +41,7 @@ var Progress = {
     if (!this._data.stars) this._data.stars = {};
     if (!this._data.titles) this._data.titles = [];
     if (window.Daily) this._data.daily = Daily.normalize(this._data.daily);
-    if (!this._data.look) this._data.look = { back: 'default', table: 'default' };
+    if (!this._data.look) this._data.look = {};
     var before = JSON.stringify(this._data.stars);
     this.migrate(this._data);
     // 付け替えが起きたときだけ書き戻す（毎回書くとクラウドへ余計に送るため）
@@ -60,7 +60,12 @@ var Progress = {
   getTitles: function() { return this._data.titles || []; },
   getDaily: function() { return Daily.normalize(this._data.daily); },
   setDaily: function(d) { this._data.daily = d; this.save(); },
-  getLook: function() { return this._data.look || { back: 'default', table: 'default' }; },
+  getLook: function() {
+    var look = this._data.look || {};
+    var out = {};
+    (window.Daily ? Daily.LOOK_TYPES : ['back', 'table']).forEach(function(t) { out[t] = look[t] || 'default'; });
+    return out;
+  },
   setLook: function(type, id) {
     var look = this.getLook();
     look[type] = id;
@@ -300,9 +305,14 @@ function applyLook() {
   var days = Progress.getDaily().days;
   var back = Daily.isUnlocked('back', look.back, days) && Daily.BACKS[look.back] ? Daily.BACKS[look.back] : Daily.BACKS['default'];
   var table = Daily.isUnlocked('table', look.table, days) && Daily.TABLES[look.table] ? Daily.TABLES[look.table] : Daily.TABLES['default'];
+  var pick = function(type, list) { return Daily.isUnlocked(type, look[type], days) && list[look[type]] ? list[look[type]] : list['default']; };
+  var face = pick('face', Daily.FACES), bg = pick('bg', Daily.BGS);
   var st = document.body.style;
   st.setProperty('--back-a', back.a); st.setProperty('--back-b', back.b); st.setProperty('--back-c', back.c);
   st.setProperty('--felt-a', table.a); st.setProperty('--felt-b', table.b); st.setProperty('--felt-frame', table.frame);
+  st.setProperty('--face-a', face.a); st.setProperty('--face-b', face.b); st.setProperty('--face-c', face.c);
+  st.setProperty('--page-bg', bg.color);
+  window.MJ_TILE_SHEET = face.sheet || null;
 }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -5158,11 +5168,15 @@ var App = {
       }).join('');
     };
     return '<div class="progress-card" id="lookCard"><h3>見た目（今日の1問のごほうび）</h3>' +
-      '<p class="look-note">「今日の1問」に答えた日が合計' + days + '日。日数がたまると、牌の裏や卓の色が増えます。</p>' +
+      '<p class="look-note">「今日の1問」に答えた日が合計' + days + '日。日数がたまると、牌や卓や背景の色が増えます。</p>' +
+      '<div class="look-label">牌の表</div><div class="look-row">' +
+      row('face', Daily.FACES, function(c) { return 'background:linear-gradient(165deg,' + c.a + ' 0%,' + c.b + ' 60%,' + c.c + ' 100%);border-bottom-color:#a76d23'; }) + '</div>' +
       '<div class="look-label">牌の裏</div><div class="look-row">' +
       row('back', Daily.BACKS, function(c) { return 'background:linear-gradient(145deg,' + c.a + ',' + c.b + ');border-bottom-color:' + c.c; }) + '</div>' +
       '<div class="look-label">卓</div><div class="look-row">' +
-      row('table', Daily.TABLES, function(c) { return 'background:radial-gradient(ellipse at 50% 50%,' + c.a + ' 0%,' + c.b + ' 100%);border-color:' + c.frame; }) + '</div></div>';
+      row('table', Daily.TABLES, function(c) { return 'background:radial-gradient(ellipse at 50% 50%,' + c.a + ' 0%,' + c.b + ' 100%);border-color:' + c.frame; }) + '</div>' +
+      '<div class="look-label">背景</div><div class="look-row">' +
+      row('bg', Daily.BGS, function(c) { return 'background:' + c.color + ';border-color:rgba(232,184,75,0.4)'; }) + '</div></div>';
   },
 
   // ===== Battle Setup =====

@@ -17,6 +17,9 @@
   --felt-a: #1e7040;
   --felt-b: #124d2a;
   --felt-frame: #5a3012;
+  --face-a: #fffef8;
+  --face-b: #f6efd9;
+  --face-c: #e8d7b6;
   --man-color: #c0392b;
   --pin-color: #2471a3;
   --sou-color: #1e8449;
@@ -46,7 +49,7 @@
 html { font-size: 16px; }
 body {
   font-family: 'Noto Sans JP', sans-serif;
-  background: var(--green-dark);
+  background: var(--page-bg, var(--green-dark));
   color: var(--text-dark);
   min-height: 100vh;
   display: flex;
@@ -341,7 +344,7 @@ button { font-family: inherit; cursor: pointer; }
 /* 見た目を選ぶ欄（学習進捗） */
 .look-note { font-size: 0.82rem; margin: 0 0 10px; opacity: 0.85; }
 .look-label { font-size: 0.85rem; font-weight: 700; margin: 10px 0 6px; }
-.look-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.look-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
 .look-opt {
   display: flex;
   flex-direction: column;
@@ -359,6 +362,8 @@ button { font-family: inherit; cursor: pointer; }
 .look-opt.locked { opacity: 0.55; }
 .look-swatch { width: 34px; height: 44px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.2); border-bottom-width: 5px; }
 .look-swatch.table { width: 56px; height: 40px; border-width: 4px; border-style: solid; }
+.look-swatch.face { border: 1px solid #d6bd8f; border-bottom-width: 5px; }
+.look-swatch.bg { width: 56px; height: 40px; border-width: 1px; border-style: solid; }
 .look-name { font-size: 0.8rem; font-weight: 700; }
 .look-state { font-size: 0.72rem; opacity: 0.8; }
 
@@ -683,7 +688,7 @@ button { font-family: inherit; cursor: pointer; }
   height: 70px;
   background:
     linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0) 28%),
-    linear-gradient(165deg, #fffef8 0%, #f6efd9 54%, #e8d7b6 100%);
+    linear-gradient(165deg, var(--face-a) 0%, var(--face-b) 54%, var(--face-c) 100%);
   border: 1px solid #d6bd8f;
   border-bottom: 7px solid #a76d23;
   border-right: 4px solid #c4862d;
