@@ -79,14 +79,28 @@ var Auth = (function() {
         if (titles.indexOf(t) < 0) titles.push(t);
       });
 
+      // 今日の1問：合計日数は多い方、間違えた問題は両方を合わせる（daily.js の merge）
+      var daily = window.Daily ? Daily.merge(local.daily, cloud.daily) : (local.daily || null);
+      // 見た目：この端末で選んでいればそれ、無ければクラウドの選択
+      var lookLocal = local.look || {}, lookCloud = cloud.look || {};
+      var look = {
+        back: lookLocal.back && lookLocal.back !== 'default' ? lookLocal.back : (lookCloud.back || 'default'),
+        table: lookLocal.table && lookLocal.table !== 'default' ? lookLocal.table : (lookCloud.table || 'default'),
+      };
+
       local.stars = stars;
       local.titles = titles;
+      local.daily = daily;
+      local.look = look;
       local.chapterMapVersion = (window.Progress && Progress.CH_MAP_VERSION) || 0;
       localStorage.setItem('mj_progress', JSON.stringify(local));
 
+      if (typeof applyLook === 'function') applyLook();
       return ref.set({
         stars: stars,
         titles: titles,
+        daily: daily,
+        look: look,
         // 章番号の付け替えを何度も走らせないための印。落とすと次のログインで
         // もう一度ずれるので、必ず一緒に保存する
         chapterMapVersion: (window.Progress && Progress.CH_MAP_VERSION) || 0,
@@ -106,6 +120,8 @@ var Auth = (function() {
       _db.collection('users').doc(_user.uid).set({
         stars: data.stars,
         titles: data.titles,
+        daily: data.daily || null,
+        look: data.look || null,
         chapterMapVersion: data.chapterMapVersion || 0,
         email: _user.email,
         name: _user.displayName || '',

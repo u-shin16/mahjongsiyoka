@@ -10,6 +10,13 @@
   --tile-bg: linear-gradient(160deg, #fffdf5 0%, #f0ead8 100%);
   --tile-border: #d4b896;
   --tile-shadow: #9d7a3a;
+  /* 牌の裏・卓の色。「今日の1問」のごほうびで選んだ色に app.js の applyLook() が差し替える */
+  --back-a: #f7b943;
+  --back-b: #d67718;
+  --back-c: #8f3f0a;
+  --felt-a: #1e7040;
+  --felt-b: #124d2a;
+  --felt-frame: #5a3012;
   --man-color: #c0392b;
   --pin-color: #2471a3;
   --sou-color: #1e8449;
@@ -209,6 +216,95 @@ button { font-family: inherit; cursor: pointer; }
   cursor: pointer;
 }
 .home-start-extra:hover { text-decoration: underline; }
+
+/* 今日の1問（ホームの3色にそろえる：クリーム・深緑・金） */
+.home-daily {
+  margin-top: 22px;
+  padding: 16px 18px 14px;
+  border-radius: 16px;
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  box-shadow: 0 6px 0 #b89d6e, 0 8px 16px rgba(0,0,0,0.3);
+  color: var(--green-dark);
+}
+.home-daily-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.home-daily-badge {
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--green-dark);
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+.home-daily-tag { font-size: 0.75rem; font-weight: 700; color: #7a6f55; }
+.home-daily-key { font-size: 1.25rem; font-weight: 900; margin-bottom: 2px; }
+.home-daily-text { font-size: 0.95rem; font-weight: 700; line-height: 1.6; }
+.home-daily-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.home-daily-choice {
+  padding: 11px 8px;
+  border: 1px solid var(--tile-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--green-dark);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #d4c39d;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.home-daily-choice:hover { transform: translateY(-1px); }
+.home-daily-choice:active { transform: translateY(3px); box-shadow: 0 0 0 #d4c39d; }
+.home-daily-result { margin-top: 12px; font-size: 1rem; font-weight: 900; }
+.home-daily-result.ok { color: var(--green-mid); }
+.home-daily-result.ng { color: #9a5a00; }
+.home-daily-expl { margin-top: 6px; font-size: 0.85rem; line-height: 1.6; color: #4a4232; }
+.home-daily-done { margin-top: 10px; font-size: 0.85rem; font-weight: 700; }
+.home-daily-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--tile-border);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #7a6f55;
+}
+.home-daily-foot strong { font-size: 1rem; color: var(--green-dark); margin: 0 2px; }
+
+/* ごほうびのお知らせ */
+.daily-reward { text-align: center; }
+.daily-reward-days { font-size: 0.85rem; color: var(--gold); font-weight: 700; }
+.daily-reward h3 { margin: 6px 0 10px; font-size: 1.2rem; }
+.daily-reward ul { list-style: none; padding: 0; margin: 0 0 10px; }
+.daily-reward li { padding: 6px 0; font-weight: 700; }
+.daily-reward p { font-size: 0.85rem; margin-bottom: 12px; }
+
+/* 見た目を選ぶ欄（学習進捗） */
+.look-note { font-size: 0.82rem; margin: 0 0 10px; opacity: 0.85; }
+.look-label { font-size: 0.85rem; font-weight: 700; margin: 10px 0 6px; }
+.look-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.look-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border: 1px solid rgba(232,184,75,0.25);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.15);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.look-opt.active { border-color: var(--gold); background: rgba(232,184,75,0.12); }
+.look-opt.locked { opacity: 0.55; }
+.look-swatch { width: 34px; height: 44px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.2); border-bottom-width: 5px; }
+.look-swatch.table { width: 56px; height: 40px; border-width: 4px; border-style: solid; }
+.look-name { font-size: 0.8rem; font-weight: 700; }
+.look-state { font-size: 0.72rem; opacity: 0.8; }
 
 /* 学ぶ・打つ のまとまり */
 .home-group { margin-top: 28px; }
@@ -566,9 +662,9 @@ button { font-family: inherit; cursor: pointer; }
 .tile.face-down {
   background:
     linear-gradient(145deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 26%),
-    linear-gradient(145deg, #f6a12a, #c76a16 62%, #8f3f0a);
-  border-color: #f4c06a;
-  border-bottom-color: #8a3f0d;
+    linear-gradient(145deg, var(--back-a), var(--back-b) 62%, var(--back-c));
+  border-color: var(--back-a);
+  border-bottom-color: var(--back-c);
   color: #fff7d8;
   cursor: pointer;
 }
@@ -579,7 +675,7 @@ button { font-family: inherit; cursor: pointer; }
   background:
     repeating-linear-gradient(90deg, rgba(255,255,255,0.34) 0 2px, transparent 2px 7px),
     repeating-linear-gradient(0deg, rgba(87,48,25,0.24) 0 2px, transparent 2px 9px),
-    linear-gradient(145deg, #f7b943, #d67718);
+    linear-gradient(145deg, var(--back-a), var(--back-b));
   border: 1px solid rgba(92,42,9,0.38);
   box-shadow: inset 0 1px 2px rgba(255,255,255,0.34), 0 1px 2px rgba(0,0,0,0.2);
 }
@@ -1660,9 +1756,9 @@ button { font-family: inherit; cursor: pointer; }
 /* Table board */
 .mj-table {
   background:
-    radial-gradient(ellipse at 50% 50%, #1e7040 0%, #134d2a 100%),
+    radial-gradient(ellipse at 50% 50%, var(--felt-a) 0%, var(--felt-b) 100%),
     repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 10px);
-  border: 8px solid #5a3012;
+  border: 8px solid var(--felt-frame);
   border-radius: 14px;
   overflow: hidden;
   display: grid;
@@ -2298,9 +2394,9 @@ button { font-family: inherit; cursor: pointer; }
   min-width: 0;
   display: flex; flex-direction: column;
   background:
-    radial-gradient(ellipse at 50% 50%, #1e7040 0%, #124d2a 100%),
+    radial-gradient(ellipse at 50% 50%, var(--felt-a) 0%, var(--felt-b) 100%),
     repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 10px);
-  border: 7px solid #5a3012;
+  border: 7px solid var(--felt-frame);
   overflow: hidden;
 }
 
@@ -3177,7 +3273,7 @@ body.is-battle-page .app-main.battle-main {
   border-radius: 4px;
   border-right-width: 2px;
   border-bottom-width: 4px;
-  background: linear-gradient(180deg, #f5b35c 0%, #c67624 58%, #925012 100%);
+  background: linear-gradient(180deg, var(--back-a) 0%, var(--back-b) 58%, var(--back-c) 100%);
 }
 .battle-main .jt-hidden-hand .tile-back-pattern {
   width: 14px;

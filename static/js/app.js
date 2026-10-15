@@ -40,6 +40,8 @@ var Progress = {
     catch (e) { this._data = {}; }
     if (!this._data.stars) this._data.stars = {};
     if (!this._data.titles) this._data.titles = [];
+    if (window.Daily) this._data.daily = Daily.normalize(this._data.daily);
+    if (!this._data.look) this._data.look = { back: 'default', table: 'default' };
     var before = JSON.stringify(this._data.stars);
     this.migrate(this._data);
     // 付け替えが起きたときだけ書き戻す（毎回書くとクラウドへ余計に送るため）
@@ -56,6 +58,16 @@ var Progress = {
   isCleared: function(id) { return (this._data.stars[id] || 0) > 0; },
   addTitle: function(t) { if (!this._data.titles.includes(t)) { this._data.titles.push(t); this.save(); } },
   getTitles: function() { return this._data.titles || []; },
+  getDaily: function() { return Daily.normalize(this._data.daily); },
+  setDaily: function(d) { this._data.daily = d; this.save(); },
+  getLook: function() { return this._data.look || { back: 'default', table: 'default' }; },
+  setLook: function(type, id) {
+    var look = this.getLook();
+    look[type] = id;
+    this._data.look = look;
+    this.save();
+    applyLook();
+  },
 };
 
 // ===== Helpers =====
@@ -280,6 +292,18 @@ document.addEventListener('click', function(e) {
   if (!ov.classList.contains('hidden') && e.target === ov) hideOverlay();
 });
 function starsHtml(n) { return '★'.repeat(n) + '☆'.repeat(3 - n); }
+
+// ごほうびで選んだ牌の裏・卓の色を、ページ全体の色の変数に入れる（style.css が使う）
+function applyLook() {
+  if (!window.Daily || !document.body) return;
+  var look = Progress.getLook();
+  var days = Progress.getDaily().days;
+  var back = Daily.isUnlocked('back', look.back, days) && Daily.BACKS[look.back] ? Daily.BACKS[look.back] : Daily.BACKS['default'];
+  var table = Daily.isUnlocked('table', look.table, days) && Daily.TABLES[look.table] ? Daily.TABLES[look.table] : Daily.TABLES['default'];
+  var st = document.body.style;
+  st.setProperty('--back-a', back.a); st.setProperty('--back-b', back.b); st.setProperty('--back-c', back.c);
+  st.setProperty('--felt-a', table.a); st.setProperty('--felt-b', table.b); st.setProperty('--felt-frame', table.frame);
+}
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // Bind choice tiles by data-ci
@@ -1932,6 +1956,7 @@ var App = {
 
   init: function() {
     Progress.load();
+    applyLook();
     var self = this;
     document.getElementById('btnBack').addEventListener('click', function() {
       var room = self.current === 'friend' && window.FriendGame ? FriendGame.room() : null;
@@ -2154,18 +2179,84 @@ var App = {
           '<span class="home-start-go" aria-hidden="true">▶</span>' +
         '</button>' +
         (startExtra ? '<button type="button" class="home-start-extra" data-ci="1">' + startExtra.label + ' ›</button>' : '') +
+        '<section class="home-daily" id="homeDaily"></section>' +
         groups.map(function(g) {
           return '<section class="home-group home-group--' + g.key + '">' +
             '<h3 class="home-group-title">' + g.title + '</h3>' +
             '<div class="home-grid">' + g.cards.map(cardHtml).join('') + '</div></section>';
         }).join('') +
       '</div>';
+    self._renderDaily(document.getElementById('homeDaily'), cleared);
     document.querySelectorAll('#homeGrid [data-ci]').forEach(function(el) {
       el.addEventListener('click', function() {
         var c = cards[Number(el.getAttribute('data-ci'))];
         if (c.disabled) { showToast('近日公開予定です！お楽しみに 🚧'); return; }
         self.navigate(c.page, c.params || {});
       });
+    });
+  },
+
+  // ===== 今日の1問（daily.js）=====
+  // 開いたらその日の1問だけが出ている。答えると合計日数が増え、決まった日数でごほうびがもらえる。
+  _renderDaily: function(box, clearedCount) {
+    if (!box || !window.Daily) return;
+    var self = this;
+    var day = Daily.today();
+    var st = Progress.getDaily();
+    var key = Daily.pickKey(st, day, GameData, clearedCount);
+    var q = Daily.questionFor(key, GameData, day);
+    if (!q) { box.remove(); return; }
+    var done = st.last === day;
+    var next = Daily.nextReward(st.days);
+    var footer = '<div class="home-daily-foot"><span>答えた日 合計<strong>' + st.days + '</strong>日</span>' +
+      (next ? '<span>次のごほうびまで あと' + (next.days - st.days) + '日</span>' : '<span>ごほうびを全部もらいました</span>') + '</div>';
+    var head = '<div class="home-daily-head"><span class="home-daily-badge">今日の1問</span><span class="home-daily-tag">' + q.tag + '</span></div>';
+    var body = (q.head ? '<div class="home-daily-key">' + esc(q.head) + '</div>' : '') +
+      '<div class="home-daily-text">' + esc(q.text).replace(/\n/g, '<br>') + '</div>';
+    if (done) {
+      box.innerHTML = head + body +
+        '<div class="home-daily-result ' + (st.lastCorrect ? 'ok' : 'ng') + '">' + (st.lastCorrect ? '正解！' : '不正解') +
+        '　答え：' + esc(q.correct) + '</div>' +
+        '<div class="home-daily-expl">' + q.explanation + '</div>' +
+        '<div class="home-daily-done">今日の1問はおしまい。また明日！' + (st.lastCorrect ? '' : '（この問題は2日後にもう一度出ます）') + '</div>' + footer;
+      return;
+    }
+    box.innerHTML = head + body +
+      '<div class="home-daily-choices">' + q.choices.map(function(c, i) {
+        return '<button type="button" class="home-daily-choice" data-i="' + i + '">' + esc(c) + '</button>';
+      }).join('') + '</div>' + footer;
+    box.querySelectorAll('.home-daily-choice').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var pick = q.choices[Number(btn.getAttribute('data-i'))];
+        var ok = pick === q.correct;
+        var res = Daily.answer(Progress.getDaily(), day, key, ok);
+        Progress.setDaily(res.state);
+        res.newRewards.forEach(function(r) { if (r.type === 'title') Progress.addTitle(r.id); });
+        sendEvent('daily_answer', { correct: ok ? 1 : 0, days: res.state.days });
+        self._renderDaily(box, clearedCount);
+        if (res.newRewards.length) self._showDailyRewards(res.newRewards, res.state.days);
+      });
+    });
+  },
+
+  _showDailyRewards: function(rewards, days) {
+    var self = this;
+    var looks = rewards.filter(function(r) { return r.type !== 'title'; });
+    showOverlay('<div class="daily-reward">' +
+      '<div class="daily-reward-days">答えた日 合計' + days + '日</div>' +
+      '<h3>ごほうびをもらいました</h3>' +
+      '<ul>' + rewards.map(function(r) { return '<li>' + Daily.rewardName(r) + '</li>'; }).join('') + '</ul>' +
+      (looks.length ? '<p>牌の裏や卓の色は「学習進捗」で選べます。</p>' : '') +
+      '<div class="btn-row">' +
+      (looks.length ? '<button class="btn btn-primary" id="dailyRewardUse">さっそく使う</button>' : '') +
+      '<button class="btn btn-secondary" id="dailyRewardClose">閉じる</button></div></div>');
+    var close = document.getElementById('dailyRewardClose');
+    if (close) close.addEventListener('click', hideOverlay);
+    var use = document.getElementById('dailyRewardUse');
+    if (use) use.addEventListener('click', function() {
+      looks.forEach(function(r) { Progress.setLook(r.type, r.id); });
+      hideOverlay();
+      self.navigate('progress');
     });
   },
 
@@ -4983,10 +5074,42 @@ var App = {
       GameData.CHAPTERS.map(function(c){var s=Progress.getStars(c.id);return '<div class="progress-chapter-row"><div class="progress-ch-title">第'+c.id+'章 '+c.short+'</div><div class="progress-ch-stars">'+(s>0?starsHtml(s):'─')+'</div></div>';}).join('')+
       '</div>' +
       (titles.length?'<div class="progress-card"><h3>獲得称号</h3><div class="title-badges">'+titles.map(function(t){return '<span class="title-badge">'+t+'</span>';}).join('')+'</div></div>':'')+
+      self._lookPickerHtml() +
       '<div class="btn-row"><button class="btn btn-secondary" id="btnReset">進捗リセット</button></div></div>';
+    main.querySelectorAll('.look-opt[data-type]').forEach(function(el) {
+      el.addEventListener('click', function() {
+        if (el.classList.contains('locked')) { showToast('「今日の1問」に答えた日が' + el.getAttribute('data-need') + '日になると使えます'); return; }
+        Progress.setLook(el.getAttribute('data-type'), el.getAttribute('data-id'));
+        self._renderProgress(main);
+      });
+    });
     document.getElementById('btnReset').addEventListener('click', function() {
       if (confirm('進捗をリセットしますか？')) { localStorage.removeItem('mj_progress'); Progress.load(); self._renderProgress(main); }
     });
+  },
+
+  // 牌の裏・卓の色を選ぶ欄（今日の1問のごほうび）
+  _lookPickerHtml: function() {
+    if (!window.Daily) return '';
+    var days = Progress.getDaily().days;
+    var look = Progress.getLook();
+    var row = function(type, list, swatch) {
+      return Object.keys(list).map(function(id) {
+        var open = Daily.isUnlocked(type, id, days);
+        var need = Daily.requiredDays(type, id);
+        return '<button type="button" class="look-opt' + (open ? '' : ' locked') + (look[type] === id ? ' active' : '') +
+          '" data-type="' + type + '" data-id="' + id + '" data-need="' + need + '">' +
+          '<span class="look-swatch ' + type + '" style="' + swatch(list[id]) + '"></span>' +
+          '<span class="look-name">' + list[id].name + '</span>' +
+          '<span class="look-state">' + (look[type] === id ? '使用中' : open ? '使う' : '🔒 あと' + (need - days) + '日') + '</span></button>';
+      }).join('');
+    };
+    return '<div class="progress-card"><h3>見た目（今日の1問のごほうび）</h3>' +
+      '<p class="look-note">「今日の1問」に答えた日が合計' + days + '日。日数がたまると、牌の裏や卓の色が増えます。</p>' +
+      '<div class="look-label">牌の裏</div><div class="look-row">' +
+      row('back', Daily.BACKS, function(c) { return 'background:linear-gradient(145deg,' + c.a + ',' + c.b + ');border-bottom-color:' + c.c; }) + '</div>' +
+      '<div class="look-label">卓</div><div class="look-row">' +
+      row('table', Daily.TABLES, function(c) { return 'background:radial-gradient(ellipse at 50% 50%,' + c.a + ' 0%,' + c.b + ' 100%);border-color:' + c.frame; }) + '</div></div>';
   },
 
   // ===== Battle Setup =====
