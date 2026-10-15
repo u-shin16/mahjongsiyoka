@@ -291,7 +291,39 @@ button { font-family: inherit; cursor: pointer; }
 }
 .home-daily-mark.ok { color: var(--green-mid); }
 .home-daily-mark.ng { color: #9a5a00; }
-.home-daily-days { margin-left: auto; color: #7a6f55; font-size: 0.78rem; }
+.home-daily-days { margin-left: auto; color: #7a6f55; font-size: 0.78rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.home-daily-line .home-daily-badge, .home-daily-mark, .home-daily-days { white-space: nowrap; flex-shrink: 0; }
+.home-daily-line .home-daily-days { flex-shrink: 1; }
+@media (max-width: 480px) {
+  .home-daily-line { gap: 7px; padding: 11px 10px; font-size: 0.8rem; }
+  .home-daily-line .home-daily-badge { padding: 3px 8px; font-size: 0.72rem; }
+  .home-daily-gift { margin-right: 8px; padding: 5px 9px; }
+}
+
+.home-daily.compact { display: flex; align-items: center; }
+.home-daily.compact .home-daily-line { flex: 1 1 auto; min-width: 0; }
+.home-daily-gift {
+  flex: 0 0 auto;
+  margin-right: 10px;
+  padding: 5px 12px;
+  border: 1px solid var(--gold-dark);
+  border-radius: 99px;
+  background: var(--green-dark);
+  color: var(--gold);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.home-daily-gift.inline { margin: 0; padding: 3px 10px; }
+.daily-reward-login { font-size: 0.82rem; opacity: 0.9; }
+
+/* ヘッダーのログインボタン：スマホでは絵を外して文字だけにし、切れないようにする */
+.btn-account .acc-ico { margin-right: 4px; }
+@media (max-width: 480px) {
+  .btn-account { max-width: 110px; padding: 6px 9px; }
+  .btn-account:not(.logged-in) .acc-ico { display: none; }
+}
 
 /* 復習・辞典 */
 .review-list { display: grid; gap: 14px; max-width: 520px; margin: 12px auto 0; }
@@ -6122,9 +6154,6 @@ body.is-battle-page .app-footer {
 .btn-account.logged-in {
   border-color: rgba(240, 200, 100, 0.55);
   color: #f3d98b;
-}
-@media (max-width: 480px) {
-  .btn-account { max-width: 96px; }
 }
 
 /* ===== 友人戦 ===== */

@@ -2009,14 +2009,16 @@ var App = {
     var btn = document.getElementById('btnAccount');
     if (!btn) return;
     var u = (window.Auth && Auth.enabled() && Auth.user()) ? Auth.user() : null;
+    // スマホでは「👤 ログ…」と切れていたので、文字と絵を分け、狭い画面は CSS で短く出す
     if (u) {
-      btn.textContent = '👤 ' + (u.displayName || u.email || 'アカウント');
+      var name = u.displayName || u.email || 'アカウント';
+      btn.innerHTML = '<span class="acc-ico">👤</span><span class="acc-txt">' + esc(name) + '</span>';
       btn.classList.add('logged-in');
       btn.title = u.email || '';
     } else {
-      btn.textContent = '👤 ログイン';
+      btn.innerHTML = '<span class="acc-ico">👤</span><span class="acc-txt">ログイン</span>';
       btn.classList.remove('logged-in');
-      btn.title = '';
+      btn.title = 'ログイン';
     }
   },
 
@@ -2087,7 +2089,7 @@ var App = {
     else if (page === 'yaku_detail')   this._renderYakuDetail(main, params.id);
     else if (page === 'terms')         this._renderTerms(main);
     else if (page === 'review')        this._renderReview(main);
-    else if (page === 'progress')      this._renderProgress(main);
+    else if (page === 'progress')      this._renderProgress(main, params.focus);
     else if (page === 'battle_setup')  this._renderBattleSetup(main, params);
     else if (page === 'battle')        this._renderBattle(main, params);
     else if (page === 'ai_coach')      this._renderAICoach(main);
@@ -2227,7 +2229,8 @@ var App = {
     var done = st.last === day;
     var next = Daily.nextReward(st.days);
     var footer = '<div class="home-daily-foot"><span>答えた日 合計<strong>' + st.days + '</strong>日</span>' +
-      (next ? '<span>次のごほうびまで あと' + (next.days - st.days) + '日</span>' : '<span>ごほうびを全部もらいました</span>') + '</div>';
+      (next ? '<span>次のごほうびまで あと' + (next.days - st.days) + '日</span>' : '<span>ごほうびを全部もらいました</span>') +
+      '<button type="button" class="home-daily-gift inline">特典を見る ›</button></div>';
     var head = '<div class="home-daily-head"><span class="home-daily-badge">今日の1問</span><span class="home-daily-tag">' + q.tag + '</span></div>';
     var body = (q.head ? '<div class="home-daily-key">' + esc(q.head) + '</div>' : '') +
       '<div class="home-daily-text">' + esc(q.text).replace(/\n/g, '<br>') + '</div>';
@@ -2237,10 +2240,12 @@ var App = {
       box.innerHTML = '<button type="button" class="home-daily-line">' +
         '<span class="home-daily-badge">今日の1問</span>' +
         '<span class="home-daily-mark ' + (st.lastCorrect ? 'ok' : 'ng') + '">' + (st.lastCorrect ? '✓ 正解' : '✗ 不正解') + '</span>' +
-        '<span class="home-daily-days">合計' + st.days + '日' + (next ? '・ごほうびまで' + (next.days - st.days) + '日' : '') + '</span></button>';
+        '<span class="home-daily-days">合計' + st.days + '日' + (next ? '・特典まで' + (next.days - st.days) + '日' : '') + '</span></button>' +
+        '<button type="button" class="home-daily-gift">特典 ›</button>';
       box.querySelector('.home-daily-line').addEventListener('click', function() {
         box.setAttribute('data-just', '1'); box.classList.remove('compact'); self._renderDaily(box, clearedCount);
       });
+      box.querySelector('.home-daily-gift').addEventListener('click', function() { self.navigate('progress', { focus: 'look' }); });
       return;
     }
     if (done) {
@@ -2250,6 +2255,7 @@ var App = {
         '<div class="home-daily-expl">' + q.explanation + '</div>' +
         '<div class="home-daily-done">今日の1問はおしまい。また明日！' + (st.lastCorrect ? '' : '（この問題は2日後にもう一度出ます）') + '</div>' + footer +
         '<button type="button" class="home-daily-close">閉じる ▲</button>';
+      box.querySelector('.home-daily-gift.inline').addEventListener('click', function() { self.navigate('progress', { focus: 'look' }); });
       // 開いた解説を1行に戻す（ゆーしん「開いた時しまう方法は」）
       box.querySelector('.home-daily-close').addEventListener('click', function() {
         box.removeAttribute('data-just'); self._renderDaily(box, clearedCount);
@@ -2260,6 +2266,8 @@ var App = {
       '<div class="home-daily-choices">' + q.choices.map(function(c, i) {
         return '<button type="button" class="home-daily-choice" data-i="' + i + '">' + esc(c) + '</button>';
       }).join('') + '</div>' + footer;
+    var gift = box.querySelector('.home-daily-gift.inline');
+    if (gift) gift.addEventListener('click', function() { self.navigate('progress', { focus: 'look' }); });
     box.querySelectorAll('.home-daily-choice').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var pick = q.choices[Number(btn.getAttribute('data-i'))];
@@ -2278,14 +2286,19 @@ var App = {
   _showDailyRewards: function(rewards, days) {
     var self = this;
     var looks = rewards.filter(function(r) { return r.type !== 'title'; });
+    var loggedIn = !!(window.Auth && Auth.enabled() && Auth.user());
     showOverlay('<div class="daily-reward">' +
       '<div class="daily-reward-days">答えた日 合計' + days + '日</div>' +
       '<h3>ごほうびをもらいました</h3>' +
       '<ul>' + rewards.map(function(r) { return '<li>' + Daily.rewardName(r) + '</li>'; }).join('') + '</ul>' +
       (looks.length ? '<p>牌の裏や卓の色は「学習進捗」で選べます。</p>' : '') +
+      (loggedIn ? '' : '<p class="daily-reward-login">ログインすると、特典と日数がずっと残ります。<br>（ログインしないと、このブラウザにしか残りません）</p>') +
       '<div class="btn-row">' +
       (looks.length ? '<button class="btn btn-primary" id="dailyRewardUse">さっそく使う</button>' : '') +
+      (loggedIn ? '' : '<button class="btn ' + (looks.length ? 'btn-secondary' : 'btn-primary') + '" id="dailyRewardLogin">ログインする</button>') +
       '<button class="btn btn-secondary" id="dailyRewardClose">閉じる</button></div></div>');
+    var login = document.getElementById('dailyRewardLogin');
+    if (login) login.addEventListener('click', function() { hideOverlay(); self.navigate('login'); });
     var close = document.getElementById('dailyRewardClose');
     if (close) close.addEventListener('click', hideOverlay);
     var use = document.getElementById('dailyRewardUse');
@@ -5099,7 +5112,7 @@ var App = {
   },
 
   // ===== Progress =====
-  _renderProgress: function(main) {
+  _renderProgress: function(main, focus) {
     var self = this;
     var chs = GameData.CHAPTERS.filter(function(c){return !c.phase||c.phase===1;});
     var cleared = chs.filter(function(c){return Progress.isCleared(c.id);}).length;
@@ -5114,6 +5127,11 @@ var App = {
       // 2026-10-15：進捗リセットのボタンは外した（ゆーしん「進捗リセットはできなくしよう」）。
       // 押し間違いで章の星・今日の1問の日数・ごほうびが全部消えるため。
       '</div>';
+    // ホームの「特典 ›」から来たときは、見た目の欄までスクロールする
+    if (focus === 'look') {
+      var lc = document.getElementById('lookCard');
+      if (lc) setTimeout(function() { lc.scrollIntoView({ block: 'start' }); }, 0);
+    }
     main.querySelectorAll('.look-opt[data-type]').forEach(function(el) {
       el.addEventListener('click', function() {
         if (el.classList.contains('locked')) { showToast('「今日の1問」に答えた日が' + el.getAttribute('data-need') + '日になると使えます'); return; }
@@ -5139,7 +5157,7 @@ var App = {
           '<span class="look-state">' + (look[type] === id ? '使用中' : open ? '使う' : '🔒 あと' + (need - days) + '日') + '</span></button>';
       }).join('');
     };
-    return '<div class="progress-card"><h3>見た目（今日の1問のごほうび）</h3>' +
+    return '<div class="progress-card" id="lookCard"><h3>見た目（今日の1問のごほうび）</h3>' +
       '<p class="look-note">「今日の1問」に答えた日が合計' + days + '日。日数がたまると、牌の裏や卓の色が増えます。</p>' +
       '<div class="look-label">牌の裏</div><div class="look-row">' +
       row('back', Daily.BACKS, function(c) { return 'background:linear-gradient(145deg,' + c.a + ',' + c.b + ');border-bottom-color:' + c.c; }) + '</div>' +
