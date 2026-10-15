@@ -2097,28 +2097,59 @@ var App = {
     } else {
       startCard = { label:'復習する', icon:'🎮', sub:'全章クリア！好きな章をもう一度', page:'chapters', cls:'primary' };
     }
-    var cards = [
-      startCard,
-      { label:'チャプター選択', icon:'📚', sub:'好きな章から', page:'chapters' },
-      { label:'VS CPU',       icon:'🤖', sub:'4人打ちCPU対局', page:'battle_setup', params:{playerCount:4} },
-      { label:'単語クイズ',   icon:'📝', sub:'用語・役をランダム出題', page:'quiz_select' },
-      { label:'AI先生',        icon:'💡', sub:'ルール・役を質問', page:'ai_coach' },
-      { label:'友人戦',        icon:'👥', sub:'6桁IDでオンライン対戦', page:'friend' },
-      { label:'役一覧',        icon:'📖', sub:'全役を確認', page:'yaku' },
-      { label:'麻雀用語',      icon:'💬', sub:'用語集', page:'terms' },
-      { label:'学習進捗',      icon:'📊', sub:'マイページ', page:'progress' },
+    // 2026-10-15：ホームのボタンを「麻雀牌」の見た目にし、「学ぶ」「打つ」に分けた（ゆーしん「もっとワクワクするように」）。
+    // 押すと牌のように沈む。一番上のボタンには、全章のうち何章クリアしたかのバーを付ける。
+    var cleared = chs.filter(function(c) { return Progress.isCleared(c.id); }).length;
+    var groups = [
+      { key:'learn', title:'学ぶ', chip:'学', cards:[
+        { label:'チャプター選択', icon:'📚', sub:'好きな章から', page:'chapters' },
+        { label:'単語クイズ',     icon:'📝', sub:'用語・役を4択で', page:'quiz_select' },
+        { label:'AI先生',          icon:'💡', sub:'ルール・役を質問', page:'ai_coach' },
+        { label:'役一覧',          icon:'📖', sub:'全役を確認', page:'yaku' },
+        { label:'麻雀用語',        icon:'💬', sub:'用語集', page:'terms' },
+        { label:'学習進捗',        icon:'📊', sub:'マイページ', page:'progress' },
+      ]},
+      { key:'play', title:'打つ', chip:'打', cards:[
+        { label:'CPUと対局', icon:'🤖', sub:'4人打ち・三人麻雀', page:'battle_setup', params:{playerCount:4} },
+        { label:'友人戦',    icon:'👥', sub:'6桁IDでオンライン対戦', page:'friend' },
+      ]},
     ];
-    main.innerHTML = '<div class="home-hero"><h2>まーじゃんしよか</h2><p>牌を動かしながら麻雀を覚えよう！</p></div>' +
-      '<div class="home-grid" id="homeGrid">' +
-      cards.map(function(c, i) {
-        return '<div class="home-card ' + (c.cls||'') + (c.disabled?' disabled':'') + '" data-ci="'+i+'">' +
-          '<span class="home-card-icon">'+c.icon+'</span>' +
-          '<div class="home-card-label">'+c.label+'</div>' +
-          '<div class="home-card-sub">'+c.sub+'</div></div>';
-      }).join('') + '</div>';
-    document.querySelectorAll('#homeGrid .home-card').forEach(function(el, i) {
+    var cards = [startCard];
+    groups.forEach(function(g) { g.cards.forEach(function(c) { c.group = g.key; cards.push(c); }); });
+
+    var heroTiles = [Tiles.make('man', 1), Tiles.make('pin', 5), Tiles.make('sou', 9), Tiles.make('wind', 1), Tiles.make('dragon', 3)];
+    var cardHtml = function(c) {
+      var i = cards.indexOf(c);
+      return '<button type="button" class="home-card home-card--' + c.group + (c.disabled ? ' disabled' : '') + '" data-ci="' + i + '">' +
+        '<span class="home-card-icon">' + c.icon + '</span>' +
+        '<span class="home-card-text"><span class="home-card-label">' + c.label + '</span>' +
+        '<span class="home-card-sub">' + c.sub + '</span></span></button>';
+    };
+    var pct = Math.round(cleared / chs.length * 100);
+    main.innerHTML =
+      '<div class="home-hero">' +
+        '<div class="home-hero-tiles" aria-hidden="true">' + heroTiles.map(function(t, k) {
+          return '<span class="home-hero-tile" style="--k:' + k + '">' + Tiles.renderTile(t, { noHover: true, small: true }) + '</span>';
+        }).join('') + '</div>' +
+        '<h2>まーじゃんしよか</h2><p>牌を動かしながら麻雀を覚えよう！</p></div>' +
+      '<div id="homeGrid">' +
+        '<button type="button" class="home-start" data-ci="0">' +
+          '<span class="home-start-icon">' + startCard.icon + '</span>' +
+          '<span class="home-start-text"><span class="home-start-label">' + startCard.label + '</span>' +
+            '<span class="home-start-sub">' + startCard.sub + '</span>' +
+            '<span class="home-start-bar"><span style="width:' + pct + '%"></span></span>' +
+            '<span class="home-start-count">' + cleared + ' / ' + chs.length + '章クリア</span></span>' +
+          '<span class="home-start-go" aria-hidden="true">▶</span>' +
+        '</button>' +
+        groups.map(function(g) {
+          return '<section class="home-group home-group--' + g.key + '">' +
+            '<h3 class="home-group-title"><span class="home-group-chip">' + g.chip + '</span>' + g.title + '</h3>' +
+            '<div class="home-grid">' + g.cards.map(cardHtml).join('') + '</div></section>';
+        }).join('') +
+      '</div>';
+    document.querySelectorAll('#homeGrid [data-ci]').forEach(function(el) {
       el.addEventListener('click', function() {
-        var c = cards[i];
+        var c = cards[Number(el.getAttribute('data-ci'))];
         if (c.disabled) { showToast('近日公開予定です！お楽しみに 🚧'); return; }
         self.navigate(c.page, c.params || {});
       });

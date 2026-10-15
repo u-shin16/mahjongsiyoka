@@ -119,75 +119,223 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* ===== Home ===== */
+/* 2026-10-15：ボタンを麻雀牌の見た目にした。牌の厚み（下の濃い帯）を影で出し、押すと沈む。
+   学ぶ＝索子の緑、打つ＝萬子の赤で色分けする。 */
 .home-hero {
   text-align: center;
-  padding: 28px 0 20px;
+  padding: 20px 0 14px;
+}
+.home-hero-tiles {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.home-hero-tile {
+  display: inline-block;
+  animation: homeTileBob 3.2s ease-in-out infinite;
+  animation-delay: calc(var(--k) * -0.45s);
+}
+.home-hero-tile .tile { cursor: default; }
+@keyframes homeTileBob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-7px) rotate(3deg); }
 }
 .home-hero h2 {
   font-size: 2rem;
   font-weight: 900;
   color: var(--gold);
   text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .home-hero p {
   color: #a8d8b0;
   font-size: 0.95rem;
 }
-.home-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 14px;
-  margin-top: 24px;
-}
-.home-card {
-  background: linear-gradient(145deg, #2a5c3c, #1e4530);
-  border: 1px solid rgba(232,184,75,0.3);
-  border-radius: var(--radius);
-  padding: 20px 12px 16px;
-  text-align: center;
+
+/* 一番上の「はじめる／続きから／復習する」 */
+.home-start {
+  --press: 7px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 18px 20px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f7d26b 0%, #e8b84b 45%, #c8901f 100%);
+  color: #3a2600;
+  text-align: left;
+  font: inherit;
   cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-  box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 var(--press) 0 #8a5d0c, 0 12px 26px rgba(0,0,0,0.45);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.home-start::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: -40%;
+  width: 30%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.55), transparent);
+  transform: skewX(-18deg);
+  animation: homeShine 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes homeShine {
+  0%, 55% { left: -40%; }
+  100% { left: 130%; }
+}
+.home-start:hover { transform: translateY(-3px); box-shadow: 0 calc(var(--press) + 3px) 0 #8a5d0c, 0 16px 30px rgba(0,0,0,0.5); }
+.home-start:active { transform: translateY(var(--press)); box-shadow: 0 0 0 #8a5d0c, 0 4px 10px rgba(0,0,0,0.4); }
+.home-start-icon {
+  flex: 0 0 auto;
+  font-size: 2.4rem;
+  width: 64px; height: 64px;
+  display: grid; place-items: center;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.45);
+  box-shadow: inset 0 -3px 0 rgba(138,93,12,0.35);
+}
+.home-start-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.home-start-label { font-size: 1.35rem; font-weight: 900; letter-spacing: 0.04em; }
+.home-start-sub { font-size: 0.82rem; font-weight: 700; color: #5a3d00; line-height: 1.5; }
+.home-start-bar {
+  display: block;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 99px;
+  background: rgba(58,38,0,0.18);
+  overflow: hidden;
+}
+.home-start-bar span {
+  display: block;
+  height: 100%;
+  min-width: 8px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #1e8449, #4a9e6b);
+}
+.home-start-count { font-size: 0.72rem; font-weight: 700; color: #5a3d00; }
+.home-start-go {
+  flex: 0 0 auto;
+  width: 46px; height: 46px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: #1a3a2a;
+  color: var(--gold);
+  font-size: 1.1rem;
+  animation: homeGo 1.6s ease-in-out infinite;
+}
+@keyframes homeGo {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+
+/* 学ぶ・打つ のまとまり */
+.home-group { margin-top: 26px; }
+.home-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--cream);
+  letter-spacing: 0.08em;
+}
+.home-group-chip {
+  width: 26px; height: 34px;
+  display: grid; place-items: center;
+  border-radius: 5px;
+  background: var(--tile-bg);
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 900;
+  box-shadow: 0 3px 0 var(--accent-dark);
+}
+.home-group--learn { --accent: #1e8449; --accent-dark: #145c33; --accent-soft: #dff2e5; }
+.home-group--play  { --accent: #c0392b; --accent-dark: #86261c; --accent-soft: #fbe3df; }
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 14px;
+}
+.home-group--play .home-grid { grid-template-columns: repeat(2, 1fr); }
+
+/* 牌の見た目のボタン */
+.home-card {
+  --press: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 10px 14px;
+  border: 1px solid var(--tile-border);
+  border-top-color: #fffef8;
+  border-radius: 14px;
+  background: var(--tile-bg);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 var(--press) 0 var(--accent-dark), 0 10px 18px rgba(0,0,0,0.35);
+  transition: transform 0.12s, box-shadow 0.12s;
 }
 .home-card::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 60%);
-  pointer-events: none;
+  left: 0; right: 0; top: 0;
+  height: 5px;
+  border-radius: 14px 14px 0 0;
+  background: var(--accent);
 }
 .home-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--gold);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transform: translateY(-4px) rotate(-1.2deg);
+  box-shadow: 0 calc(var(--press) + 4px) 0 var(--accent-dark), 0 16px 24px rgba(0,0,0,0.42);
 }
-.home-card.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.home-card:nth-child(even):hover { transform: translateY(-4px) rotate(1.2deg); }
+.home-card:active {
+  transform: translateY(var(--press));
+  box-shadow: 0 0 0 var(--accent-dark), 0 3px 8px rgba(0,0,0,0.3);
 }
+.home-card:focus-visible, .home-start:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.home-card.disabled { opacity: 0.5; cursor: not-allowed; }
 .home-card.disabled:hover { transform: none; }
-.home-card-icon { font-size: 2.2rem; margin-bottom: 8px; display: block; }
+.home-card-icon {
+  font-size: 1.9rem;
+  width: 54px; height: 54px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+}
 .home-card-label {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--text-light);
+  font-size: 0.98rem;
+  font-weight: 900;
+  color: #1a3a2a;
   line-height: 1.3;
 }
 .home-card-sub {
   font-size: 0.72rem;
-  color: #8ab89c;
-  margin-top: 4px;
+  font-weight: 700;
+  color: #7a6f55;
 }
-.home-card.primary {
-  background: linear-gradient(145deg, #c8a020, #8b6010);
-  border-color: var(--gold);
-  grid-column: 1 / -1;
+.home-group--play .home-card {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 18px 16px;
+  text-align: left;
 }
-.home-card.primary .home-card-label { font-size: 1.1rem; color: #fff; }
-.home-card.primary .home-card-sub { color: #fff6d8; font-size: 0.8rem; line-height: 1.5; }
+.home-group--play .home-card-icon { width: 60px; height: 60px; font-size: 2.1rem; flex: 0 0 auto; }
+.home-group--play .home-card-label { font-size: 1.12rem; }
+.home-card-text { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.home-group--play .home-card-text { align-items: flex-start; }
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-tile, .home-start::after, .home-start-go { animation: none; }
+}
 .badge-new {
   position: absolute;
   top: 8px; right: 8px;
@@ -1087,6 +1235,10 @@ button { font-family: inherit; cursor: pointer; }
 @media (max-width: 480px) {
   .app-main { padding: 14px 12px 32px; }
   .home-grid { grid-template-columns: repeat(2, 1fr); }
+  .home-group--play .home-grid { grid-template-columns: 1fr; }
+  .home-start { gap: 12px; padding: 16px 14px; }
+  .home-start-icon { width: 52px; height: 52px; font-size: 2rem; }
+  .home-start-go { width: 38px; height: 38px; }
   .tile { width: 42px; height: 56px; border-bottom-width: 5px; border-right-width: 3px; }
   .tile .tile-num { font-size: 1.2rem; }
   .tile-corner { font-size: 0.48rem; top: 4px; left: 4px; }
