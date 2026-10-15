@@ -5,7 +5,7 @@
 // ・ホームを開くと、その日の1問だけが出ている（選ばせない）
 // ・間違えた問題は2日後にもう一度出す（忘れたころに出すほうが身につく）
 // ・答えた日を「合計」で数える。連続日数にはしない（途切れた日にやめる理由になるため）
-// ・合計日数でごほうび（称号・牌の表の色・牌の裏の色・卓の色・背景）がもらえる
+// ・合計日数でごほうび（称号・牌のデザイン・卓の色・背景）がもらえる
 //
 // 画面を持たない計算だけをここに置き、app.js から使う。テストは tests/daily_test.js。
 // ============================================================
@@ -13,30 +13,35 @@ var Daily = (function() {
   var RETRY_AFTER_DAYS = 2;
 
   // 合計日数ごとのごほうび。数字は小さい順に並べる
-  // 2026-10-15：あいだを埋めるように、牌の表（5・20・50日）と背景（10・40日）、50・100日の称号を足した
+  // 2026-10-15：牌の表と裏を別々の特典にしていたが、ゆーしん「牌だけで一つのものにして」→
+  // 表の色と裏の色をセットにした「牌」1つにまとめた
   var REWARDS = [
     { days: 1,   type: 'title', id: 'はじめの一歩' },
-    { days: 3,   type: 'back',  id: 'indigo' },
-    { days: 5,   type: 'face',  id: 'ivory' },
+    { days: 3,   type: 'tile',  id: 'ivory' },
     { days: 7,   type: 'title', id: '麻雀好き' },
     { days: 7,   type: 'table', id: 'night' },
     { days: 10,  type: 'bg',    id: 'navy' },
-    { days: 14,  type: 'back',  id: 'wood' },
-    { days: 20,  type: 'face',  id: 'sky' },
+    { days: 14,  type: 'tile',  id: 'indigo' },
     { days: 30,  type: 'title', id: '麻雀の常連' },
     { days: 30,  type: 'table', id: 'wine' },
     { days: 40,  type: 'bg',    id: 'sumi' },
-    { days: 50,  type: 'face',  id: 'sakura' },
+    { days: 50,  type: 'tile',  id: 'sakura' },
     { days: 50,  type: 'title', id: '麻雀の達人' },
     { days: 100, type: 'title', id: '百日の打ち手' },
   ];
 
-  // 牌の表の色。sheet は本物の牌の画像（白い面だけを色づけしたもの）、a〜c は数字だけの牌（CSSで描く）の面の色
-  var FACES = {
-    'default': { name: '白',   sheet: null, a: '#fffef8', b: '#f6efd9', c: '#e8d7b6' },
-    'ivory':   { name: '象牙', sheet: '/static/img/mahjong-tiles-ivory.jpg',  a: '#fff6e0', b: '#f7e6bf', c: '#e8cf9c' },
-    'sky':     { name: '空色', sheet: '/static/img/mahjong-tiles-sky.jpg',    a: '#f4f9ff', b: '#e1ecfb', c: '#c9d9ee' },
-    'sakura':  { name: '桜',   sheet: '/static/img/mahjong-tiles-sakura.jpg', a: '#fff6f8', b: '#fbe3ea', c: '#efc9d4' },
+  // 牌のデザイン（表と裏のセット）
+  //   sheet：本物の牌の画像（白い面だけを色づけしたもの）。null ならもとの画像
+  //   face：数字だけの牌（CSSで描く）の面の色 a〜c ／ back：牌の裏の色 a=明るい側, b=中, c=厚みの暗い側
+  var TILES = {
+    'default': { name: '定番', sheet: null,
+      face: { a: '#fffef8', b: '#f6efd9', c: '#e8d7b6' }, back: { a: '#f7b943', b: '#d67718', c: '#8f3f0a' } },
+    'ivory':   { name: '象牙', sheet: '/static/img/mahjong-tiles-ivory.jpg',
+      face: { a: '#fff6e0', b: '#f7e6bf', c: '#e8cf9c' }, back: { a: '#efe0bd', b: '#c9a96e', c: '#7d6033' } },
+    'indigo':  { name: '藍',   sheet: '/static/img/mahjong-tiles-sky.jpg',
+      face: { a: '#f4f9ff', b: '#e1ecfb', c: '#c9d9ee' }, back: { a: '#6f8fd0', b: '#3c5ea8', c: '#1d3268' } },
+    'sakura':  { name: '桜',   sheet: '/static/img/mahjong-tiles-sakura.jpg',
+      face: { a: '#fff6f8', b: '#fbe3ea', c: '#efc9d4' }, back: { a: '#eda3b7', b: '#c96f8a', c: '#86364f' } },
   };
   // アプリ全体の背景色
   var BGS = {
@@ -44,14 +49,8 @@ var Daily = (function() {
     'navy':    { name: '紺',   color: '#16263d' },
     'sumi':    { name: '墨',   color: '#1f2124' },
   };
-  var LOOK_TYPES = ['face', 'back', 'table', 'bg'];
+  var LOOK_TYPES = ['tile', 'table', 'bg'];
 
-  // 牌の裏の色（a=明るい側, b=中, c=厚みの暗い側）
-  var BACKS = {
-    'default': { name: 'だいだい', a: '#f7b943', b: '#d67718', c: '#8f3f0a' },
-    'indigo':  { name: '藍色',     a: '#6f8fd0', b: '#3c5ea8', c: '#1d3268' },
-    'wood':    { name: '白木',     a: '#efe0bd', b: '#c9a96e', c: '#7d6033' },
-  };
   // 卓の色（a=中央, b=外側, frame=縁）
   var TABLES = {
     'default': { name: '緑の卓',   a: '#1e7040', b: '#124d2a', frame: '#5a3012' },
@@ -199,9 +198,8 @@ var Daily = (function() {
 
   function rewardName(r) {
     if (r.type === 'title') return '称号「' + r.id + '」';
-    if (r.type === 'back') return '牌の裏「' + BACKS[r.id].name + '」';
+    if (r.type === 'tile') return '牌「' + TILES[r.id].name + '」';
     if (r.type === 'table') return '卓「' + TABLES[r.id].name + '」';
-    if (r.type === 'face') return '牌の表「' + FACES[r.id].name + '」';
     if (r.type === 'bg') return '背景「' + BGS[r.id].name + '」';
     return '';
   }
@@ -221,7 +219,7 @@ var Daily = (function() {
   }
 
   return {
-    REWARDS: REWARDS, BACKS: BACKS, TABLES: TABLES, FACES: FACES, BGS: BGS, LOOK_TYPES: LOOK_TYPES,
+    REWARDS: REWARDS, TILES: TILES, TABLES: TABLES, BGS: BGS, LOOK_TYPES: LOOK_TYPES,
     RETRY_AFTER_DAYS: RETRY_AFTER_DAYS,
     today: today, addDays: addDays, emptyState: emptyState, normalize: normalize,
     pickKey: pickKey, questionFor: questionFor, answer: answer,

@@ -298,21 +298,19 @@ document.addEventListener('click', function(e) {
 });
 function starsHtml(n) { return '★'.repeat(n) + '☆'.repeat(3 - n); }
 
-// ごほうびで選んだ牌の裏・卓の色を、ページ全体の色の変数に入れる（style.css が使う）
+// ごほうびで選んだ牌・卓・背景の色を、ページ全体の色の変数に入れる（style.css が使う）
 function applyLook() {
   if (!window.Daily || !document.body) return;
   var look = Progress.getLook();
   var days = Progress.getDaily().days;
-  var back = Daily.isUnlocked('back', look.back, days) && Daily.BACKS[look.back] ? Daily.BACKS[look.back] : Daily.BACKS['default'];
-  var table = Daily.isUnlocked('table', look.table, days) && Daily.TABLES[look.table] ? Daily.TABLES[look.table] : Daily.TABLES['default'];
   var pick = function(type, list) { return Daily.isUnlocked(type, look[type], days) && list[look[type]] ? list[look[type]] : list['default']; };
-  var face = pick('face', Daily.FACES), bg = pick('bg', Daily.BGS);
+  var tile = pick('tile', Daily.TILES), table = pick('table', Daily.TABLES), bg = pick('bg', Daily.BGS);
   var st = document.body.style;
-  st.setProperty('--back-a', back.a); st.setProperty('--back-b', back.b); st.setProperty('--back-c', back.c);
+  st.setProperty('--face-a', tile.face.a); st.setProperty('--face-b', tile.face.b); st.setProperty('--face-c', tile.face.c);
+  st.setProperty('--back-a', tile.back.a); st.setProperty('--back-b', tile.back.b); st.setProperty('--back-c', tile.back.c);
   st.setProperty('--felt-a', table.a); st.setProperty('--felt-b', table.b); st.setProperty('--felt-frame', table.frame);
-  st.setProperty('--face-a', face.a); st.setProperty('--face-b', face.b); st.setProperty('--face-c', face.c);
   st.setProperty('--page-bg', bg.color);
-  window.MJ_TILE_SHEET = face.sheet || null;
+  window.MJ_TILE_SHEET = tile.sheet || null;
 }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -5169,10 +5167,11 @@ var App = {
     };
     return '<div class="progress-card" id="lookCard"><h3>見た目（今日の1問のごほうび）</h3>' +
       '<p class="look-note">「今日の1問」に答えた日が合計' + days + '日。日数がたまると、牌や卓や背景の色が増えます。</p>' +
-      '<div class="look-label">牌の表</div><div class="look-row">' +
-      row('face', Daily.FACES, function(c) { return 'background:linear-gradient(165deg,' + c.a + ' 0%,' + c.b + ' 60%,' + c.c + ' 100%);border-bottom-color:#a76d23'; }) + '</div>' +
-      '<div class="look-label">牌の裏</div><div class="look-row">' +
-      row('back', Daily.BACKS, function(c) { return 'background:linear-gradient(145deg,' + c.a + ',' + c.b + ');border-bottom-color:' + c.c; }) + '</div>' +
+      '<div class="look-label">牌（表と裏）</div><div class="look-row">' +
+      row('tile', Daily.TILES, function(c) {
+        // 見本は表と裏を並べて見せる（左が表、右が裏）
+        return 'background:linear-gradient(90deg,' + c.face.a + ' 0%,' + c.face.b + ' 50%,' + c.back.a + ' 50%,' + c.back.b + ' 100%);border-bottom-color:' + c.back.c;
+      }) + '</div>' +
       '<div class="look-label">卓</div><div class="look-row">' +
       row('table', Daily.TABLES, function(c) { return 'background:radial-gradient(ellipse at 50% 50%,' + c.a + ' 0%,' + c.b + ' 100%);border-color:' + c.frame; }) + '</div>' +
       '<div class="look-label">背景</div><div class="look-row">' +

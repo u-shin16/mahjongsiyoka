@@ -362,10 +362,10 @@ button { font-family: inherit; cursor: pointer; }
 .look-opt.locked { opacity: 0.55; }
 .look-swatch { width: 34px; height: 44px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.2); border-bottom-width: 5px; }
 .look-swatch.table { width: 56px; height: 40px; border-width: 4px; border-style: solid; }
-.look-swatch.face { border: 1px solid #d6bd8f; border-bottom-width: 5px; }
+.look-swatch.tile { width: 46px; border: 1px solid #d6bd8f; border-bottom-width: 5px; }
 .look-swatch.bg { width: 56px; height: 40px; border-width: 1px; border-style: solid; }
 .look-name { font-size: 0.8rem; font-weight: 700; }
-.look-state { font-size: 0.72rem; opacity: 0.8; }
+.look-state { font-size: 0.7rem; opacity: 0.8; white-space: nowrap; }
 
 /* 学ぶ・打つ のまとまり */
 .home-group { margin-top: 28px; }
