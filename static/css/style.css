@@ -196,6 +196,20 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 1rem;
 }
 
+.home-start-extra {
+  display: block;
+  margin: 12px 0 0 auto;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--gold);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.home-start-extra:hover { text-decoration: underline; }
+
 /* 学ぶ・打つ のまとまり */
 .home-group { margin-top: 28px; }
 .home-group-title {

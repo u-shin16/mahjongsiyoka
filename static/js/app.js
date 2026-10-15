@@ -2087,15 +2087,29 @@ var App = {
     var started = chs.some(function(c) { return Progress.isCleared(c.id); });
     var coreLeft = chs.filter(function(c) { return c.tier === 'core' && !Progress.isCleared(c.id); });
     var coreMin = coreLeft.reduce(function(s, c) { return s + c.min; }, 0);
-    var startCard;
+    // 2026-10-15：一番上のボタンを進み具合で5段階に変える（ゆーしんの案）。
+    // それまでは全章クリア後が「復習する」で、押すと下の「チャプター選択」と同じ画面になっていた。
+    //   1 未開始 → はじめる（第1章）  2 必修の途中 → 続きから
+    //   3 必修クリア → CPUと対局（＋小さく「第◯章から続ける」）  4 次が道場 → 道場チャレンジ
+    //   5 全章クリア → CPUと対局
+    // CPU戦をやったかどうかは記録していないので、段階はクリアした章だけで決める。
+    var cpuPage = { page:'battle_setup', params:{playerCount:4} };
+    var startCard, startExtra = null;
     if (!started) {
-      startCard = { label:'はじめる', icon:'🎮', sub:'数字セット入門から学ぼう', page:'chapter', params:{id:1}, cls:'primary' };
+      startCard = { label:'はじめる', icon:'🎮', sub:'数字の牌から始めよう', page:'chapter', params:{id:1} };
+    } else if (next && coreLeft.length) {
+      startCard = { label:'続きから', icon:'🎮', page:'chapter', params:{id:next.id},
+        sub:'第'+next.id+'章 '+esc(next.short) + '<br>打ち始めるまで あと'+coreLeft.length+'章・約'+coreMin+'分' };
+    } else if (next && next.tier === 'test') {
+      startCard = { label:'道場チャレンジ', icon:'🥋', page:'chapter', params:{id:next.id},
+        sub:'第'+next.id+'章　10問で段位が出る腕試し' };
     } else if (next) {
-      startCard = { label:'続きから', icon:'🎮', page:'chapter', params:{id:next.id}, cls:'primary',
-        sub:'第'+next.id+'章 '+esc(next.short) +
-          (coreLeft.length ? '<br>打ち始めるまで あと'+coreLeft.length+'章・約'+coreMin+'分' : '') };
+      startCard = { label:'CPUと対局', icon:'🀄', page:cpuPage.page, params:cpuPage.params,
+        sub:'必修クリア！覚えたことを試そう' };
+      startExtra = { label:'第'+next.id+'章「'+esc(next.short)+'」から続ける', page:'chapter', params:{id:next.id} };
     } else {
-      startCard = { label:'復習する', icon:'🎮', sub:'全章クリア！好きな章をもう一度', page:'chapters', cls:'primary' };
+      startCard = { label:'CPUと対局', icon:'🀄', page:cpuPage.page, params:cpuPage.params,
+        sub:'全章クリア！対局で腕をみがこう' };
     }
     // 2026-10-15：ホームのボタンを「麻雀牌」の見た目にし、「学ぶ」「打つ」に分けた（ゆーしん「もっとワクワクするように」）。
     // 押すと牌のように沈む。一番上のボタンには、全章のうち何章クリアしたかのバーを付ける。
@@ -2116,6 +2130,7 @@ var App = {
       ]},
     ];
     var cards = [startCard];
+    if (startExtra) cards.push(startExtra);
     groups.forEach(function(g) { g.cards.forEach(function(c) { c.group = g.key; cards.push(c); }); });
 
     var cardHtml = function(c) {
@@ -2138,6 +2153,7 @@ var App = {
             '<span class="home-start-count">' + cleared + ' / ' + chs.length + '章クリア</span></span>' +
           '<span class="home-start-go" aria-hidden="true">▶</span>' +
         '</button>' +
+        (startExtra ? '<button type="button" class="home-start-extra" data-ci="1">' + startExtra.label + ' ›</button>' : '') +
         groups.map(function(g) {
           return '<section class="home-group home-group--' + g.key + '">' +
             '<h3 class="home-group-title">' + g.title + '</h3>' +
@@ -2911,7 +2927,7 @@ var App = {
         var sel=q.type==='find_set'?3:2; var selected=[];
         qHtml='<div class="tiles-row" id="qTiles">'+tiles.map(function(t){return Tiles.renderTile(t,{});}).join('')+'</div><div style="color:#8ab89c;font-size:0.83rem;margin-top:6px">'+sel+'枚選ぼう</div><div id="feedback"></div>';
         main.innerHTML='<div class="game-wrap">'+
-          '<div class="game-header"><div class="game-chapter-title">第7章 道場チャレンジ</div><div class="game-mg-title">問題'+(qIdx+1)+'/'+allQs.length+'</div></div>'+
+          '<div class="game-header"><div class="game-chapter-title">第10章 道場チャレンジ</div><div class="game-mg-title">問題'+(qIdx+1)+'/'+allQs.length+'</div></div>'+
           '<div class="game-progress-bar-wrap"><div class="game-progress-bar" style="width:'+pct+'%"></div></div>'+
           '<div class="game-score-text">現在の正解数：'+correct+'問</div>'+
           '<div class="game-instruction"><strong>'+q.q+'</strong></div>'+
@@ -2942,7 +2958,7 @@ var App = {
           '<div class="yn-tiles" id="choiceRow" style="margin-top:10px">'+sc7.choices.map(function(ch,ci){return '<div class="choice-tile" data-ci="'+ci+'">'+Tiles.renderTile(Tiles.make(ch.suit,ch.num),{})+'</div>';}).join('')+'</div><div id="feedback"></div>';
       }
       main.innerHTML='<div class="game-wrap">'+
-        '<div class="game-header"><div class="game-chapter-title">第7章 道場チャレンジ</div><div class="game-mg-title">問題'+(qIdx+1)+'/'+allQs.length+'</div></div>'+
+        '<div class="game-header"><div class="game-chapter-title">第10章 道場チャレンジ</div><div class="game-mg-title">問題'+(qIdx+1)+'/'+allQs.length+'</div></div>'+
         '<div class="game-progress-bar-wrap"><div class="game-progress-bar" style="width:'+pct+'%"></div></div>'+
         '<div class="game-score-text">現在の正解数：'+correct+'問</div>'+
         '<div class="game-instruction"><strong>'+q.q+'</strong></div>'+
