@@ -2248,7 +2248,12 @@ var App = {
         '<div class="home-daily-result ' + (st.lastCorrect ? 'ok' : 'ng') + '">' + (st.lastCorrect ? '正解！' : '不正解') +
         '　答え：' + esc(q.correct) + '</div>' +
         '<div class="home-daily-expl">' + q.explanation + '</div>' +
-        '<div class="home-daily-done">今日の1問はおしまい。また明日！' + (st.lastCorrect ? '' : '（この問題は2日後にもう一度出ます）') + '</div>' + footer;
+        '<div class="home-daily-done">今日の1問はおしまい。また明日！' + (st.lastCorrect ? '' : '（この問題は2日後にもう一度出ます）') + '</div>' + footer +
+        '<button type="button" class="home-daily-close">閉じる ▲</button>';
+      // 開いた解説を1行に戻す（ゆーしん「開いた時しまう方法は」）
+      box.querySelector('.home-daily-close').addEventListener('click', function() {
+        box.removeAttribute('data-just'); self._renderDaily(box, clearedCount);
+      });
       return;
     }
     box.innerHTML = head + body +

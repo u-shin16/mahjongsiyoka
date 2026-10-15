@@ -258,6 +258,20 @@ button { font-family: inherit; cursor: pointer; }
 }
 .home-daily-foot strong { font-size: 1rem; color: var(--green-dark); margin: 0 2px; }
 
+.home-daily-close {
+  display: block;
+  margin: 10px auto 0;
+  padding: 6px 18px;
+  border: 1px solid var(--tile-border);
+  border-radius: 99px;
+  background: #fff;
+  color: var(--green-dark);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* 答えたあとの1行 */
 .home-daily.compact { padding: 0; }
 .home-daily-line {
