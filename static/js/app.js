@@ -2099,9 +2099,10 @@ var App = {
     }
     // 2026-10-15：ホームのボタンを「麻雀牌」の見た目にし、「学ぶ」「打つ」に分けた（ゆーしん「もっとワクワクするように」）。
     // 押すと牌のように沈む。一番上のボタンには、全章のうち何章クリアしたかのバーを付ける。
+    // 同じ日に「色が多くてチカチカする」と言われ、色分けと揺れる牌の飾りはやめた（色はCSS側で3色にしぼった）。
     var cleared = chs.filter(function(c) { return Progress.isCleared(c.id); }).length;
     var groups = [
-      { key:'learn', title:'学ぶ', chip:'学', cards:[
+      { key:'learn', title:'学ぶ', cards:[
         { label:'チャプター選択', icon:'📚', sub:'好きな章から', page:'chapters' },
         { label:'単語クイズ',     icon:'📝', sub:'用語・役を4択で', page:'quiz_select' },
         { label:'AI先生',          icon:'💡', sub:'ルール・役を質問', page:'ai_coach' },
@@ -2109,7 +2110,7 @@ var App = {
         { label:'麻雀用語',        icon:'💬', sub:'用語集', page:'terms' },
         { label:'学習進捗',        icon:'📊', sub:'マイページ', page:'progress' },
       ]},
-      { key:'play', title:'打つ', chip:'打', cards:[
+      { key:'play', title:'打つ', cards:[
         { label:'CPUと対局', icon:'🤖', sub:'4人打ち・三人麻雀', page:'battle_setup', params:{playerCount:4} },
         { label:'友人戦',    icon:'👥', sub:'6桁IDでオンライン対戦', page:'friend' },
       ]},
@@ -2117,7 +2118,6 @@ var App = {
     var cards = [startCard];
     groups.forEach(function(g) { g.cards.forEach(function(c) { c.group = g.key; cards.push(c); }); });
 
-    var heroTiles = [Tiles.make('man', 1), Tiles.make('pin', 5), Tiles.make('sou', 9), Tiles.make('wind', 1), Tiles.make('dragon', 3)];
     var cardHtml = function(c) {
       var i = cards.indexOf(c);
       return '<button type="button" class="home-card home-card--' + c.group + (c.disabled ? ' disabled' : '') + '" data-ci="' + i + '">' +
@@ -2128,9 +2128,6 @@ var App = {
     var pct = Math.round(cleared / chs.length * 100);
     main.innerHTML =
       '<div class="home-hero">' +
-        '<div class="home-hero-tiles" aria-hidden="true">' + heroTiles.map(function(t, k) {
-          return '<span class="home-hero-tile" style="--k:' + k + '">' + Tiles.renderTile(t, { noHover: true, small: true }) + '</span>';
-        }).join('') + '</div>' +
         '<h2>まーじゃんしよか</h2><p>牌を動かしながら麻雀を覚えよう！</p></div>' +
       '<div id="homeGrid">' +
         '<button type="button" class="home-start" data-ci="0">' +
@@ -2143,7 +2140,7 @@ var App = {
         '</button>' +
         groups.map(function(g) {
           return '<section class="home-group home-group--' + g.key + '">' +
-            '<h3 class="home-group-title"><span class="home-group-chip">' + g.chip + '</span>' + g.title + '</h3>' +
+            '<h3 class="home-group-title">' + g.title + '</h3>' +
             '<div class="home-grid">' + g.cards.map(cardHtml).join('') + '</div></section>';
         }).join('') +
       '</div>';
