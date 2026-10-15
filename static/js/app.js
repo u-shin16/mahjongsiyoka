@@ -2086,6 +2086,7 @@ var App = {
     else if (page === 'yaku')          this._renderYaku(main, params.filter || 'all');
     else if (page === 'yaku_detail')   this._renderYakuDetail(main, params.id);
     else if (page === 'terms')         this._renderTerms(main);
+    else if (page === 'review')        this._renderReview(main);
     else if (page === 'progress')      this._renderProgress(main);
     else if (page === 'battle_setup')  this._renderBattleSetup(main, params);
     else if (page === 'battle')        this._renderBattle(main, params);
@@ -2141,17 +2142,16 @@ var App = {
     // 同じ日に「色が多くてチカチカする」と言われ、色分けと揺れる牌の飾りはやめた（色はCSS側で3色にしぼった）。
     var cleared = chs.filter(function(c) { return Progress.isCleared(c.id); }).length;
     var groups = [
+      // 2026-10-15：ゆーしん「メインメニューがごちゃごちゃしすぎ」→ 9個から5個へ。
+      // 単語クイズ・役一覧・麻雀用語は「復習・辞典」1つにまとめ、学習進捗は右上の「進捗」と同じなので外した。
       { key:'learn', title:'学ぶ', cards:[
-        { label:'チャプター選択', icon:'📚', sub:'好きな章から', page:'chapters' },
-        { label:'単語クイズ',     icon:'📝', sub:'用語・役を4択で', page:'quiz_select' },
-        { label:'AI先生',          icon:'💡', sub:'ルール・役を質問', page:'ai_coach' },
-        { label:'役一覧',          icon:'📖', sub:'全役を確認', page:'yaku' },
-        { label:'麻雀用語',        icon:'💬', sub:'用語集', page:'terms' },
-        { label:'学習進捗',        icon:'📊', sub:'マイページ', page:'progress' },
+        { label:'章を選ぶ',   icon:'📚', page:'chapters' },
+        { label:'復習・辞典', icon:'📝', page:'review' },
+        { label:'AI先生',      icon:'💡', page:'ai_coach' },
       ]},
       { key:'play', title:'打つ', cards:[
-        { label:'CPUと対局', icon:'🤖', sub:'4人打ち・三人麻雀', page:'battle_setup', params:{playerCount:4} },
-        { label:'友人戦',    icon:'👥', sub:'6桁IDでオンライン対戦', page:'friend' },
+        { label:'CPUと対局', icon:'🤖', page:'battle_setup', params:{playerCount:4} },
+        { label:'友人戦',    icon:'👥', page:'friend' },
       ]},
     ];
     var cards = [startCard];
@@ -2163,12 +2163,10 @@ var App = {
       return '<button type="button" class="home-card home-card--' + c.group + (c.disabled ? ' disabled' : '') + '" data-ci="' + i + '">' +
         '<span class="home-card-icon">' + c.icon + '</span>' +
         '<span class="home-card-text"><span class="home-card-label">' + c.label + '</span>' +
-        '<span class="home-card-sub">' + c.sub + '</span></span></button>';
+        (c.sub ? '<span class="home-card-sub">' + c.sub + '</span>' : '') + '</span></button>';
     };
     var pct = Math.round(cleared / chs.length * 100);
     main.innerHTML =
-      '<div class="home-hero">' +
-        '<h2>まーじゃんしよか</h2><p>牌を動かしながら麻雀を覚えよう！</p></div>' +
       '<div id="homeGrid">' +
         '<button type="button" class="home-start" data-ci="0">' +
           '<span class="home-start-icon">' + startCard.icon + '</span>' +
@@ -2196,6 +2194,26 @@ var App = {
     });
   },
 
+  // ===== 復習・辞典（単語クイズ・役一覧・麻雀用語をまとめた入口）=====
+  _renderReview: function(main) {
+    var self = this;
+    var items = [
+      { label:'単語クイズ', icon:'📝', sub:'用語・役を4択で確認', page:'quiz_select' },
+      { label:'役一覧',     icon:'📖', sub:'全役の翻数・条件・上がり例', page:'yaku' },
+      { label:'麻雀用語',   icon:'💬', sub:'用語の読み方と意味', page:'terms' },
+    ];
+    main.innerHTML = '<div class="page-title">復習・辞典</div>' +
+      '<div class="review-list">' + items.map(function(c, i) {
+        return '<button type="button" class="home-card review-item" data-i="' + i + '">' +
+          '<span class="home-card-icon">' + c.icon + '</span>' +
+          '<span class="home-card-text"><span class="home-card-label">' + c.label + '</span>' +
+          '<span class="home-card-sub">' + c.sub + '</span></span></button>';
+      }).join('') + '</div>';
+    main.querySelectorAll('.review-item').forEach(function(el) {
+      el.addEventListener('click', function() { self.navigate(items[Number(el.getAttribute('data-i'))].page); });
+    });
+  },
+
   // ===== 今日の1問（daily.js）=====
   // 開いたらその日の1問だけが出ている。答えると合計日数が増え、決まった日数でごほうびがもらえる。
   _renderDaily: function(box, clearedCount) {
@@ -2213,6 +2231,18 @@ var App = {
     var head = '<div class="home-daily-head"><span class="home-daily-badge">今日の1問</span><span class="home-daily-tag">' + q.tag + '</span></div>';
     var body = (q.head ? '<div class="home-daily-key">' + esc(q.head) + '</div>' : '') +
       '<div class="home-daily-text">' + esc(q.text).replace(/\n/g, '<br>') + '</div>';
+    if (done && !box.getAttribute('data-just')) {
+      // 答えたあとは1行に縮める（ゆーしん「ごちゃごちゃしすぎ」）。押すと解説を開く
+      box.classList.add('compact');
+      box.innerHTML = '<button type="button" class="home-daily-line">' +
+        '<span class="home-daily-badge">今日の1問</span>' +
+        '<span class="home-daily-mark ' + (st.lastCorrect ? 'ok' : 'ng') + '">' + (st.lastCorrect ? '✓ 正解' : '✗ 不正解') + '</span>' +
+        '<span class="home-daily-days">合計' + st.days + '日' + (next ? '・ごほうびまで' + (next.days - st.days) + '日' : '') + '</span></button>';
+      box.querySelector('.home-daily-line').addEventListener('click', function() {
+        box.setAttribute('data-just', '1'); box.classList.remove('compact'); self._renderDaily(box, clearedCount);
+      });
+      return;
+    }
     if (done) {
       box.innerHTML = head + body +
         '<div class="home-daily-result ' + (st.lastCorrect ? 'ok' : 'ng') + '">' + (st.lastCorrect ? '正解！' : '不正解') +
@@ -2231,6 +2261,7 @@ var App = {
         var ok = pick === q.correct;
         var res = Daily.answer(Progress.getDaily(), day, key, ok);
         Progress.setDaily(res.state);
+        box.setAttribute('data-just', '1');
         res.newRewards.forEach(function(r) { if (r.type === 'title') Progress.addTitle(r.id); });
         sendEvent('daily_answer', { correct: ok ? 1 : 0, days: res.state.days });
         self._renderDaily(box, clearedCount);

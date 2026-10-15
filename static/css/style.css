@@ -129,22 +129,6 @@ button { font-family: inherit; cursor: pointer; }
 /* 2026-10-15：ボタンを麻雀牌の見た目にした。牌の厚み（下の帯）を影で出し、押すと沈む。
    同じ日にゆーしん「色が多くて目がチカチカする」→ 色は背景の深緑・牌のクリーム・金の3つにしぼり、
    常に動く飾り（光・揺れ）はやめた。動くのはマウスを乗せた／押したときだけ。 */
-.home-hero {
-  text-align: center;
-  padding: 26px 0 14px;
-}
-.home-hero h2 {
-  font-size: 2rem;
-  font-weight: 900;
-  color: var(--gold);
-  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  margin-bottom: 6px;
-}
-.home-hero p {
-  color: #a8d8b0;
-  font-size: 0.95rem;
-}
-
 /* 一番上の「はじめる／続きから／復習する」 */
 .home-start {
   --press: 6px;
@@ -273,6 +257,32 @@ button { font-family: inherit; cursor: pointer; }
   color: #7a6f55;
 }
 .home-daily-foot strong { font-size: 1rem; color: var(--green-dark); margin: 0 2px; }
+
+/* 答えたあとの1行 */
+.home-daily.compact { padding: 0; }
+.home-daily-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  color: var(--green-dark);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.home-daily-mark.ok { color: var(--green-mid); }
+.home-daily-mark.ng { color: #9a5a00; }
+.home-daily-days { margin-left: auto; color: #7a6f55; font-size: 0.78rem; }
+
+/* 復習・辞典 */
+.review-list { display: grid; gap: 14px; max-width: 520px; margin: 12px auto 0; }
+.home-card.review-item { flex-direction: row; justify-content: flex-start; gap: 14px; padding: 16px; text-align: left; }
+.home-card.review-item .home-card-text { align-items: flex-start; }
 
 /* ごほうびのお知らせ */
 .daily-reward { text-align: center; }
@@ -1287,8 +1297,12 @@ button { font-family: inherit; cursor: pointer; }
 /* ===== Responsive ===== */
 @media (max-width: 480px) {
   .app-main { padding: 14px 12px 32px; }
-  .home-grid { grid-template-columns: repeat(2, 1fr); }
-  .home-group--play .home-grid { grid-template-columns: 1fr; }
+  .home-card { padding: 12px 4px 10px; }
+  .home-card-icon { width: 42px; height: 42px; font-size: 1.45rem; }
+  .home-card-label { font-size: 0.86rem; }
+  .home-group--play .home-card { gap: 10px; padding: 14px 10px; }
+  .home-group--play .home-card-icon { width: 44px; height: 44px; font-size: 1.55rem; }
+  .home-group--play .home-card-label { font-size: 0.95rem; }
   .home-start { gap: 12px; padding: 16px 14px; }
   .home-start-icon { width: 50px; height: 50px; font-size: 1.9rem; }
   .home-start-go { width: 38px; height: 38px; }
@@ -1314,7 +1328,6 @@ button { font-family: inherit; cursor: pointer; }
   .header-title { font-size: 1rem; }
 }
 @media (max-width: 360px) {
-  .home-grid { grid-template-columns: 1fr 1fr; }
   .tile { width: 36px; height: 50px; border-bottom-width: 4px; border-right-width: 2px; }
   .tile .tile-num { font-size: 1rem; }
   .tile.wind .tile-num { font-size: 1.05rem; }
