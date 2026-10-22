@@ -1105,6 +1105,20 @@ function tileToAdviceId(tile) {
   return '';
 }
 
+// 「AIに聞く」で勧めた牌の、振り込む確率の目安を1行で出す（2026-10-22 ゆーしんの要望）。
+// 計算は自作AI「Sorekiri」の降りと同じ（Sorekiri.dangerOfTile）。リーチしている人がいないときは何も出さない。
+// あくまで目安なので、根拠を小さく添える。
+function adviceSafetyHtml(payload, tileId) {
+  if (!payload || !tileId || typeof Sorekiri === 'undefined' || !Sorekiri.dangerOfTile) return '';
+  var d = Sorekiri.dangerOfTile(payload, tileId);
+  if (!d) return '';
+  var dealPct = d.prob * 100;
+  var safeText = dealPct < 1 ? '99%以上' : '約' + Math.round(100 - dealPct) + '%';
+  var dealText = dealPct < 1 ? '1%未満' : '約' + Math.round(dealPct) + '%';
+  return '<div class="battle-ai-safety">安全度の目安：' + safeText + '（振り込む確率 ' + dealText + '）</div>' +
+    '<div class="battle-ai-note">リーチした人の捨て牌と、まだ見えていない牌の枚数から計算した目安です</div>';
+}
+
 function adviceSeatTiles(tiles) {
   return (tiles || []).map(tileToAdviceId).filter(Boolean);
 }
@@ -5375,6 +5389,7 @@ var App = {
       return '<div class="ai-panel battle-ai-card">' +
         '<div class="battle-ai-recommend ai-one-line">' + esc(oneLine) + '</div>' +
         (risk ? '<div class="battle-ai-risk">' + esc(risk) + '</div>' : '') +
+        (battleAdvice.safetyHtml || '') +
       '</div>';
     };
 
@@ -5394,10 +5409,11 @@ var App = {
       battleAdviceTileId = '';
       renderGame();
 
+      var advicePayload = buildBattleAdvicePayload(current);
       fetch('/api/mahjong/advice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildBattleAdvicePayload(current)),
+        body: JSON.stringify(advicePayload),
       }).then(function(r) {
         return r.json().then(function(d) { return { ok: r.ok, data: d }; });
       }).then(function(res) {
@@ -5415,6 +5431,7 @@ var App = {
           return;
         }
         battleAdvice = d;
+        battleAdvice.safetyHtml = adviceSafetyHtml(advicePayload, d.discard);
         battleAdviceTileId = d.discard;
         renderGame();
       }).catch(function() {

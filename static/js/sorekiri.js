@@ -355,6 +355,21 @@ var Sorekiri = (function() {
     return best;
   }
 
+  // ---------- 「AIに聞く」用：振り込む確率の目安（2026-10-22） ----------
+  // ある牌を切ったとき、リーチしている人のだれかに振り込む確率の見積もり。降りの判断と同じ計算
+  // （待ちの形ごとの組み合わせ数×学習した重み。栗田・保木 2017）。リーチがいなければ null。
+  // sample は「AIに聞く」がサーバーへ送る場面（hand・discards・calls・riichi・doraIndicators・gameMode）と同じ形でよい
+  function dangerOfTile(sample, tile) {
+    var riichiRels = OTHER_SEATS.filter(function(rel) { return sample.riichi && sample.riichi[rel]; });
+    if (riichiRels.length === 0 || TILE_INDEX[tile] === undefined) return null;
+    var filled = {
+      hand: sample.hand || [], discards: sample.discards || {}, calls: sample.calls || {},
+      doraIndicators: sample.doraIndicators || [], gameMode: sample.gameMode,
+    };
+    var visible = visibleCounts(filled);
+    return { riichiCount: riichiRels.length, prob: ronProbability(tile, filled, riichiRels, visible) };
+  }
+
   // ---------- まーじゃんしよかの対局状態とのつなぎ ----------
   function tileId(t) {
     if (t.suit === 'man') return t.num + 'm';
@@ -434,6 +449,7 @@ var Sorekiri = (function() {
   var api = {
     load: load, ready: ready, setWeights: setWeights,
     chooseDiscardIndex: chooseDiscardIndex, defenseIndex: defenseIndex, decideCall: decideCall,
+    dangerOfTile: dangerOfTile,
     // 検証用
     _encode: encode, _forward: forward, _chooseDiscardFromSample: chooseDiscardFromSample,
     _decideCallFromSample: decideCallFromSample, _defensePickFromSample: defensePickFromSample, _shanten: shanten, _countsOf: countsOf,

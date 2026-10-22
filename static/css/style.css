@@ -4462,6 +4462,9 @@ body.is-battle-page .app-main.battle-main {
   line-height: 1.45;
   margin-top: 4px;
 }
+/* 2026-10-22：勧めた牌の安全度の目安（Sorekiriの計算） */
+.battle-ai-safety { color: var(--gold); font-size: 0.86rem; font-weight: 900; line-height: 1.45; margin-top: 4px; }
+.battle-ai-note { color: #8ab89c; font-size: 0.68rem; line-height: 1.4; margin-top: 2px; }
 .battle-ai-section { margin-top: 8px; }
 .battle-ai-label {
   color: #8ab89c;
