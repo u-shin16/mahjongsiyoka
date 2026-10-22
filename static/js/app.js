@@ -1893,9 +1893,24 @@ function buildWinPanelBodyShared(o) {
     return '<div class="fr-row"><span>' + esc(y.name) + '</span><span class="fr-score">' + y.han + '翻</span></div>';
   }).join('');
 
-  var tierText = (o.han >= 5 && o.tierLabel) ? o.tierLabel + ' ' : '';
+  // 2026-10-22：符を数えるようにしたので、満貫未満は「◯翻◯符」と、符の内訳も出す
+  var limit = /満|役満/.test(o.tierLabel || '');
+  var tierText = limit ? o.tierLabel + ' ' : (o.fu ? o.fu + '符 ' : '');
+  // ツモは払い方の形で出す（子のツモ：子の払い・親の払い／親のツモ：◯点オール）。
+  // ロンの点数（o.pts）を出すと、実際に受け取る合計と合わなくなるため
+  var ptsText = o.pts.toLocaleString() + '点';
+  if (o.winTypeLabel === 'ツモ' && o.tsumo) {
+    ptsText = o.tsumo.dealerWin
+      ? o.tsumo.each.toLocaleString() + '点オール'
+      : o.tsumo.fromChild.toLocaleString() + '・' + o.tsumo.fromDealer.toLocaleString() + '点';
+  }
   var scoreLine = '<div style="font-weight:900;color:var(--gold);margin:6px 0">' +
-    o.han + '翻 ' + tierText + o.pts.toLocaleString() + '点</div>';
+    o.han + '翻 ' + tierText + ptsText + '</div>';
+  if (!limit && o.fuDetail && o.fuDetail.length) {
+    scoreLine += '<div class="fr-fu-detail">符の内訳：' + o.fuDetail.map(function(d) {
+      return esc(d.name) + ' ' + d.fu;
+    }).join('＋') + '＝' + o.fu + '符</div>';
+  }
 
   var doraRowHtml = o.doraInd
     ? '<div class="fr-row" style="margin-bottom:6px"><span style="font-size:0.8rem;color:#8ab89c">ドラ表示牌</span>' +
@@ -3961,6 +3976,9 @@ var App = {
             nuki: r.nuki || [],
             yaku: r.yaku || [],
             han: r.han,
+            fu: r.fu,
+            fuDetail: r.fuDetail || [],
+            tsumo: r.tsumo || null,
             tierLabel: r.label,
             pts: r.pts,
             doraInd: g.doraInd,
@@ -6438,6 +6456,9 @@ var App = {
               nuki: (s.nuki && s.nuki[winner]) || [],
               yaku: yakuList,
               han: sc ? sc.han : 0,
+              fu: sc ? sc.fu : 0,
+              fuDetail: (sc && sc.fuDetail) || [],
+              tsumo: sc ? { dealerWin: winner === s.dealerSeat, each: sc.tsumoEach, fromDealer: sc.tsumoFromDealer, fromChild: sc.tsumoFromChild } : null,
               tierLabel: sc ? sc.label : '',
               pts: sc ? sc.pts : 0,
               doraInd: s.doraIndicator,

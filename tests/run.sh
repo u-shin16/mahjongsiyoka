@@ -19,7 +19,7 @@ WORK=$(mktemp -d /tmp/mahjong_test.XXXXXX)
 trap 'rm -rf "$WORK"' EXIT
 cp "$ROOT/static/js/tiles.js" "$ROOT/static/js/agari.js" "$ROOT/static/js/yaku.js" \
    "$ROOT/static/js/battle.js" "$ROOT/static/js/data.js" "$ROOT/static/js/chapters.js" "$ROOT/static/js/daily.js" "$WORK/"
-cp "$ROOT/tests/yaku_test.js" "$ROOT/tests/score_test.js" "$ROOT/tests/waits_test.js" "$ROOT/tests/api_test.js" "$ROOT/tests/waitmark_test.js" "$ROOT/tests/quiz_test.js" "$ROOT/tests/daily_test.js" "$WORK/"
+cp "$ROOT/tests/yaku_test.js" "$ROOT/tests/score_test.js" "$ROOT/tests/waits_test.js" "$ROOT/tests/api_test.js" "$ROOT/tests/waitmark_test.js" "$ROOT/tests/quiz_test.js" "$ROOT/tests/daily_test.js" "$ROOT/tests/fu_test.js" "$ROOT/tests/fixtures/fu_reference.json" "$WORK/"
 
 FAILED=0
 
@@ -38,6 +38,9 @@ run_suite api_test.js   "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK
 run_suite waitmark_test.js "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK/battle.js"
 run_suite quiz_test.js     "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK/data.js" "$WORK/chapters.js"
 run_suite daily_test.js    "$WORK/tiles.js" "$WORK/data.js" "$WORK/daily.js"
+_out=$(cd "$WORK" && "$JSC" -e "var FU_CASES='fu_reference.json';" tiles.js agari.js yaku.js fu_test.js 2>&1)
+echo "$_out"
+echo "$_out" | grep -q '失敗: 0' || FAILED=1
 
 # AIアドバイスの計算（Python）。.venv があればそちらを使う
 PY=python3

@@ -12,8 +12,9 @@
 var Yaku = (function() {
   var YAKUMAN_HAN = 13; // 役満1つぶんの翻数（表示・合算用。点数は別途yakumanUnitsで計算）
   var YAKUMAN_PTS = 32000; // 役満1つぶんの点数（積み満貫方式：複数役満は加算）
-  var BASE_SCORES = [1000, 2000, 3900, 7700, 8000, 12000, 16000]; // 子の素点（30符固定）
-  var DEALER_BASE_SCORES = [1500, 2900, 5800, 11600];               // 親の素点（30符固定）
+  // 30符のときの点数表（参考用。2026-10-22から点数は符と翻から計算する）
+  var BASE_SCORES = [1000, 2000, 3900, 7700, 8000, 12000, 16000]; // 子・30符
+  var DEALER_BASE_SCORES = [1500, 2900, 5800, 11600];               // 親・30符
 
   function isHonorTile(t) { return t.suit === 'wind' || t.suit === 'dragon'; }
   function isTerminalTile(t) { return (t.suit === 'man' || t.suit === 'pin' || t.suit === 'sou') && (t.num === 1 || t.num === 9); }
@@ -115,22 +116,178 @@ var Yaku = (function() {
     }
 
     var open = !isClosed;
-    var shape = buildHandGroups(hand, openMelds);
-    if (!shape) return [];
+    var best = bestShape(hand, openMelds, open, seatWindNum, roundWindNum, winType, winningTile);
+    if (!best) return [];
+    var out = best.yaku;
+    // 符は和了形で決まるので、役の一覧に添えて返す（呼び出し側が calcPoints に渡す）。
+    // 配列の要素ではなく見えない属性にしておけば、役の一覧の扱いは今までどおり。
+    Object.defineProperty(out, 'fu', { value: best.fu, enumerable: false, writable: true });
+    Object.defineProperty(out, 'fuDetail', { value: best.fuDetail, enumerable: false, writable: true });
+    return out;
+  }
 
-    var result = shapeYakuFrom(shape, open, seatWindNum, roundWindNum, winType, winningTile);
-    if (!shape.chiitoitsu) return result;
+  // ===== 高点法と符計算（2026-10-22）=====
+  // 以前は手の分け方を1通りだけ読み、点数は30符で決め打ちしていた。
+  // 符は「分け方」と「和了牌がどの面子に入ったか」で変わるので、ありうる組み合わせを
+  // 全部数えて、いちばん点数が高い読み方を採る（高点法）。
+  // ルールは天鳳に合わせる：連風牌の雀頭は4符、平和ツモは20符、鳴いた平和形は30符、
+  // 七対子は25符、切り上げ満貫なし、数え役満あり。
 
-    // 七対子として読めた手が、通常形（4面子1雀頭）としても読めるか試す
-    var stdShape = buildHandGroups(hand, openMelds, true);
-    if (!stdShape) return result;
-    var stdResult = shapeYakuFrom(stdShape, open, seatWindNum, roundWindNum, winType, winningTile);
+  function sameKind(a, b) { return a && b && Tiles.isSame(a, b); }
 
-    var a = calcPoints(result);
-    var b = calcPoints(stdResult);
-    // 点数が高いほう。同点なら翻数が多いほう。それも同じなら七対子側を残す
-    if (b.pts > a.pts || (b.pts === a.pts && b.han > a.han)) return stdResult;
-    return result;
+  // 手牌（副露を除く）を「雀頭1つ＋面子」に分ける方法をすべて挙げる
+  function allStandardDecomps(tiles) {
+    var sorted = Tiles.sortTiles(tiles);
+    var out = [];
+    var seen = {};
+    function key(t) { return t.suit + (t.color || '') + t.num; }
+    function sets(rest, acc, pair) {
+      if (rest.length === 0) {
+        var sig = key(pair[0]) + '|' + acc.map(function(g) { return g.map(key).join(','); }).sort().join('/');
+        if (!seen[sig]) { seen[sig] = true; out.push({ pair: pair, melds: acc.slice() }); }
+        return;
+      }
+      var t = rest[0];
+      var same = rest.filter(function(x) { return sameKind(x, t); });
+      if (same.length >= 3) {
+        var tri = same.slice(0, 3);
+        sets(rest.filter(function(x) { return tri.indexOf(x) < 0; }), acc.concat([tri]), pair);
+      }
+      var t2 = rest.filter(function(x) { return x.suit === t.suit && (x.color || '') === (t.color || '') && x.num === t.num + 1; })[0];
+      var t3 = rest.filter(function(x) { return x.suit === t.suit && (x.color || '') === (t.color || '') && x.num === t.num + 2; })[0];
+      if (t2 && t3 && Tiles.isSequence([t, t2, t3])) {
+        sets(rest.filter(function(x) { return x !== t && x !== t2 && x !== t3; }), acc.concat([[t, t2, t3]]), pair);
+      }
+    }
+    var tried = {};
+    sorted.forEach(function(t) {
+      var k = key(t);
+      if (tried[k]) return;
+      tried[k] = true;
+      var same = sorted.filter(function(x) { return sameKind(x, t); });
+      if (same.length < 2) return;
+      var pair = same.slice(0, 2);
+      sets(sorted.filter(function(x) { return pair.indexOf(x) < 0; }), [], pair);
+    });
+    return out;
+  }
+
+  function toShape(decomp, openMelds) {
+    var groups = decomp.melds.map(function(m) {
+      var isTriplet = sameKind(m[0], m[1]) && sameKind(m[1], m[2]);
+      return { kind: isTriplet ? 'triplet' : 'sequence', tiles: m.slice(), concealed: true, isKan: false };
+    });
+    (openMelds || []).forEach(function(m) {
+      groups.push({
+        kind: m.type === 'chi' ? 'sequence' : 'triplet',
+        tiles: m.tiles.slice(0, 3),
+        concealed: m.type === 'ankan',
+        isKan: (m.type === 'kan' || m.type === 'ankan'),
+        open: true,
+      });
+    });
+    return { chiitoitsu: false, pair: decomp.pair.slice(), groups: groups };
+  }
+
+  // 和了牌が「どの面子（または雀頭）で完成したか」を全通り作る。
+  // 同じ種類の牌は入れ替えても同じなので、和了牌と同じ種類の牌を持つ面子ごとに、
+  // その面子の牌を和了牌そのものと入れ替えた形を作る（役判定は和了牌のidで見るため）。
+  function winningPlacements(shape, winningTile) {
+    if (!winningTile) return [shape];
+    var holders = [];
+    if (shape.pair.some(function(t) { return sameKind(t, winningTile); })) holders.push(-1);
+    shape.groups.forEach(function(g, i) {
+      if (!g.open && g.tiles.some(function(t) { return sameKind(t, winningTile); })) holders.push(i);
+    });
+    var out = [];
+    holders.forEach(function(h) {
+      var copy = { chiitoitsu: false, pair: shape.pair.slice(),
+        groups: shape.groups.map(function(g) { return Object.assign({}, g, { tiles: g.tiles.slice() }); }) };
+      var target = h === -1 ? copy.pair : copy.groups[h].tiles;
+      // 牌は並べ替えで別の物になっていることがあるので、同じ牌かはidで比べる
+      var idx = function(list) { return list.findIndex(function(t) { return t.id === winningTile.id; }); };
+      // 今、和了牌（id）が入っている場所
+      var fromList = idx(copy.pair) >= 0 ? copy.pair : null;
+      copy.groups.forEach(function(g) { if (idx(g.tiles) >= 0) fromList = g.tiles; });
+      if (idx(target) < 0) {
+        var j = target.findIndex(function(t) { return sameKind(t, winningTile); });
+        var displaced = target[j];
+        target[j] = winningTile;
+        if (fromList) fromList[idx(fromList)] = displaced;
+      }
+      out.push(copy);
+    });
+    return out.length ? out : [shape];
+  }
+
+  // 符を数える。shape は和了牌が入った面子が確定したもの
+  function computeFu(shape, open, seatW, roundW, winType, winningTile, yaku) {
+    if (shape.chiitoitsu) return { fu: 25, detail: [{ name: '七対子', fu: 25 }] };
+    var isPinfu = yaku.some(function(y) { return y.name === '平和'; });
+    if (isPinfu) {
+      return winType === 'tsumo'
+        ? { fu: 20, detail: [{ name: '平和ツモ', fu: 20 }] }
+        : { fu: 30, detail: [{ name: '副底', fu: 20 }, { name: '門前ロン', fu: 10 }] };
+    }
+    var detail = [{ name: '副底', fu: 20 }];
+    var fu = 20;
+    function add(name, n) { if (n > 0) { detail.push({ name: name, fu: n }); fu += n; } }
+    if (!open && winType === 'ron') add('門前ロン', 10);
+    if (winType === 'tsumo') add('ツモ', 2);
+
+    var isWin = function(list) { return !!(winningTile && list.some(function(t) { return t.id === winningTile.id; })); };
+    shape.groups.forEach(function(g) {
+      if (g.kind !== 'triplet') return;
+      var yao = isTerminalOrHonor(g.tiles[0]);
+      // ロンで完成させた刻子は、明刻（さらした刻子）と同じに数える
+      var concealed = g.concealed && !(winType === 'ron' && !g.open && isWin(g.tiles));
+      var n = (yao ? 4 : 2) * (concealed ? 2 : 1) * (g.isKan ? 4 : 1);
+      add((yao ? '么九牌の' : '中張牌の') + (concealed ? '暗' : '明') + (g.isKan ? '槓' : '刻'), n);
+    });
+    var p = shape.pair[0];
+    if (p.suit === 'dragon') add('役牌の雀頭', 2);
+    if (p.suit === 'wind') {
+      var pairFu = (p.num === seatW ? 2 : 0) + (p.num === roundW ? 2 : 0);
+      add(pairFu === 4 ? '連風牌の雀頭' : '役牌の雀頭', pairFu);
+    }
+    if (winningTile) {
+      if (isWin(shape.pair)) add('単騎待ち', 2);
+      else {
+        var wg = shape.groups.filter(function(g) { return !g.open && isWin(g.tiles); })[0];
+        if (wg && wg.kind === 'sequence' && !isRyanmenWait(wg, winningTile)) {
+          var nums = wg.tiles.map(function(t) { return t.num; }).sort(function(a, b) { return a - b; });
+          add(winningTile.num === nums[1] ? '嵌張待ち' : '辺張待ち', 2);
+        }
+      }
+    }
+    // 鳴いていて符が1つも付かない形（鳴いた平和形）は30符にする
+    if (open && fu === 20) { detail.push({ name: '鳴いた平和形は30符', fu: 10 }); fu = 30; }
+    var rounded = Math.ceil(fu / 10) * 10;
+    if (rounded !== fu) detail.push({ name: '10符単位に切り上げ', fu: rounded - fu });
+    return { fu: rounded, detail: detail };
+  }
+
+  // すべての読み方の中から、点数がいちばん高いもの（同点なら翻、次に符が多いもの）を選ぶ
+  function bestShape(hand, openMelds, open, seatW, roundW, winType, winningTile) {
+    var candidates = [];
+    function consider(shape) {
+      var yaku = shapeYakuFrom(shape, open, seatW, roundW, winType, winningTile);
+      var f = computeFu(shape, open, seatW, roundW, winType, winningTile, yaku);
+      var pts = calcPoints(yaku, false, f.fu);
+      // 役が1つも無い読み方は0点として比べる（calcPointsは0翻を1翻として数えるため）
+      candidates.push({ yaku: yaku, fu: f.fu, fuDetail: f.detail, pts: yaku.length ? pts.pts : 0, han: pts.han });
+    }
+    var seven = Agari.decomposeWinningHand(hand);
+    if (seven && seven.type === 'chiitoitsu') {
+      consider({ chiitoitsu: true, pair: null,
+        groups: seven.groups.map(function(g) { return { kind: 'pair', tiles: g, concealed: true, isKan: false }; }) });
+    }
+    allStandardDecomps(hand).forEach(function(d) {
+      winningPlacements(toShape(d, openMelds), winningTile).forEach(consider);
+    });
+    if (candidates.length === 0) return null;
+    candidates.sort(function(a, b) { return (b.pts - a.pts) || (b.han - a.han) || (b.fu - a.fu); });
+    return candidates[0];
   }
 
   // ひとつの和了形（shape）から、形に依存する役を数え上げる。
@@ -210,7 +367,8 @@ var Yaku = (function() {
     var everyGroupTouchesTerminalOrHonor = groups.every(function(g) {
       return g.tiles.some(isTerminalOrHonor);
     }) && isTerminalOrHonor(pair[0]);
-    if (everyGroupTouchesTerminalOrHonor) {
+    // 混老頭・清老頭（么九牌だけの手）のときは、混全帯幺九・純全帯幺九は付かない
+    if (everyGroupTouchesTerminalOrHonor && !allTiles.every(isTerminalOrHonor)) {
       if (allTiles.some(isHonorTile)) yaku.push({ name: '混全帯幺九', han: open ? 1 : 2 });
       else yaku.push({ name: '純全帯幺九', han: open ? 2 : 3 });
     }
@@ -343,36 +501,44 @@ var Yaku = (function() {
     return yakuman.length > 0 ? yakuman : yakuList;
   }
 
-  // 役の内訳(yakuList)から翻数・点数・表示ラベルを求める（積み満貫方式）
-  // isDealer を渡すと親の点数（子の1.5倍）で返す。
-  // 4翻以下は1.5倍ちょうどではない（子2翻2000点に対し親2翻は2900点）ため、
-  // 親用の素点表を別に持っている。
-  function calcPoints(yakuList, isDealer) {
+  function round100(n) { return Math.ceil(n / 100) * 100; }
+
+  // 役の内訳(yakuList)と符から、翻数・点数・表示ラベルを求める（積み満貫方式）。
+  // 基本点 = 符 × 2の(翻+2)乗（2000点で満貫）。ロンは子4倍・親6倍、
+  // ツモは子の和了なら親が2倍・子が1倍、親の和了なら全員が2倍を払う（どれも100点単位に切り上げ）。
+  // fu を省くと30符として数える（30符のときは以前の点数表と同じ点数になる）。
+  function calcPoints(yakuList, isDealer, fu) {
+    fu = fu || 30;
     var han = yakuList.reduce(function(a, y) { return a + y.han; }, 0);
     var yakumanUnits = yakuList.reduce(function(a, y) { return a + (y.yakuman ? Math.round(y.han / YAKUMAN_HAN) : 0); }, 0);
-    var mul = isDealer ? 1.5 : 1;
-    var pts, label;
+    var base, label;
     if (yakumanUnits > 0) {
-      pts = yakumanUnits * YAKUMAN_PTS * mul;
+      base = 8000 * yakumanUnits;
       label = yakumanUnits > 1 ? (yakumanUnits + '倍役満') : '役満';
     } else if (han >= 13) {
       // 役満そのものではなく翻数の積み上げで13翻以上になった場合（数え役満）
-      pts = YAKUMAN_PTS * mul;
-      label = '役満';
+      base = 8000; label = '役満';
     } else if (han >= 11) {
-      pts = 24000 * mul; label = '三倍満';
+      base = 6000; label = '三倍満';
     } else if (han >= 8) {
-      pts = 16000 * mul; label = '倍満';
+      base = 4000; label = '倍満';
     } else if (han >= 6) {
-      pts = 12000 * mul; label = '跳満';
+      base = 3000; label = '跳満';
     } else if (han >= 5) {
-      pts = 8000 * mul; label = '満貫';
+      base = 2000; label = '満貫';
     } else {
-      var idx = Math.min(Math.max(han, 1) - 1, 3);
-      pts = isDealer ? DEALER_BASE_SCORES[idx] : BASE_SCORES[idx];
-      label = han + '翻';
+      base = fu * Math.pow(2, Math.max(han, 1) + 2);
+      if (base >= 2000) { base = 2000; label = '満貫'; }
+      else label = han + '翻' + fu + '符';
     }
-    return { han: han, pts: pts, label: label, yakumanUnits: yakumanUnits };
+    var pts = round100(base * (isDealer ? 6 : 4));
+    return {
+      han: han, fu: fu, base: base, pts: pts, label: label, yakumanUnits: yakumanUnits,
+      // ツモのときの払い方（親の和了なら tsumoEach を全員が、子の和了なら親が tsumoFromDealer・子が tsumoFromChild）
+      tsumoEach: round100(base * 2),
+      tsumoFromDealer: round100(base * 2),
+      tsumoFromChild: round100(base),
+    };
   }
 
   return {
@@ -390,6 +556,8 @@ var Yaku = (function() {
     isFuritenBySelf: isFuritenBySelf,
     buildHandGroups: buildHandGroups,
     computeShapeYaku: computeShapeYaku,
+    computeFu: computeFu,
+    allStandardDecomps: allStandardDecomps,
     calcPoints: calcPoints,
     onlyYakuman: onlyYakuman,
   };

@@ -1146,12 +1146,15 @@ var Battle = (function() {
     if (uraDora > 0) yaku.push({ name: '裏ドラ',   han: uraDora });
     if (nuki > 0)    yaku.push({ name: '抜き北',   han: nuki });
 
+    // 符は和了形で決まる（computeShapeYaku が役の一覧に添えて返す）。2026-10-22から30符決め打ちをやめた
+    var fu = yaku.fu, fuDetail = yaku.fuDetail;
     yaku = Yaku.onlyYakuman(yaku);   // 役満があれば役満だけを数える
-    var points = Yaku.calcPoints(yaku, w === state.dealerSeat);
+    var points = Yaku.calcPoints(yaku, w === state.dealerSeat, fu);
     var ippatsu = !!(state.ippatsuActive && state.ippatsuActive[w]);
 
-    return { han: points.han, dora: dora, nuki: nuki, kanDora: kanDora, uraDora: uraDora,
-             pts: points.pts, label: points.label, yaku: yaku, ippatsu: ippatsu };
+    return { han: points.han, fu: points.fu, fuDetail: fuDetail || [], dora: dora, nuki: nuki, kanDora: kanDora, uraDora: uraDora,
+             pts: points.pts, label: points.label, yaku: yaku, ippatsu: ippatsu,
+             tsumoEach: points.tsumoEach, tsumoFromDealer: points.tsumoFromDealer, tsumoFromChild: points.tsumoFromChild };
   }
 
   function round100(n) {
@@ -1182,9 +1185,9 @@ var Battle = (function() {
       deltas[winner] += pay;
       deltas[loser] -= pay;
     } else {
-      // 親ツモは全員が同額（基本点の1/3）。子ツモは親が1/2、他の子が1/4を払う。
-      var dealerPay = round100(sc.pts / (isDealerWin ? 3 : 2));
-      var childPay  = round100(sc.pts / (isDealerWin ? 3 : 4));
+      // ツモの払い方は基本点から出す（親の和了は全員が基本点の2倍、子の和了は親が2倍・子が1倍）
+      var dealerPay = isDealerWin ? sc.tsumoEach : sc.tsumoFromDealer;
+      var childPay  = isDealerWin ? sc.tsumoEach : sc.tsumoFromChild;
       for (var i = 0; i < n; i++) {
         if (i === winner) continue;
         var amount = (i === state.dealerSeat ? dealerPay : childPay) + honba * 100;

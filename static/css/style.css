@@ -7464,3 +7464,6 @@ body.is-battle-page .jt-table {
 
 .chapter-tier.tier-advanced .chapter-tier-label,
 .chapter-tier.tier-test .chapter-tier-label { color: #a8c8b0; }
+
+/* 和了画面の符の内訳（2026-10-22） */
+.fr-fu-detail { font-size: 0.74rem; color: #a8d8b0; margin: -2px 0 8px; line-height: 1.6; }

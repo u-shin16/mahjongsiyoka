@@ -1032,8 +1032,10 @@ var FriendGame = (function() {
 
     var dealerSeatForPay = (state.round - 1) % state.playerCount;
     var isDealerWin = winner === dealerSeatForPay;
+    // 符は和了形で決まる（computeShapeYaku が役の一覧に添えて返す）。2026-10-22から30符決め打ちをやめた
+    var fu = yaku.fu, fuDetail = yaku.fuDetail || [];
     yaku = Yaku.onlyYakuman(yaku);   // 役満があれば役満だけを数える
-    var points = Yaku.calcPoints(yaku, isDealerWin);
+    var points = Yaku.calcPoints(yaku, isDealerWin, fu);
     var han = points.han;
     var pts = points.pts;
     var deltas = state.scores.map(function() { return 0; });
@@ -1041,9 +1043,9 @@ var FriendGame = (function() {
       deltas[winner] += pts;
       deltas[fromSeat] -= pts;
     } else {
-      // 親ツモは全員が同額（基本点の1/3）。子ツモは親が1/2、他の子が1/4を払う。
-      var dealerPay = Math.ceil(pts / (isDealerWin ? 3 : 2) / 100) * 100;
-      var childPay  = Math.ceil(pts / (isDealerWin ? 3 : 4) / 100) * 100;
+      // ツモの払い方は基本点から出す（親の和了は全員が基本点の2倍、子の和了は親が2倍・子が1倍）
+      var dealerPay = isDealerWin ? points.tsumoEach : points.tsumoFromDealer;
+      var childPay  = isDealerWin ? points.tsumoEach : points.tsumoFromChild;
       for (var i = 0; i < state.playerCount; i++) {
         if (i === winner) continue;
         var amount = (i === dealerSeatForPay ? dealerPay : childPay);
@@ -1066,6 +1068,9 @@ var FriendGame = (function() {
       from: (fromSeat != null ? fromSeat : null),
       yaku: yaku,
       han: han,
+      fu: points.fu,
+      fuDetail: fuDetail,
+      tsumo: { dealerWin: isDealerWin, each: points.tsumoEach, fromDealer: points.tsumoFromDealer, fromChild: points.tsumoFromChild },
       pts: pts,
       label: points.label,
       deltas: deltas,
