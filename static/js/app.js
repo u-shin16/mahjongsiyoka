@@ -1893,19 +1893,23 @@ function buildWinPanelBodyShared(o) {
     return '<div class="fr-row"><span>' + esc(y.name) + '</span><span class="fr-score">' + y.han + '翻</span></div>';
   }).join('');
 
-  // 2026-10-22：符を数えるようにしたので、満貫未満は「◯翻◯符」と、符の内訳も出す
+  // 2026-10-22：見出しは「◯符 ◯翻 ◯点 満貫」の順（ゆーしんの指定）。満貫などに届かなければ最後は空ける。
+  // 点数はその和了で受け取る合計（ツモは全員の払いの合計。本場・供託は含めない）
   var limit = /満|役満/.test(o.tierLabel || '');
-  var tierText = limit ? o.tierLabel + ' ' : (o.fu ? o.fu + '符 ' : '');
-  // ツモは払い方の形で出す（子のツモ：子の払い・親の払い／親のツモ：◯点オール）。
-  // ロンの点数（o.pts）を出すと、実際に受け取る合計と合わなくなるため
-  var ptsText = o.pts.toLocaleString() + '点';
+  var isYakuman = /役満/.test(o.tierLabel || '');
+  var total = o.pts;
   if (o.winTypeLabel === 'ツモ' && o.tsumo) {
-    ptsText = o.tsumo.dealerWin
-      ? o.tsumo.each.toLocaleString() + '点オール'
-      : o.tsumo.fromChild.toLocaleString() + '・' + o.tsumo.fromDealer.toLocaleString() + '点';
+    var nPlayers = (o.deltas && o.deltas.length) || 4;
+    total = o.tsumo.dealerWin
+      ? o.tsumo.each * (nPlayers - 1)
+      : o.tsumo.fromDealer + o.tsumo.fromChild * (nPlayers - 2);
   }
-  var scoreLine = '<div style="font-weight:900;color:var(--gold);margin:6px 0">' +
-    o.han + '翻 ' + tierText + ptsText + '</div>';
+  var parts = [];
+  if (o.fu && !isYakuman) parts.push(o.fu + '符');
+  parts.push(o.han + '翻');
+  parts.push(total.toLocaleString() + '点');
+  if (limit) parts.push(o.tierLabel);
+  var scoreLine = '<div style="font-weight:900;color:var(--gold);margin:6px 0">' + parts.join(' ') + '</div>';
   if (!limit && o.fuDetail && o.fuDetail.length) {
     scoreLine += '<div class="fr-fu-detail">符の内訳：' + o.fuDetail.map(function(d) {
       return esc(d.name) + ' ' + d.fu;
