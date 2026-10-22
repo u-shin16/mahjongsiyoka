@@ -1119,6 +1119,12 @@ function adviceSafetyHtml(payload, tileId) {
     '<div class="battle-ai-note">リーチした人の捨て牌と、まだ見えていない牌の枚数から計算した目安です</div>';
 }
 
+function serializeMeldsForAdviceShared(melds) {
+  return (melds || []).map(function(m) {
+    return { type: m.type || '', tiles: adviceSeatTiles(m.tiles || []), calledTile: tileToAdviceId(m.calledTile), fromPlayer: m.fromPlayer };
+  });
+}
+
 function adviceSeatTiles(tiles) {
   return (tiles || []).map(tileToAdviceId).filter(Boolean);
 }
@@ -4098,6 +4104,57 @@ var App = {
     // 取り直さないと、前の局やCPU戦の枚数と比べてしまう。
     if (self._frLastRound !== g.round) { self._frLastRound = g.round; resetCallWatch(); }
     watchOtherCalls(g, names, my);
+    // ── 「AIに聞く」（2026-10-22 友人戦にも追加。CPU戦と同じサーバーの計算＋Sorekiriの安全度の目安） ──
+    // 自分の番で、牌を切る前だけ押せる。番が変わったら前の答えは消す
+    var frAdvKey = g.round + ':' + my + ':' + (g.discards || []).reduce(function(a, d) { return a + (d ? d.length : 0); }, 0);
+    if (!self._frAdv || self._frAdv.key !== frAdvKey) self._frAdv = { key: frAdvKey, loading: false, error: '', data: null };
+    var frAdv = self._frAdv;
+    var frCanAskAi = myTurn && g.phase === 'turn' && myHand.length % 3 === 2;
+    var frRight = (my + 1) % n, frTop = (my + 2) % n, frLeft = n === 4 ? (my + 3) % n : -1;
+    var buildFriendAdvicePayload = function() {
+      var dealerSeat = (g.round - 1) % n;
+      var windNames = ['東', '南', '西', '北'];
+      var drawn = myHand.filter(function(t) { return t.id === g.drawnId; })[0] || null;
+      var seatTiles = function(seat) { return seat >= 0 ? adviceSeatTiles(g.discards[seat] || []) : []; };
+      var seatMelds = function(seat) { return seat >= 0 ? serializeMeldsForAdviceShared(g.melds && g.melds[seat]) : []; };
+      var seatRiichi = function(seat) { return seat >= 0 ? !!(g.riichi && g.riichi[seat]) : false; };
+      return {
+        round: windNames[g.round <= n ? 0 : 1] + (((g.round - 1) % n) + 1) + '局',
+        honba: g.honba || 0,
+        kyotaku: 0,
+        roundWind: windNames[g.round <= n ? 0 : 1],
+        playerWind: windNames[(my - dealerSeat + n) % n],
+        doraIndicators: adviceSeatTiles([g.doraInd].concat(g.kanDoraInds || []).filter(Boolean)),
+        hand: adviceSeatTiles(myHand),
+        drawnTile: tileToAdviceId(drawn),
+        discards: { self: seatTiles(my), left: seatTiles(frLeft), top: seatTiles(frTop), right: seatTiles(frRight) },
+        calls: { self: seatMelds(my), left: seatMelds(frLeft), top: seatMelds(frTop), right: seatMelds(frRight) },
+        riichi: { self: seatRiichi(my), left: seatRiichi(frLeft), top: seatRiichi(frTop), right: seatRiichi(frRight) },
+        remainTiles: (g.wall || []).length,
+        mode: 'beginner',
+        gameMode: n === 3 ? 'sanma' : 'yonma',
+        playerCount: n,
+      };
+    };
+    var frAiBtnHtml = frCanAskAi
+      ? '<button class="btn-battle btn-ai-intable jt-ai-beside-self" id="btnFrAiGame" ' + (frAdv.loading ? 'disabled' : '') + '>' +
+          (frAdv.loading ? 'AI考え中' : 'AIに聞く') + '</button>'
+      : '';
+    var frAdvPanelHtml = '';
+    if (frCanAskAi && (frAdv.loading || frAdv.error || frAdv.data)) {
+      var advBody;
+      if (frAdv.loading) advBody = '<div class="ai-panel-title"><span>AI</span> AIアドバイス</div><div class="ai-loading">考えています...</div>';
+      else if (frAdv.error) advBody = '<div class="ai-panel-title"><span>AI</span> AIアドバイス</div><div class="ai-response ai-error">' + esc(frAdv.error) + '</div>';
+      else {
+        var ad = frAdv.data;
+        var oneLine = ad.alreadyWon ? (ad.reason || 'この手はもう和了できる形です。') : (ad.tileName || ad.discard) + '切り。' + (ad.reason || '形がいちばん残るから');
+        var riskLine = (ad.detailedReason && ad.detailedReason.risk) || '';
+        advBody = '<div class="battle-ai-recommend ai-one-line">' + esc(oneLine) + '</div>' +
+          (riskLine ? '<div class="battle-ai-risk">' + esc(riskLine) + '</div>' : '') + (ad.safetyHtml || '');
+      }
+      frAdvPanelHtml = '<div class="ai-panel battle-ai-card">' + advBody + '</div>';
+    }
+
     var meldAreasFr = renderMeldAndNukiAreasShared(g.melds || {}, g.nuki, n, seatCls, isSanma);
     var perPlayerMeldsHtml = meldAreasFr.melds;
     var perPlayerNukiHtml = meldAreasFr.nuki;
@@ -4115,7 +4172,7 @@ var App = {
           seatBadge(topSeat, 'top') +
           (leftSeat >= 0 ? seatBadge(leftSeat, 'left') : '') +
           seatBadge(rightSeat, 'right') +
-          seatBadge(my, 'self') +
+          seatBadge(my, 'self') + frAiBtnHtml +
           doraHtml +
           '<div class="jt-hidden-hand jt-hidden-top">' + hiddenTiles('fr-top-wall-', (g.hands[topSeat] || []).length, 13) + '</div>' +
           (leftSeat >= 0 ? '<div class="jt-hidden-hand jt-hidden-left">' + hiddenTiles('fr-left-wall-', (g.hands[leftSeat] || []).length, 13) + '</div>' : '') +
@@ -4147,6 +4204,7 @@ var App = {
         '</div>' +
         '<div class="jt-side"></div>' +
       '</div>' +
+      '<div id="aiAdvArea">' + frAdvPanelHtml + '</div>' +
     '</div>';
     fitBattleTable();
     positionDiscardRivers();
@@ -4474,6 +4532,29 @@ var App = {
           sendFrAction('kakan', { tile: { suit: cand.tiles[0].suit, num: cand.tiles[0].num } });
         }
       });
+    });
+    var frAiBtn = document.getElementById('btnFrAiGame');
+    if (frAiBtn) frAiBtn.addEventListener('click', function() {
+      var adv = self._frAdv;
+      if (!adv || adv.loading) return;
+      var payload = buildFriendAdvicePayload();
+      adv.loading = true; adv.error = ''; adv.data = null;
+      sendEvent('ai_ask', { mode: 'friend_battle', level: 'beginner' });
+      self._render('friend', {});
+      fetch('/api/mahjong/advice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(res) {
+          if (self._frAdv !== adv) return;   // その間に番が変わっていたら捨てる
+          adv.loading = false;
+          var d = res.data || {};
+          if (!d.alreadyWon && (!res.ok || d.error || !d.discard)) adv.error = d.message || 'アドバイスを取得できませんでした。';
+          else { adv.data = d; if (!d.alreadyWon) adv.data.safetyHtml = adviceSafetyHtml(payload, d.discard); }
+          self._render('friend', {});
+        })['catch'](function() {
+          if (self._frAdv !== adv) return;
+          adv.loading = false; adv.error = 'アドバイスを取得できませんでした。';
+          self._render('friend', {});
+        });
     });
     var riichiBtn = document.getElementById('btnFrRiichi');
     if (riichiBtn) riichiBtn.addEventListener('click', function() {
