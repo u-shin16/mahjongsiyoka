@@ -1,0 +1,16 @@
+{
+ "fu": [
+  {"hand":"345678m678p456s55s","win":"8m","type":"ron","extras":[{"name":"立直","han":1}]},
+  {"hand":"234678m345p567s88s","win":"8m","type":"tsumo","extras":[{"name":"立直","han":1}]},
+  {"hand":"222p345m567s88s456p","win":"5s","type":"tsumo","extras":[{"name":"立直","han":1}]},
+  {"hand":"999m345p678s44s567m","win":"7m","type":"ron","extras":[{"name":"立直","han":1}]},
+  {"hand":"234m567p345s789m77z","win":"9m","type":"ron","extras":[{"name":"立直","han":1}]},
+  {"hand":"234m456p345s789m11p","win":"4s","type":"ron","extras":[{"name":"立直","han":1}]}
+ ],
+ "points": [
+  {"hand":"234m567p345s66s789m","win":"9m","type":"ron","extras":[{"name":"立直","han":1}]},
+  {"hand":"345m678p456s77s234m","win":"4m","type":"tsumo","extras":[{"name":"立直","han":1}]},
+  {"hand":"222p345m567s88s456p","win":"6p","type":"ron","extras":[{"name":"立直","han":1}],"dora":1},
+  {"hand":"333m456p678s44s567m","win":"7m","type":"tsumo","seat":1,"extras":[{"name":"立直","han":1}],"dora":2}
+ ]
+}

@@ -32,7 +32,7 @@ var GameData = (function() {
     { id:6,  tier:'core',     title:'対局のルールを\n覚えよう', short:'対局のルール', diff:1, min:5, topics:['対局の進め方','ロンとツモ'] },
     { id:7,  tier:'core',     title:'鳴きを使ってみよう', short:'ポン・チー・カン', diff:3, min:6, topics:['ポン・チーの判定','鳴けない場合の判定','カンの判定'] },
     { id:8,  tier:'core',     title:'初心者向けの役', short:'基本の役', diff:3, min:28, topics:['役が無いとアガれない','フリテン','立直','タンヤオ','平和','一発'] },
-    { id:9,  tier:'practice', title:'翻を数えてみよう', short:'翻とドラと点数', diff:3, min:10, topics:['翻数','ドラ','点数'] },
+    { id:9,  tier:'practice', title:'翻と符を数えて\n点数を出してみよう', short:'翻・符・点数', diff:3, min:20, topics:['翻数','ドラ','符','点数'] },
     { id:10, tier:'test',     title:'復習テスト\n道場チャレンジ', short:'道場チャレンジ', diff:2, min:10, topics:['全章復習','10問テスト','段位評価'] },
     { id:11, tier:'practice', title:'中級者向けの役', short:'中級役', diff:3, min:40, topics:['一盃口','三色同順','三色同刻','対々和','一気通貫','三暗刻'] },
     { id:12, tier:'practice', title:'上級者向けの役', short:'上級役', diff:3, min:35, topics:['清一色','混一色','二盃口','三槓子','純全帯幺九'] },
