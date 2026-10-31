@@ -456,7 +456,21 @@ def ai_advice():
 
     except Exception as e:
         app.logger.exception('Gemini advice request failed')
-        return jsonify({'advice': 'アドバイスを取得できませんでした。しばらくしてから再試行してください。'}), 500
+        return jsonify({'advice': gemini_error_message(e)}), 500
+
+def gemini_error_message(error):
+    """Geminiの失敗を、押した人が「待てばいいのか」分かる一文にする。
+
+    2026-09-01：月の上限（429 RESOURCE_EXHAUSTED・spending cap）で止まったときも
+    通信の失敗と同じ文言しか出ず、壊れているのか分からなかった。
+    """
+    text = str(error)
+    is_429 = getattr(error, 'code', None) == 429 or 'RESOURCE_EXHAUSTED' in text
+    if is_429 and 'spending cap' in text.lower():
+        return 'AI先生は今月の利用上限に達したため、来月まで休みます。対局中の「AIに聞く」はそのまま使えます。'
+    if is_429:
+        return 'AI先生が混み合っています。1分ほど待ってから、もう一度聞いてください。'
+    return 'アドバイスを取得できませんでした。しばらくしてから再試行してください。'
 
 def safety_message(tile, situation):
     """切る牌がリーチ者に通っているかを、初心者に読める一文にする。
