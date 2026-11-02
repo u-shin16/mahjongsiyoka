@@ -123,6 +123,8 @@ var Yaku = (function() {
     // 配列の要素ではなく見えない属性にしておけば、役の一覧の扱いは今までどおり。
     Object.defineProperty(out, 'fu', { value: best.fu, enumerable: false, writable: true });
     Object.defineProperty(out, 'fuDetail', { value: best.fuDetail, enumerable: false, writable: true });
+    // 2026-11-02：第10章の問題で手牌を面子ごとに区切って見せるため、選んだ分け方も持たせる
+    Object.defineProperty(out, 'shape', { value: best.shape, enumerable: false, writable: true });
     return out;
   }
 
@@ -275,7 +277,7 @@ var Yaku = (function() {
       var f = computeFu(shape, open, seatW, roundW, winType, winningTile, yaku);
       var pts = calcPoints(yaku, false, f.fu);
       // 役が1つも無い読み方は0点として比べる（calcPointsは0翻を1翻として数えるため）
-      candidates.push({ yaku: yaku, fu: f.fu, fuDetail: f.detail, pts: yaku.length ? pts.pts : 0, han: pts.han });
+      candidates.push({ yaku: yaku, fu: f.fu, fuDetail: f.detail, pts: yaku.length ? pts.pts : 0, han: pts.han, shape: shape });
     }
     var seven = Agari.decomposeWinningHand(hand);
     if (seven && seven.type === 'chiitoitsu') {

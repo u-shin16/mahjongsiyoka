@@ -671,18 +671,48 @@ var CH_INTROS = {
     example: '5翻 → 満貫\n6〜7翻 → 跳満\n8〜10翻 → 倍満\n11〜12翻 → 三倍満',
     tip: '💡 翻数に合う点数ランクの名前を選ぼう！',
   },
-  // Chapter 10: 符を数えて点数を出してみよう（2026-11-02に第9章から独立）
+  // Chapter 10: 符を数えて点数を出してみよう（2026-11-02に第9章から独立。1つのミニゲームで覚えることは1つ）
   ch10_0: {
     icon: '🔢',
     points: [
-      '点数は<strong>翻</strong>のほかに<strong>符（フ）</strong>でも決まる。符は「アガリ形の細かい得点」',
-      '最初に<strong>副底20符</strong>。ここに条件ごとの符を足していく',
-      '最後に<strong>10符単位に切り上げる</strong>（32符→40符）',
+      '点数は<strong>翻</strong>のほかに<strong>符（フ）</strong>でも決まる',
+      'どんなアガリも、まず<strong>20符</strong>からスタート（副底）',
+      '足し終わったら<strong>10符単位に切り上げ</strong>（24符→30符）',
     ],
-    example: '門前ロン　　　　＋10符\nツモ　　　　　　＋2符\n中張牌の暗刻　　＋4符（明刻なら2符）\n么九牌の暗刻　　＋8符（明刻なら4符）\n三元牌の頭　　　＋2符\n嵌張・辺張・単騎待ち ＋2符',
-    tip: '💡 符のルールを4択から選ぼう！',
+    example: 'スタート　20符\n（ここに②〜④の分を足していく）\n合計24符 → 30符として使う',
+    tip: '💡 まずは「20から始めて、最後に切り上げ」だけ覚えよう！',
   },
   ch10_1: {
+    icon: '🀄',
+    points: [
+      '<strong>鳴かずにロン</strong>でアガったら<strong>+10符</strong>',
+      '<strong>ツモ</strong>でアガったら<strong>+2符</strong>',
+      '鳴いたあとのロンは<strong>0符</strong>',
+    ],
+    example: '鳴かずにロン　20＋10＝30符\nツモ　　　　　20＋2＝22符 → 30符',
+    tip: '💡 アガり方で足すのはこの3つだけ！',
+  },
+  ch10_2: {
+    icon: '🎲',
+    points: [
+      '同じ牌3枚（<strong>刻子</strong>）は符が付く。並び（順子）は0符',
+      '<strong>2〜8</strong>はポンで<strong>2符</strong>。<strong>1・9・字牌</strong>はその倍で<strong>4符</strong>',
+      '<strong>自分でそろえた</strong>（暗刻）ら、さらに<strong>倍</strong>',
+    ],
+    example: '　　　　　ポン　自分で\n2〜8　　　2符　　4符\n1・9・字　4符　　8符',
+    tip: '💡 「1・9・字で倍、自分でそろえて倍」と覚えよう！',
+  },
+  ch10_3: {
+    icon: '⏳',
+    points: [
+      '<strong>1種類しか待てない形</strong>でアガったら<strong>+2符</strong>',
+      '真ん中待ち（4・6で5）、端待ち（1・2で3）、頭の1枚待ち',
+      '両側で待てる形（4・5で3か6）は<strong>0符</strong>。<strong>頭が役牌</strong>（白・發・中など）なら<strong>+2符</strong>',
+    ],
+    example: '4萬6萬で5萬待ち　＋2符\n4萬5萬で3萬・6萬待ち　0符\n頭が中中　＋2符',
+    tip: '💡 待ちが狭いほどごほうびがある、と考えよう！',
+  },
+  ch10_4: {
     icon: '🧮',
     points: [
       '手牌の形から、符を<strong>上から順に足していく</strong>',
@@ -692,7 +722,7 @@ var CH_INTROS = {
     example: '副底20＋門前ロン10＝30符\n副底20＋ツモ2＋中張牌の暗刻4＝26符 → 切り上げて30符',
     tip: '💡 手牌と和了牌を見て、符を選ぼう！答え合わせで内訳が出るよ',
   },
-  ch10_2: {
+  ch10_5: {
     icon: '💯',
     points: [
       '<strong>翻</strong>（役＋ドラ）と<strong>符</strong>がそろえば、点数が決まる',
@@ -1101,7 +1131,7 @@ function showFeedback(ok, msg, onNext) {
   var cls = ok ? 'feedback correct' : 'feedback incorrect';
   var icon = ok ? '✅ 正解！' : '❌ おしい！';
   fbEl.innerHTML =
-    '<div class="' + cls + '">' + icon + ' ' + esc(msg) + '</div>' +
+    '<div class="' + cls + '">' + icon + ' ' + esc(msg).replace(/\n/g, '<br>') + '</div>' +
     '<div class="next-btn-wrap"><button class="btn-next-q" id="btnNextQ">解説を読んで次へ →</button></div>';
   var btn = document.getElementById('btnNextQ');
   if (btn) btn.addEventListener('click', function() { if (onNext) onNext(); });
@@ -3237,7 +3267,19 @@ var App = {
 
       var promptHtml = q.text ? '<div class="game-instruction" style="background:rgba(0,0,0,0.18)"><strong>' + q.text + '</strong></div>' : '';
       var tilesHtml = '';
-      if (q.tiles) {
+      if (q.groups) {
+        // 2026-11-02：符の問題は、どこが面子か見えないと数えられない（ゆーしん「符の計算は分からない」）。
+        // 面子ごとに区切って並べ、和了牌に印を付ける
+        var winT = q.win, winMarked = false;
+        tilesHtml = '<div class="tiles-row tiles-groups">' + q.groups.map(function(g) {
+          return '<div class="tile-group">' + g.tiles.map(function(t) {
+            var isWin = !winMarked && winT && g.hasWin && t.suit === winT.suit && t.num === winT.num;
+            if (isWin) winMarked = true;
+            var html = Tiles.renderTile(Tiles.make(t.suit, t.num), {noHover: true, small: true, highlighted: isWin});
+            return isWin ? '<span class="win-tile">' + html + '<span class="win-label">和了牌</span></span>' : html;
+          }).join('') + (g.label ? '<div class="tile-group-label">' + g.label + '</div>' : '') + '</div>';
+        }).join('') + '</div>';
+      } else if (q.tiles) {
         var smallT = q.tiles.length > 7;
         var sortedQTiles = Tiles.sortTiles(q.tiles.map(function(t) { return Tiles.make(t.suit, t.num); }));
         tilesHtml = '<div class="tiles-row">' + sortedQTiles.map(function(t) {

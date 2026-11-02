@@ -52,7 +52,21 @@ function solve(spec) {
   if (spec.dora) list.push({ name: 'ドラ', han: spec.dora });
   var dealer = seat === 1;
   var p = Yaku.calcPoints(list, dealer, fu);
-  return { tiles: parse(spec.hand), win: wt, seat: seat, round: round, type: spec.type, yaku: list, fu: fu, fuDetail: fuDetail, p: p, dealer: dealer, spec: spec };
+  return { tiles: parse(spec.hand), groups: shapeGroups(yaku.shape, win), win: wt, seat: seat, round: round, type: spec.type, yaku: list, fu: fu, fuDetail: fuDetail, p: p, dealer: dealer, spec: spec };
+}
+
+// 2026-11-02：手牌を面子ごとに区切って見せるため、点数計算が選んだ分け方をそのまま並べる（頭は最後）
+function shapeGroups(shape, win) {
+  function plain(list) { return list.map(function(t) { return { suit: t.suit, num: t.num }; }); }
+  function hasWin(list) { return list.some(function(t) { return t.id === win.id; }); }
+  function group(tiles, label) {
+    var g = { tiles: plain(tiles), label: label };
+    if (hasWin(tiles)) g.hasWin = true;   // 和了牌の入った面子だけに付ける（アプリ側の書き方と同じ）
+    return g;
+  }
+  var out = shape.groups.map(function(g) { return group(g.tiles, g.kind === 'sequence' ? '順子' : '刻子'); });
+  out.push(group(shape.pair, '頭'));
+  return out;
 }
 
 function situation(s) {
@@ -65,6 +79,12 @@ function situation(s) {
 }
 function fuText(s) {
   return s.fuDetail.map(function(d) { return d.name + d.fu; }).join('＋');
+}
+// 答え合わせで1行ずつ見せる内訳
+function fuLines(s) {
+  return s.fuDetail.map(function(d, i) {
+    return (i === 0 ? '' : '＋') + d.name + ' ' + d.fu + '符';
+  }).join('\n');
 }
 function pointText(s) {
   var p = s.p;
@@ -95,22 +115,22 @@ function buildCh9(specs) {
   var fuQs = specs.fu.map(function(spec) {
     var s = solve(spec);
     return {
-      tiles: s.tiles,
+      tiles: s.tiles, groups: s.groups, win: s.win,
       text: situation(s) + '何符？',
       choices: [20, 30, 40, 50].map(function(n) { return n + '符'; }),
       answer: s.fu + '符',
-      fb: s.fu + '符！内訳は ' + fuText(s) + '。'
+      fb: s.fu + '符！\n' + fuLines(s)
     };
   });
   var ptQs = specs.points.map(function(spec) {
     var s = solve(spec);
     var yakuText = s.yaku.map(function(y) { return y.name + y.han; }).join('＋');
     return {
-      tiles: s.tiles,
+      tiles: s.tiles, groups: s.groups, win: s.win,
       text: situation(s) + '点数は？',
       choices: pointChoices(s),
       answer: pointText(s),
-      fb: yakuText + '＝' + s.p.han + '翻。符は' + s.fu + '符。' + (s.p.label.indexOf('符') < 0 ? s.p.label + '！' : '') +
+      fb: '翻：' + yakuText + '＝' + s.p.han + '翻\n符：' + fuText(s) + '＝' + s.fu + '符\n' + (s.p.label.indexOf('符') < 0 ? s.p.label + '！' : '') +
         (s.dealer ? '親' : '子') + 'の' + (s.type === 'tsumo' ? 'ツモ' : 'ロン') + 'で ' + pointText(s) + '。'
     };
   });
@@ -118,11 +138,14 @@ function buildCh9(specs) {
 }
 
 function q(str) { return "'" + str + "'"; }
+function tl(list) { return '[' + list.map(function(t) { return '{suit:' + q(t.suit) + ',num:' + t.num + '}'; }).join(',') + ']'; }
 function emit(x) {
-  return '          { tiles: [' + x.tiles.map(function(t) { return '{suit:' + q(t.suit) + ',num:' + t.num + '}'; }).join(',') + '],\n' +
+  return '          { tiles: ' + tl(x.tiles) + ',\n' +
+    '            groups: [' + x.groups.map(function(g) { return '{tiles:' + tl(g.tiles) + ',label:' + q(g.label) + (g.hasWin ? ',hasWin:true' : '') + '}'; }).join(',') + '],\n' +
+    '            win: {suit:' + q(x.win.suit) + ',num:' + x.win.num + '},\n' +
     '            text: ' + q(x.text) + ',\n' +
     '            choices: [' + x.choices.map(q).join(',') + '], answer: ' + q(x.answer) + ',\n' +
-    '            fb: ' + q(x.fb) + ' },';
+    '            fb: ' + q(x.fb.replace(/\n/g, '\\n')) + ' },';
 }
 // テストから読み込むときは SPECS を定義しない（関数だけ使う）
 if (typeof SPECS !== 'undefined') {

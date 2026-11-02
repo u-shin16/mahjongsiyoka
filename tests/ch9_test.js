@@ -12,10 +12,11 @@ function ok(title, cond) { if (cond) __pass++; else { __fail++; __fails.push(tit
 
 var specs = JSON.parse(readFile('ch9_specs.json'));
 var built = buildCh9(specs);
-// 2026-11-02：符と点数（旧④〜⑥）を第10章へ独立させた。ここでは第9章の①〜③と第10章の①〜③を続けて並べて、旧来の6つとして確かめる
+// 2026-11-02：符と点数を第10章へ独立させ、覚えることを1つずつのミニゲーム6つに分けた
+// （①20符から ②アガり方 ③同じ牌3枚 ④待ちと頭 ⑤符を数える ⑥点数を出す）
 ok('第9章のミニゲームは3つ', Chapters.ch9.mgs.length === 3);
-ok('第10章のミニゲームは3つ', Chapters.ch10.mgs.length === 3);
-var mgs = Chapters.ch9.mgs.concat(Chapters.ch10.mgs);
+var mgs = Chapters.ch10.mgs;
+ok('第10章のミニゲームは6つ', mgs.length === 6);
 
 function compareSet(title, data, mg) {
   ok(title + '：問題数が同じ', mg.questions.length === data.length);
@@ -26,6 +27,11 @@ function compareSet(title, data, mg) {
     ok(name + '：答えが計算結果と同じ（' + d.answer + '）', q.answer === d.answer);
     ok(name + '：解説が計算結果と同じ', q.fb === d.fb);
     ok(name + '：手牌が同じ', JSON.stringify(q.tiles) === JSON.stringify(d.tiles));
+    ok(name + '：面子の区切りが計算と同じ', JSON.stringify(q.groups) === JSON.stringify(d.groups));
+    ok(name + '：和了牌が同じ', JSON.stringify(q.win) === JSON.stringify(d.win));
+    var flat = [].concat.apply([], (q.groups || []).map(function(g) { return g.tiles; }));
+    ok(name + '：区切った牌を合わせると14枚', flat.length === 14);
+    ok(name + '：和了牌の入った面子がちょうど1つ', (q.groups || []).filter(function(g) { return g.hasWin; }).length === 1);
     ok(name + '：選択肢が同じ', JSON.stringify((q.choices || []).slice().sort()) === JSON.stringify(d.choices.slice().sort()));
   });
 }
@@ -59,10 +65,10 @@ var yaochuTri = Yaku.computeFu({ chiitoitsu: false, pair: [{suit:'man',num:5},{s
 ] }, false, 2, 1, 'tsumo', null, []);
 var detail = yaochuTri.detail.map(function(d) { return d.name + d.fu; }).join(',');
 ok('么九牌の暗刻は8符（' + detail + '）', yaochuTri.detail.some(function(d) { return d.fu === 8; }));
-var s4 = mgs[3].questions;
-ok('⑥符のしくみ：么九牌の暗刻の答えは8符', s4.some(function(q) { return /么九牌/.test(q.text) && q.answer === '8符'; }));
-ok('⑥符のしくみ：副底の答えは20符', s4.some(function(q) { return /副底/.test(q.text) && q.answer === '20符'; }));
-ok('⑥符のしくみ：32符は40符へ切り上げ', s4.some(function(q) { return /32符/.test(q.text) && q.answer === '40符'; }));
+var s1 = mgs[0].questions, s3 = mgs[2].questions;
+ok('①：副底の答えは20符', s1.some(function(q) { return /副底/.test(q.text) && q.answer === '20符'; }));
+ok('①：32符は40符へ切り上げ', s1.some(function(q) { return /32符/.test(q.text) && q.answer === '40符'; }));
+ok('③：9筒の暗刻の答えは8符', s3.some(function(q) { return /9筒/.test(q.text) && /暗刻/.test(q.text) && q.answer === '8符'; }));
 
 print('=== 第9章（翻・符・点数）の問題のテスト ===');
 print('通過: ' + __pass + ' / 失敗: ' + __fail);

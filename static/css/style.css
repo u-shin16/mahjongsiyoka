@@ -7470,3 +7470,10 @@ body.is-battle-page .jt-table {
 
 /* 和了画面の符の内訳（2026-10-22） */
 .fr-fu-detail { font-size: 0.74rem; color: #a8d8b0; margin: -2px 0 8px; line-height: 1.6; }
+
+/* 2026-11-02：第10章（符）で、手牌を面子ごとに区切って見せる */
+.tiles-groups { gap: 14px; }
+.tile-group { display: flex; flex-wrap: nowrap; gap: 2px; align-items: flex-end; position: relative; padding-bottom: 18px; }
+.tile-group-label { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 0.72rem; color: #a8d8b0; white-space: nowrap; }
+.win-tile { position: relative; display: inline-flex; }
+.win-label { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 0.66rem; color: var(--gold, #f5c542); white-space: nowrap; font-weight: 700; }
