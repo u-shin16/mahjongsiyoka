@@ -302,7 +302,7 @@ const Chapters = (() => {
     mg3: null,
     mg4: null,
     // 2026-09-05：カンの説明がどこにも無かったので足した。
-    // 第8章（暗カンは鳴きに数えない）・第11章（三槓子）・第12章（三麻はポン・カンOK）が
+    // 第8章（暗カンは鳴きに数えない）・第13章（三槓子）・第14章（三麻はポン・カンOK）が
     // カンを知っている前提で問うているのに、教える場所が無かった。
     // 種類（暗カン・大明カン・加カン）は分けず、「4枚そろえばカンできる」だけを教える。
     mg2: {
@@ -356,7 +356,7 @@ const Chapters = (() => {
   };
 
   // ===== Chapter 7: Review test =====
-  const ch10 = {
+  const ch11 = {
     title: '道場チャレンジ　初級試験',
     instruction: '10問に答えて段位を目指そう！',
     questions: [
@@ -552,7 +552,7 @@ const Chapters = (() => {
     ],
   };
 
-  // ===== Chapter 9: 翻を数えてみよう（翻数・ドラ・点数） =====
+  // ===== Chapter 9: 翻を数えてみよう（翻数・ドラ・点数のランク） =====
   const ch9 = {
     mgs: [
       {
@@ -595,9 +595,16 @@ const Chapters = (() => {
           { text: '13翻以上（役満相当）は何という？', choices: ['倍満','三倍満','役満','満貫'], answer: '役満', fb: '13翻以上は役満！子32000点・親48000点。' },
         ],
       },
+    ],
+  };
+
+  // ===== Chapter 10: 符を数えて点数を出してみよう（符のしくみ・符を数える・点数を出す） =====
+  // 2026-11-02：第9章に入れていた符と点数のミニゲームを独立させた（ゆーしん「翻の計算は簡単だけど符の計算は分からない」）
+  const ch10 = {
+    mgs: [
       {
         type: 'choice',
-        title: 'ミニゲーム④　符のしくみ',
+        title: 'ミニゲーム①　符のしくみ',
         instruction: '点数は<strong>翻と符</strong>で決まる。符がいくつ付くかを選ぼう！',
         passNeeded: 4,
         questions: [
@@ -611,7 +618,7 @@ const Chapters = (() => {
       },
       {
         type: 'choice',
-        title: 'ミニゲーム⑤　符を数えよう',
+        title: 'ミニゲーム②　符を数えよう',
         instruction: '手牌の符を数えよう！（副底20＋門前ロン10 など）<br><span style="font-size:0.82rem">平和ツモは20符・平和ロンは30符。ツモは+2符、待ちの形（嵌張・辺張・単騎）も+2符。</span>',
         passNeeded: 5,
         questions: [
@@ -643,7 +650,7 @@ const Chapters = (() => {
       },
       {
         type: 'choice',
-        title: 'ミニゲーム⑥　点数を出そう',
+        title: 'ミニゲーム③　点数を出そう',
         instruction: '役の翻と符から、<strong>点数</strong>を出そう！<br><span style="font-size:0.82rem">子のツモは「子の払い・親の払い」の順。親のツモは全員が同じ額。</span>',
         passNeeded: 3,
         questions: [
@@ -668,8 +675,8 @@ const Chapters = (() => {
     ],
   };
 
-  // ===== Chapter 10: 中級者向けの役（一盃口・七対子・対々和） =====
-  const ch11 = {
+  // ===== Chapter 12: 中級者向けの役（一盃口・七対子・対々和） =====
+  const ch12 = {
     mgs: [
       {
         type: 'yn',
@@ -839,8 +846,8 @@ const Chapters = (() => {
     ],
   };
 
-  // ===== Chapter 11: 上級者向けの役（清一色・二盃口・三槓子） =====
-  const ch12 = {
+  // ===== Chapter 13: 上級者向けの役（清一色・二盃口・三槓子） =====
+  const ch13 = {
     mgs: [
       {
         type: 'yn',
@@ -975,8 +982,8 @@ const Chapters = (() => {
     ],
   };
 
-  // ===== Chapter 12: 三人麻雀入門（北抜き・3人対局・三麻ルール） =====
-  const ch13 = {
+  // ===== Chapter 14: 三人麻雀入門（北抜き・3人対局・三麻ルール） =====
+  const ch14 = {
     mgs: [
       {
         type: 'yn',
@@ -1007,5 +1014,5 @@ const Chapters = (() => {
     ],
   };
 
-  return { ch6, ch1, ch2, ch3, ch4, ch5, ch7, ch8, ch9, ch10, ch11, ch12, ch13, HONOR_NAMES, COLOR_NAMES, SUIT_LABELS };
+  return { ch6, ch1, ch2, ch3, ch4, ch5, ch7, ch8, ch9, ch10, ch11, ch12, ch13, ch14, HONOR_NAMES, COLOR_NAMES, SUIT_LABELS };
 })();

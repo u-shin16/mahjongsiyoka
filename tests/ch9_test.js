@@ -12,8 +12,10 @@ function ok(title, cond) { if (cond) __pass++; else { __fail++; __fails.push(tit
 
 var specs = JSON.parse(readFile('ch9_specs.json'));
 var built = buildCh9(specs);
-var mgs = Chapters.ch9.mgs;
-ok('第9章のミニゲームは6つ', mgs.length === 6);
+// 2026-11-02：符と点数（旧④〜⑥）を第10章へ独立させた。ここでは第9章の①〜③と第10章の①〜③を続けて並べて、旧来の6つとして確かめる
+ok('第9章のミニゲームは3つ', Chapters.ch9.mgs.length === 3);
+ok('第10章のミニゲームは3つ', Chapters.ch10.mgs.length === 3);
+var mgs = Chapters.ch9.mgs.concat(Chapters.ch10.mgs);
 
 function compareSet(title, data, mg) {
   ok(title + '：問題数が同じ', mg.questions.length === data.length);

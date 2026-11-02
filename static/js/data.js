@@ -32,11 +32,13 @@ var GameData = (function() {
     { id:6,  tier:'core',     title:'対局のルールを\n覚えよう', short:'対局のルール', diff:1, min:5, topics:['対局の進め方','ロンとツモ'] },
     { id:7,  tier:'core',     title:'鳴きを使ってみよう', short:'ポン・チー・カン', diff:3, min:6, topics:['ポン・チーの判定','鳴けない場合の判定','カンの判定'] },
     { id:8,  tier:'core',     title:'初心者向けの役', short:'基本の役', diff:3, min:28, topics:['役が無いとアガれない','フリテン','立直','タンヤオ','平和','一発'] },
-    { id:9,  tier:'practice', title:'翻と符を数えて\n点数を出してみよう', short:'翻・符・点数', diff:3, min:20, topics:['翻数','ドラ','符','点数'] },
-    { id:10, tier:'test',     title:'復習テスト\n道場チャレンジ', short:'道場チャレンジ', diff:2, min:10, topics:['全章復習','10問テスト','段位評価'] },
-    { id:11, tier:'practice', title:'中級者向けの役', short:'中級役', diff:3, min:40, topics:['一盃口','三色同順','三色同刻','対々和','一気通貫','三暗刻'] },
-    { id:12, tier:'practice', title:'上級者向けの役', short:'上級役', diff:3, min:35, topics:['清一色','混一色','二盃口','三槓子','純全帯幺九'] },
-    { id:13, tier:'advanced', title:'三人麻雀入門', short:'三麻', diff:3, min:12, topics:['北抜き','3人対局','三麻ルール'] },
+    { id:9,  tier:'practice', title:'翻を数えてみよう', short:'翻とドラ', diff:2, min:10, topics:['翻数','ドラ','点数のランク'] },
+    // 2026-11-02：符と点数を第9章から独立させた（ゆーしん「翻の計算は簡単だけど符の計算は分からない」）
+    { id:10, tier:'practice', title:'符を数えて\n点数を出してみよう', short:'符と点数', diff:3, min:12, topics:['符のしくみ','符を数える','点数を出す'] },
+    { id:11, tier:'test',     title:'復習テスト\n道場チャレンジ', short:'道場チャレンジ', diff:2, min:10, topics:['全章復習','10問テスト','段位評価'] },
+    { id:12, tier:'practice', title:'中級者向けの役', short:'中級役', diff:3, min:40, topics:['一盃口','三色同順','三色同刻','対々和','一気通貫','三暗刻'] },
+    { id:13, tier:'practice', title:'上級者向けの役', short:'上級役', diff:3, min:35, topics:['清一色','混一色','二盃口','三槓子','純全帯幺九'] },
+    { id:14, tier:'advanced', title:'三人麻雀入門', short:'三麻', diff:3, min:12, topics:['北抜き','3人対局','三麻ルール'] },
   ];
 
   var YAKU = [
@@ -85,7 +87,7 @@ var GameData = (function() {
       id:'iipeiko', name:'一盃口', reading:'イーペーコー', han:1, hanOpen:null,
       condition:'同じ種類・同じ数字並びの順子を2つ作る役。門前必須。',
       mistake:'鳴いているとつかない。',
-      chapter:10,
+      chapter:12,
       example:[_m(2),_m(3),_m(4),_m(2),_m(3),_m(4),_p(5),_p(6),_p(7),_s(1),_s(2),_s(3),_p(9),_p(9)],
       winTile:_p(9), winNote:'2-3-4萬が2セット＝一盃口'
     },
@@ -93,7 +95,7 @@ var GameData = (function() {
       id:'yakuhai_dragon', name:'役牌（三元牌）', reading:'ヤクハイ（サンゲンパイ）', han:1, hanOpen:1,
       condition:'白・發・中（三元牌）を3枚揃える役。',
       mistake:'三元牌は場風・自風に関係なく、いつでも役牌になる。',
-      chapter:4,
+      chapter:5,
       example:[_m(1),_m(2),_m(3),_p(4),_p(5),_p(6),_s(7),_s(8),_s(9),_d(3),_d(3),_d(3),_m(5),_m(5)],
       winTile:_m(5), winNote:'中（中）の刻子で役牌（三元牌）成立'
     },
@@ -101,7 +103,7 @@ var GameData = (function() {
       id:'yakuhai_wind', name:'役牌（風牌）', reading:'ヤクハイ（フォンパイ）', han:1, hanOpen:1,
       condition:'場の風・自分の風の牌を3枚揃える役。',
       mistake:'自風でも場風でもない風牌の刻子は役にならない。',
-      chapter:4,
+      chapter:5,
       example:[_m(1),_m(2),_m(3),_p(4),_p(5),_p(6),_s(7),_s(8),_s(9),_w(1),_w(1),_w(1),_m(5),_m(5)],
       winTile:_m(5), winNote:'東（場風）の刻子で役牌（風牌）成立'
     },
@@ -150,7 +152,7 @@ var GameData = (function() {
       id:'renpuhai', name:'連風牌', reading:'レンプウハイ', han:2, hanOpen:2,
       condition:'場風と自風が同じとき（例：東場の東家のダブ東）、その風牌の刻子は役牌が2つ重なり2翻になる。',
       mistake:'場風か自風どちらか一方だけなら通常の役牌で1翻。',
-      chapter:4,
+      chapter:5,
       example:[_w(1),_w(1),_w(1),_m(2),_m(3),_m(4),_p(5),_p(6),_p(7),_s(3),_s(4),_s(5),_p(9),_p(9)],
       winTile:_s(5), winNote:'東場の東家で東の刻子（ダブ東）'
     },
@@ -158,7 +160,7 @@ var GameData = (function() {
       id:'sanshoku', name:'三色同順', reading:'サンショクドウジュン', han:2, hanOpen:1,
       condition:'萬子・筒子・索子の3種類で、同じ数字の順子を1つずつ作る。',
       mistake:'3種類すべてに同じ順子が必要。1種類でも違うとNG。',
-      chapter:10,
+      chapter:12,
       example:[_m(2),_m(3),_m(4),_p(2),_p(3),_p(4),_s(2),_s(3),_s(4),_m(7),_m(8),_m(9),_p(6),_p(6)],
       winTile:_p(6), winNote:'2-3-4が萬・筒・索すべてに'
     },
@@ -166,7 +168,7 @@ var GameData = (function() {
       id:'ittsu', name:'一気通貫', reading:'イッキツウカン', han:2, hanOpen:1,
       condition:'同じ種類で1-2-3・4-5-6・7-8-9の3つの順子を作る役。',
       mistake:'全部同じ種類の牌でないとNG。',
-      chapter:10,
+      chapter:12,
       example:[_m(1),_m(2),_m(3),_m(4),_m(5),_m(6),_m(7),_m(8),_m(9),_p(3),_p(4),_p(5),_s(6),_s(6)],
       winTile:_s(6), winNote:'萬子で1-2-3、4-5-6、7-8-9'
     },
@@ -174,7 +176,7 @@ var GameData = (function() {
       id:'chanta', name:'混全帯么九', reading:'チャンタ', han:2, hanOpen:1,
       condition:'全ての面子と雀頭に1・9・字牌が絡む役。',
       mistake:'どれか1つでも1・9・字牌が入っていないとNG。',
-      chapter:10,
+      chapter:12,
       example:[_m(1),_m(2),_m(3),_p(7),_p(8),_p(9),_s(1),_s(2),_s(3),_w(1),_w(1),_w(1),_m(9),_m(9)],
       winTile:_m(9), winNote:'すべての面子・頭に1/9/字牌'
     },
@@ -182,7 +184,7 @@ var GameData = (function() {
       id:'chiitoi', name:'七対子', reading:'チートイツ', han:2, hanOpen:null,
       condition:'7種類の対子（2枚ペア）だけで手を作る役。同じ牌を4枚使うのはNG。',
       mistake:'同じ種類の対子を2つ使うのは認められない場合が多い。',
-      chapter:10,
+      chapter:12,
       example:[_m(1),_m(1),_m(3),_m(3),_p(5),_p(5),_p(7),_p(7),_s(2),_s(2),_s(4),_s(4),_w(1),_w(1)],
       winTile:_w(1), winNote:'7種類の対子のみで構成'
     },
@@ -190,7 +192,7 @@ var GameData = (function() {
       id:'toitoi', name:'対々和', reading:'トイトイ', han:2, hanOpen:2,
       condition:'全部刻子（同じ牌3枚）で揃える役。順子なし。',
       mistake:'順子が1つでもあるとつかない。',
-      chapter:10,
+      chapter:12,
       example:[_m(3),_m(3),_m(3),_p(5),_p(5),_p(5),_s(7),_s(7),_s(7),_w(2),_w(2),_w(2),_d(1),_d(1)],
       winTile:_d(1), winNote:'すべて刻子のみ'
     },
@@ -198,7 +200,7 @@ var GameData = (function() {
       id:'sananko', name:'三暗刻', reading:'サンアンコウ', han:2, hanOpen:2,
       condition:'暗刻（自分でツモって作った刻子）を3つ作る。',
       mistake:'ロンで完成した刻子は暗刻に数えない。',
-      chapter:10,
+      chapter:12,
       example:[_m(3),_m(3),_m(3),_p(5),_p(5),_p(5),_s(7),_s(7),_s(7),_m(1),_m(2),_m(3),_p(8),_p(8)],
       winTile:_p(8), winNote:'3つの刻子をすべて自分でツモって作る'
     },
@@ -206,7 +208,7 @@ var GameData = (function() {
       id:'sankantsu', name:'三槓子', reading:'サンカンツ', han:2, hanOpen:2,
       condition:'カンを3回行い、槓子を3つ作る役。',
       mistake:'3回カンしないとつかない。難しい役。',
-      chapter:11,
+      chapter:13,
       example:[_m(5),_m(5),_m(5),_m(5),_p(3),_p(3),_p(3),_p(3),_s(9),_s(9),_s(9),_s(9),_m(7),_m(7)],
       winTile:_m(7), winNote:'3種の槓子（カン3回）で構成'
     },
@@ -222,7 +224,7 @@ var GameData = (function() {
       id:'shosangen', name:'小三元', reading:'ショウサンゲン', han:2, hanOpen:2,
       condition:'白・發・中のうち2つを刻子にし、残り1つを雀頭にする役。',
       mistake:'3つすべて刻子にすると大三元（役満）になる。',
-      chapter:10,
+      chapter:12,
       example:[_m(1),_m(2),_m(3),_d(1),_d(1),_d(1),_d(2),_d(2),_d(2),_p(4),_p(5),_p(6),_d(3),_d(3)],
       winTile:_d(3), winNote:'白・發が刻子、中が頭'
     },
@@ -230,7 +232,7 @@ var GameData = (function() {
       id:'honroto', name:'混老頭', reading:'ホンロウトウ', han:2, hanOpen:2,
       condition:'1・9・字牌だけで手を作る役。対々和または七対子との複合。',
       mistake:'2〜8の牌が入るとつかない。',
-      chapter:11,
+      chapter:13,
       example:[_m(1),_m(1),_m(1),_m(9),_m(9),_m(9),_p(1),_p(1),_p(1),_w(1),_w(1),_w(1),_s(9),_s(9)],
       winTile:_s(9), winNote:'すべて1・9・字牌のみ'
     },
@@ -239,7 +241,7 @@ var GameData = (function() {
       id:'ryanpeiko', name:'二盃口', reading:'リャンペーコー', han:3, hanOpen:null,
       condition:'一盃口（同じ順子2つ）を2セット作る役。門前必須。',
       mistake:'鳴いているとつかない。',
-      chapter:11,
+      chapter:13,
       example:[_m(1),_m(2),_m(3),_m(1),_m(2),_m(3),_p(4),_p(5),_p(6),_p(4),_p(5),_p(6),_s(8),_s(8)],
       winTile:_s(8), winNote:'一盃口が2セット＝二盃口'
     },
@@ -247,7 +249,7 @@ var GameData = (function() {
       id:'junchan', name:'純全帯么九', reading:'ジュンチャン', han:3, hanOpen:2,
       condition:'全ての面子と雀頭に1・9が絡む役。字牌は使わない。',
       mistake:'字牌が入るとチャンタになる。',
-      chapter:11,
+      chapter:13,
       example:[_m(1),_m(2),_m(3),_p(7),_p(8),_p(9),_s(1),_s(2),_s(3),_m(7),_m(8),_m(9),_p(1),_p(1)],
       winTile:_p(1), winNote:'すべての面子・頭に1か9が入る'
     },
@@ -273,7 +275,7 @@ var GameData = (function() {
       id:'chinitsu', name:'清一色', reading:'チンイツ', han:6, hanOpen:5,
       condition:'1種類の数牌だけで手を作る役。字牌も使えない。',
       mistake:'字牌が1枚でも入るとホンイツになる。',
-      chapter:11,
+      chapter:13,
       example:[_m(1),_m(2),_m(3),_m(4),_m(5),_m(6),_m(7),_m(8),_m(9),_m(3),_m(4),_m(5),_m(7),_m(7)],
       winTile:_m(7), winNote:'萬子のみ14枚で構成'
     },
