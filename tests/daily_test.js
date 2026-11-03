@@ -93,7 +93,12 @@ check('14日目で牌「藍」', Daily.isUnlocked('tile', 'indigo', 14) && !Dail
 check('牌は表と裏の色をセットで持つ', Object.keys(Daily.TILES).every(function(k) { var t = Daily.TILES[k]; return t.face && t.back && t.face.a && t.back.c; }));
 check('10日目で背景「紺」', Daily.isUnlocked('bg', 'navy', 10) && !Daily.isUnlocked('bg', 'navy', 9));
 check('50日目は牌の表「桜」と称号', Daily.rewardsBetween(49, 50).map(function(r) { return r.id; }).join(',') === 'sakura,麻雀の達人');
-check('100日目の称号', Daily.rewardsBetween(99, 100).length === 1 && Daily.nextReward(100) === null);
+check('100日目は称号と金の卓', Daily.rewardsBetween(99, 100).map(function(r) { return r.id; }).join(',') === '百日の打ち手,gold' && Daily.nextReward(100) === null);
+// 2026-11-03に足した派手な特典。今の特典の日数は変えない（もらった人が失わないように）
+check('20日目は紅の卓・25日目は金の牌', Daily.rewardsBetween(19, 25).map(function(r) { return r.id; }).join(',') === 'crimson,gold');
+check('足した特典に名前がある', Daily.rewardName({ type: 'tile', id: 'jade' }) === '牌「翡翠」' && Daily.rewardName({ type: 'table', id: 'kokukin' }) === '卓「黒金の卓」' && Daily.rewardName({ type: 'bg', id: 'murasaki' }) === '背景「紫」');
+var sheetsOk = Object.keys(Daily.TILES).every(function(id) { var t = Daily.TILES[id]; return t.face && t.back && (t.sheet === null || /^\/static\/img\/mahjong-tiles-[a-z]+\.jpg$/.test(t.sheet)); });
+check('牌はどれも表と裏の色を持つ', sheetsOk);
 check('特典の名前', Daily.rewardName({ type: 'tile', id: 'sakura' }) === '牌「桜」' && Daily.rewardName({ type: 'bg', id: 'sumi' }) === '背景「墨」');
 var allNamed = Daily.REWARDS.every(function(r) { return Daily.rewardName(r).length > 0; });
 check('すべての特典に名前がある', allNamed);

@@ -340,6 +340,28 @@ button { font-family: inherit; cursor: pointer; }
 .daily-reward ul { list-style: none; padding: 0; margin: 0 0 10px; }
 .daily-reward li { padding: 6px 0; font-weight: 700; }
 .daily-reward p { font-size: 0.85rem; margin-bottom: 12px; }
+.daily-reward { position: relative; }
+.daily-reward h3 { color: var(--gold); font-size: 1.45rem; text-shadow: 0 0 14px rgba(255,215,94,0.55); }
+.daily-reward li.title { font-size: 1.15rem; color: var(--gold); }
+.daily-reward-stage { margin: 4px auto 12px; padding: 14px; border-radius: 12px; max-width: 320px;
+  box-shadow: 0 0 0 2px rgba(255,215,94,0.5), 0 0 28px rgba(255,215,94,0.35); animation: rewardPop 0.5s ease-out both; }
+.daily-reward-felt { display: flex; justify-content: center; gap: 6px; padding: 18px 10px; border: 6px solid; border-radius: 10px; }
+.daily-reward-confetti { position: absolute; inset: -28px -24px auto; height: 0; pointer-events: none; }
+.daily-reward-confetti i { position: absolute; top: 0; width: 8px; height: 12px; border-radius: 2px; opacity: 0;
+  animation-name: rewardFall; animation-timing-function: ease-in; animation-fill-mode: forwards; }
+@keyframes rewardFall {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(420px) rotate(540deg); opacity: 0; }
+}
+@keyframes rewardPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .daily-reward-confetti { display: none; }
+  .daily-reward-stage { animation: none; }
+}
 
 /* 見た目を選ぶ欄（学習進捗） */
 .look-note { font-size: 0.82rem; margin: 0 0 10px; opacity: 0.85; }

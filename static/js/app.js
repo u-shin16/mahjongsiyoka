@@ -2394,14 +2394,49 @@ var App = {
     });
   },
 
+  // もらった牌・卓・背景で組んだ見本。もらっていないものは今使っている見た目で埋める
+  _rewardStageHtml: function(rewards) {
+    var look = Progress.getLook();
+    var got = {};
+    rewards.forEach(function(r) { if (r.type !== 'title') got[r.type] = r.id; });
+    if (!Object.keys(got).length) return '';
+    var pick = function(type, list) { return list[got[type] || look[type]] || list['default']; };
+    var tile = pick('tile', Daily.TILES), table = pick('table', Daily.TABLES), bg = pick('bg', Daily.BGS);
+    // 牌の画像は window.MJ_TILE_SHEET で決まるので、見本を描く間だけ差し替える
+    var saved = window.MJ_TILE_SHEET;
+    window.MJ_TILE_SHEET = tile.sheet || null;
+    var tiles = [Tiles.make('man', 1), Tiles.make('pin', 5), Tiles.make('dragon', 3)].map(function(t) {
+      return Tiles.renderTile(t, { noHover: true });
+    }).join('') + Tiles.renderTile({ suit: 'back', num: 0, id: 'rewardBack' }, { faceDown: true, noHover: true });
+    window.MJ_TILE_SHEET = saved;
+    var vars = '--face-a:' + tile.face.a + ';--face-b:' + tile.face.b + ';--face-c:' + tile.face.c +
+      ';--back-a:' + tile.back.a + ';--back-b:' + tile.back.b + ';--back-c:' + tile.back.c;
+    return '<div class="daily-reward-stage" style="background:' + bg.color + '">' +
+      '<div class="daily-reward-felt" style="' + vars + ';background:radial-gradient(ellipse at 50% 50%,' + table.a + ' 0%,' + table.b + ' 100%);border-color:' + table.frame + '">' +
+      tiles + '</div></div>';
+  },
+
+  _rewardConfettiHtml: function() {
+    var colors = ['#ffd75e', '#ff5a6e', '#5ad1ff', '#7dff9a', '#ffffff', '#c58bff'];
+    var html = '';
+    for (var i = 0; i < 28; i++) {
+      html += '<i style="left:' + Math.round(Math.random() * 100) + '%;background:' + colors[i % colors.length] +
+        ';animation-delay:' + (Math.random() * 0.8).toFixed(2) + 's;animation-duration:' + (1.6 + Math.random() * 1.4).toFixed(2) + 's"></i>';
+    }
+    return '<div class="daily-reward-confetti" aria-hidden="true">' + html + '</div>';
+  },
+
   _showDailyRewards: function(rewards, days) {
     var self = this;
     var looks = rewards.filter(function(r) { return r.type !== 'title'; });
     var loggedIn = !!(window.Auth && Auth.enabled() && Auth.user());
-    showOverlay('<div class="daily-reward">' +
+    // 2026-11-03：ゆーしん「もらった瞬間の演出も派手に」→ 文字だけだったのを、
+    // もらった牌・卓・背景で組んだ見本を大きく出し、紙吹雪で祝う形にした
+    showOverlay('<div class="daily-reward">' + this._rewardConfettiHtml() +
       '<div class="daily-reward-days">答えた日 合計' + days + '日</div>' +
       '<h3>ごほうびをもらいました</h3>' +
-      '<ul>' + rewards.map(function(r) { return '<li>' + Daily.rewardName(r) + '</li>'; }).join('') + '</ul>' +
+      this._rewardStageHtml(rewards) +
+      '<ul>' + rewards.map(function(r) { return '<li' + (r.type === 'title' ? ' class="title"' : '') + '>' + Daily.rewardName(r) + '</li>'; }).join('') + '</ul>' +
       (looks.length ? '<p>牌の裏や卓の色は「学習進捗」で選べます。</p>' : '') +
       (loggedIn ? '' : '<p class="daily-reward-login">ログインすると、特典と日数がずっと残ります。<br>（ログインしないと、このブラウザにしか残りません）</p>') +
       '<div class="btn-row">' +

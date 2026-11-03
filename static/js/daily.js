@@ -13,6 +13,8 @@ var Daily = (function() {
   var RETRY_AFTER_DAYS = 2;
 
   // 合計日数ごとのごほうび。数字は小さい順に並べる
+  // 2026-11-03：ゆーしん「もらっても嬉しくない」「もうちょっと派手にする」→ 落ち着いた色しか無かったので、
+  // 紅・金・紫・翡翠・黒金・金の卓を足した。日数が多いほど派手にしてある
   // 2026-10-15：牌の表と裏を別々の特典にしていたが、ゆーしん「牌だけで一つのものにして」→
   // 表の色と裏の色をセットにした「牌」1つにまとめた
   var REWARDS = [
@@ -22,12 +24,18 @@ var Daily = (function() {
     { days: 7,   type: 'table', id: 'night' },
     { days: 10,  type: 'bg',    id: 'navy' },
     { days: 14,  type: 'tile',  id: 'indigo' },
+    { days: 20,  type: 'table', id: 'crimson' },
+    { days: 25,  type: 'tile',  id: 'gold' },
     { days: 30,  type: 'title', id: '麻雀の常連' },
     { days: 30,  type: 'table', id: 'wine' },
     { days: 40,  type: 'bg',    id: 'sumi' },
     { days: 50,  type: 'tile',  id: 'sakura' },
     { days: 50,  type: 'title', id: '麻雀の達人' },
+    { days: 60,  type: 'bg',    id: 'murasaki' },
+    { days: 70,  type: 'tile',  id: 'jade' },
+    { days: 80,  type: 'table', id: 'kokukin' },
     { days: 100, type: 'title', id: '百日の打ち手' },
+    { days: 100, type: 'table', id: 'gold' },
   ];
 
   // 牌のデザイン（表と裏のセット）
@@ -42,12 +50,17 @@ var Daily = (function() {
       face: { a: '#f4f9ff', b: '#e1ecfb', c: '#c9d9ee' }, back: { a: '#6f8fd0', b: '#3c5ea8', c: '#1d3268' } },
     'sakura':  { name: '桜',   sheet: '/static/img/mahjong-tiles-sakura.jpg',
       face: { a: '#fff6f8', b: '#fbe3ea', c: '#efc9d4' }, back: { a: '#eda3b7', b: '#c96f8a', c: '#86364f' } },
+    'gold':    { name: '金',   sheet: '/static/img/mahjong-tiles-gold.jpg',
+      face: { a: '#fff1c4', b: '#ffd970', c: '#e0a92c' }, back: { a: '#ffe27a', b: '#e0a514', c: '#7a5200' } },
+    'jade':    { name: '翡翠', sheet: '/static/img/mahjong-tiles-jade.jpg',
+      face: { a: '#f0fff4', b: '#c9eed4', c: '#9fd6b2' }, back: { a: '#4fd6a0', b: '#0f9a68', c: '#04452c' } },
   };
   // アプリ全体の背景色
   var BGS = {
     'default': { name: '深緑', color: '#1a3a2a' },
     'navy':    { name: '紺',   color: '#16263d' },
     'sumi':    { name: '墨',   color: '#1f2124' },
+    'murasaki':{ name: '紫',   color: '#2c1745' },
   };
   var LOOK_TYPES = ['tile', 'table', 'bg'];
 
@@ -56,6 +69,9 @@ var Daily = (function() {
     'default': { name: '緑の卓',   a: '#1e7040', b: '#124d2a', frame: '#5a3012' },
     'night':   { name: '夜の卓',   a: '#24476f', b: '#122740', frame: '#3a2a1a' },
     'wine':    { name: 'えんじの卓', a: '#7a2e3a', b: '#45161e', frame: '#2e1a10' },
+    'crimson': { name: '紅の卓',   a: '#c8172f', b: '#6e0814', frame: '#d4a537' },
+    'kokukin': { name: '黒金の卓', a: '#34343a', b: '#0b0b0d', frame: '#e3b742' },
+    'gold':    { name: '金の卓',   a: '#e2b043', b: '#8a5d0e', frame: '#3a1f05' },
   };
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
