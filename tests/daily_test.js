@@ -105,4 +105,29 @@ check('すべての特典に名前がある', allNamed);
 var ordered = Daily.REWARDS.every(function(r, i, a) { return i === 0 || a[i - 1].days <= r.days; });
 check('特典は日数の小さい順', ordered);
 
+// 符と点数（2026-11-07）：第10章の問題を、第10章をクリアした人にだけ混ぜる
+var fuData = { TERMS: GameData.TERMS, YAKU: GameData.YAKU, FU: Daily.fuList(Chapters.ch10) };
+var fuCount = Chapters.ch10.mgs.reduce(function(n, mg) { return n + mg.questions.length; }, 0);
+check('第10章の問題がすべて取り出せる', fuData.FU.length === fuCount && fuCount >= 20);
+var fuBad = 0;
+fuData.FU.forEach(function(f) {
+  var q = Daily.questionFor('f:' + f.id, fuData, '2026-11-07');
+  if (!q || q.choices.indexOf(q.correct) < 0 || q.choices.length !== f.q.choices.length || !q.explanation) fuBad++;
+});
+check('符・点数のすべてで問題が作れる', fuBad === 0);
+var q5 = Daily.questionFor('f:4-0', fuData, '2026-11-07');
+check('手牌の問題は面子の区切りと和了牌を持つ', q5.groups && q5.groups.length === 5 && q5.win && q5.tag === '符');
+check('点数の問題の分類は「点数」', Daily.questionFor('f:5-0', fuData, '2026-11-07').tag === '点数');
+var fuBefore = 0, fuAfter = 0;
+for (var dd = 0; dd < 120; dd++) {
+  var dayX = Daily.addDays('2026-11-01', dd);
+  if (Daily.pickKey(s0, dayX, fuData, 9).indexOf('f:') === 0) fuBefore++;
+  if (Daily.pickKey(s0, dayX, fuData, 10).indexOf('f:') === 0) fuAfter++;
+}
+check('第10章をクリアする前は出ない', fuBefore === 0);
+check('第10章をクリアしたら3日に1回くらい出る', fuAfter >= 25 && fuAfter <= 55);
+var rf = Daily.answer(s0, '2026-11-07', 'f:4-3', false);
+check('間違えた符の問題は2日後に先に出る', Daily.pickKey(rf.state, '2026-11-09', fuData, 10) === 'f:4-3');
+check('符のデータが無くても用語・役は出る', Daily.pickKey(s0, '2026-11-07', GameData, 10).indexOf('f:') !== 0);
+
 print('通過: ' + __pass + ' / 失敗: ' + __fail);

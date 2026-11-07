@@ -37,7 +37,7 @@ run_suite waits_test.js "$WORK/tiles.js" "$WORK/agari.js"
 run_suite api_test.js   "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK/battle.js"
 run_suite waitmark_test.js "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK/battle.js"
 run_suite quiz_test.js     "$WORK/tiles.js" "$WORK/agari.js" "$WORK/yaku.js" "$WORK/data.js" "$WORK/chapters.js"
-run_suite daily_test.js    "$WORK/tiles.js" "$WORK/data.js" "$WORK/daily.js"
+run_suite daily_test.js    "$WORK/tiles.js" "$WORK/data.js" "$WORK/chapters.js" "$WORK/daily.js"
 _out=$(cd "$WORK" && "$JSC" -e "var FU_CASES='fu_reference.json';" tiles.js agari.js yaku.js fu_test.js 2>&1)
 echo "$_out"
 echo "$_out" | grep -q '失敗: 0' || FAILED=1

@@ -226,6 +226,10 @@ button { font-family: inherit; cursor: pointer; }
 .home-daily-tag { font-size: 0.75rem; font-weight: 700; color: #7a6f55; }
 .home-daily-key { font-size: 1.25rem; font-weight: 900; margin-bottom: 2px; }
 .home-daily-text { font-size: 0.95rem; font-weight: 700; line-height: 1.6; }
+/* 2026-11-07：符・点数の問題の手牌。面子ごとに区切って折り返す */
+.home-daily-tiles { margin: 22px 0 4px; }
+.home-daily-tiles .tile-group-label { color: #4c6b57; font-weight: 700; }
+.home-daily-tiles .tiles-row { flex-wrap: wrap; justify-content: center; gap: 10px; }
 .home-daily-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .home-daily-choice {
   padding: 11px 8px;

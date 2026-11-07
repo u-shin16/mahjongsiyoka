@@ -317,6 +317,31 @@ function applyLook() {
 }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// 問題の手牌を描く（ミニゲームと今日の1問で共通）
+function questionTilesHtml(q) {
+  if (q.groups) {
+    // 2026-11-02：符の問題は、どこが面子か見えないと数えられない（ゆーしん「符の計算は分からない」）。
+    // 面子ごとに区切って並べ、和了牌に印を付ける
+    var winT = q.win, winMarked = false;
+    return '<div class="tiles-row tiles-groups">' + q.groups.map(function(g) {
+      return '<div class="tile-group">' + g.tiles.map(function(t) {
+        var isWin = !winMarked && winT && g.hasWin && t.suit === winT.suit && t.num === winT.num;
+        if (isWin) winMarked = true;
+        var html = Tiles.renderTile(Tiles.make(t.suit, t.num), {noHover: true, small: true, highlighted: isWin});
+        return isWin ? '<span class="win-tile">' + html + '<span class="win-label">和了牌</span></span>' : html;
+      }).join('') + (g.label ? '<div class="tile-group-label">' + g.label + '</div>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  if (q.tiles) {
+    var smallT = q.tiles.length > 7;
+    var sortedQTiles = Tiles.sortTiles(q.tiles.map(function(t) { return Tiles.make(t.suit, t.num); }));
+    return '<div class="tiles-row">' + sortedQTiles.map(function(t) {
+      return Tiles.renderTile(t, {noHover: true, small: smallT});
+    }).join('') + '</div>';
+  }
+  return '';
+}
+
 // Bind choice tiles by data-ci
 function bindChoiceTiles(sel, cb) {
   document.querySelectorAll(sel).forEach(function(el) {
@@ -2334,8 +2359,11 @@ var App = {
     var self = this;
     var day = Daily.today();
     var st = Progress.getDaily();
-    var key = Daily.pickKey(st, day, GameData, clearedCount);
-    var q = Daily.questionFor(key, GameData, day);
+    // 2026-11-07：第10章（符と点数）の問題も混ぜる。第10章をクリアした人だけ（daily.js）
+    if (!this._dailyData) this._dailyData = { TERMS: GameData.TERMS, YAKU: GameData.YAKU, FU: Daily.fuList(Chapters.ch10) };
+    var data = this._dailyData;
+    var key = Daily.pickKey(st, day, data, clearedCount);
+    var q = Daily.questionFor(key, data, day);
     if (!q) { box.remove(); return; }
     var done = st.last === day;
     var next = Daily.nextReward(st.days);
@@ -2344,7 +2372,8 @@ var App = {
       '<button type="button" class="home-daily-gift inline">特典を見る ›</button></div>';
     var head = '<div class="home-daily-head"><span class="home-daily-badge">今日の1問</span><span class="home-daily-tag">' + q.tag + '</span></div>';
     var body = (q.head ? '<div class="home-daily-key">' + esc(q.head) + '</div>' : '') +
-      '<div class="home-daily-text">' + esc(q.text).replace(/\n/g, '<br>') + '</div>';
+      '<div class="home-daily-text">' + esc(q.text).replace(/\n/g, '<br>') + '</div>' +
+      (q.groups || q.tiles ? '<div class="home-daily-tiles">' + questionTilesHtml(q) + '</div>' : '');
     if (done && !box.getAttribute('data-just')) {
       // 答えたあとは1行に縮める（ゆーしん「ごちゃごちゃしすぎ」）。押すと解説を開く
       box.classList.add('compact');
@@ -3301,26 +3330,7 @@ var App = {
       };
 
       var promptHtml = q.text ? '<div class="game-instruction" style="background:rgba(0,0,0,0.18)"><strong>' + q.text + '</strong></div>' : '';
-      var tilesHtml = '';
-      if (q.groups) {
-        // 2026-11-02：符の問題は、どこが面子か見えないと数えられない（ゆーしん「符の計算は分からない」）。
-        // 面子ごとに区切って並べ、和了牌に印を付ける
-        var winT = q.win, winMarked = false;
-        tilesHtml = '<div class="tiles-row tiles-groups">' + q.groups.map(function(g) {
-          return '<div class="tile-group">' + g.tiles.map(function(t) {
-            var isWin = !winMarked && winT && g.hasWin && t.suit === winT.suit && t.num === winT.num;
-            if (isWin) winMarked = true;
-            var html = Tiles.renderTile(Tiles.make(t.suit, t.num), {noHover: true, small: true, highlighted: isWin});
-            return isWin ? '<span class="win-tile">' + html + '<span class="win-label">和了牌</span></span>' : html;
-          }).join('') + (g.label ? '<div class="tile-group-label">' + g.label + '</div>' : '') + '</div>';
-        }).join('') + '</div>';
-      } else if (q.tiles) {
-        var smallT = q.tiles.length > 7;
-        var sortedQTiles = Tiles.sortTiles(q.tiles.map(function(t) { return Tiles.make(t.suit, t.num); }));
-        tilesHtml = '<div class="tiles-row">' + sortedQTiles.map(function(t) {
-          return Tiles.renderTile(t, {noHover: true, small: smallT});
-        }).join('') + '</div>';
-      }
+      var tilesHtml = questionTilesHtml(q);
 
       if (mg.type === 'yn') {
         main.innerHTML = chHeader(navTitle, mg.title, pct, correct, mg.passNeeded) +

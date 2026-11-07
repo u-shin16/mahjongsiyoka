@@ -124,7 +124,22 @@ var Daily = (function() {
     };
   }
 
-  // 問題の鍵：t:<用語の漢字>:r（読み）/ t:<漢字>:m（意味）/ y:<役id>:h（翻数）/ y:<役id>:c（条件）
+  // 符と点数の問題（2026-11-07）：ゆーしん「分かりやすいけど、一回やってもすぐに忘れちゃう」（第10章を試して）→
+  // 第10章の問題をそのまま今日の1問にも出す。第10章をクリアした人だけ。用語・役より数が少ないので、3日に1回くらいの割合で出す
+  var FU_SHARE = 1 / 3;
+  // 第10章（Chapters.ch10）から、今日の1問に使える問題を取り出す。id は「ミニゲーム番号-問題番号」
+  function fuList(chapter) {
+    var out = [];
+    ((chapter && chapter.mgs) || []).forEach(function(mg, mi) {
+      (mg.questions || []).forEach(function(q, qi) {
+        if (q.text && q.choices && q.choices.indexOf(q.answer) >= 0) out.push({ id: mi + '-' + qi, mg: mi, q: q });
+      });
+    });
+    return out;
+  }
+  function escHtml(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  // 問題の鍵：t:<用語の漢字>:r（読み）/ t:<漢字>:m（意味）/ y:<役id>:h（翻数）/ y:<役id>:c（条件）/ f:<第10章の問題id>（符・点数）
   function allKeys(data, includeYaku) {
     var keys = [];
     data.TERMS.forEach(function(t) { keys.push('t:' + t.kanji + ':r', 't:' + t.kanji + ':m'); });
@@ -141,8 +156,12 @@ var Daily = (function() {
       .sort(function(a, b) { return s.wrong[a].due < s.wrong[b].due ? -1 : s.wrong[a].due > s.wrong[b].due ? 1 : (a < b ? -1 : 1); });
     if (due.length) return due[0];
     // 必修（第1〜8章）を終えるまでは用語だけ。役は第8章から習うので、そのあとに混ぜる
+    var rand = rng('pick:' + day);
+    // 第10章（符と点数）をクリアしたら、符・点数の問題も混ぜる
+    var fu = clearedCount >= 10 && data.FU ? data.FU : [];
+    if (fu.length && rand() < FU_SHARE) return 'f:' + fu[Math.floor(rand() * fu.length)].id;
     var pool = allKeys(data, clearedCount >= 8);
-    return pool[Math.floor(rng('pick:' + day)() * pool.length)];
+    return pool[Math.floor(rand() * pool.length)];
   }
 
   // 鍵から問題を作る。選択肢の並びは日付と鍵で決まる
@@ -178,6 +197,15 @@ var Daily = (function() {
       var wrongY = shuffle(data.YAKU.filter(function(v) { return v.id !== y.id; }), rand).slice(0, 3);
       return { key: key, tag: '役', head: null, text: '次の成立条件の役は？\n「' + cond + '」', correct: yname(y),
         choices: shuffle([yname(y)].concat(wrongY.map(yname)), rand), explanation: yexpl };
+    }
+    if (kind === 'f') {
+      var item = (data.FU || []).filter(function(f) { return f.id === id; })[0];
+      if (!item) return null;
+      var fq = item.q;
+      // 手牌のある問題は、第10章と同じく面子ごとに区切って和了牌に印を付けて見せる（app.js が描く）
+      return { key: key, tag: item.mg >= 5 ? '点数' : '符', head: null, text: fq.text, correct: fq.answer,
+        choices: shuffle(fq.choices.slice(), rand), explanation: escHtml(fq.fb).replace(/\n/g, '<br>'),
+        tiles: fq.tiles || null, groups: fq.groups || null, win: fq.win || null };
     }
     return null;
   }
@@ -238,7 +266,7 @@ var Daily = (function() {
     REWARDS: REWARDS, TILES: TILES, TABLES: TABLES, BGS: BGS, LOOK_TYPES: LOOK_TYPES,
     RETRY_AFTER_DAYS: RETRY_AFTER_DAYS,
     today: today, addDays: addDays, emptyState: emptyState, normalize: normalize,
-    pickKey: pickKey, questionFor: questionFor, answer: answer,
+    pickKey: pickKey, questionFor: questionFor, answer: answer, fuList: fuList,
     rewardsBetween: rewardsBetween, nextReward: nextReward, isUnlocked: isUnlocked,
     requiredDays: requiredDays, rewardName: rewardName, merge: merge,
   };
