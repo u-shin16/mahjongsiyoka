@@ -5421,7 +5421,9 @@ var App = {
   _renderBattleSetup: function(main, params) {
     var self = this;
     params = params || {};
-    var difficulty = 'easy', gameType = 'tonpu', sorekiriLevel = 'hard';
+    // 2026-11-09：CPUはすべてSorekiri（自作AI）にした。従来の「やさしい・ふつう・つよい」の3種類はやめ、
+    // 強さだけ3段階から選ぶ（やさしい＝ランダムに切る確率50%、ふつう25%、つよい0%）。
+    var gameType = 'tonpu', sorekiriLevel = 'easy';
     var playerCount = params.playerCount === 3 ? 3 : 4;
     main.innerHTML = '<div class="page-title" id="battleSetupTitle">'+(playerCount === 3 ? '三人麻雀 対局設定' : 'VS CPU 対局設定')+'</div>' +
       '<div class="battle-setup-wrap">' +
@@ -5431,11 +5433,8 @@ var App = {
       '<div class="setup-section"><h3>対局形式</h3><div class="setup-options" id="optType">' +
       '<div class="setup-opt active" data-v="tonpu">東風戦</div><div class="setup-opt" data-v="hanchan">半荘戦</div>' +
       '</div></div>' +
-      '<div class="setup-section"><h3>CPU難易度</h3><div class="setup-options" id="optDiff">' +
-      '<div class="setup-opt active" data-v="easy">やさしい</div><div class="setup-opt" data-v="normal">ふつう</div><div class="setup-opt" data-v="hard">つよい</div><div class="setup-opt" data-v="sorekiri">Sorekiri（自作AI）</div>' +
-      '</div></div>' +
-      '<div class="setup-section" id="secSorekiriLv" style="display:none"><h3>Sorekiriの強さ</h3><div class="setup-options" id="optSorekiriLv">' +
-      '<div class="setup-opt" data-v="easy">やさしい</div><div class="setup-opt" data-v="normal">ふつう</div><div class="setup-opt active" data-v="hard">つよい</div>' +
+      '<div class="setup-section" id="secSorekiriLv"><h3>CPUの強さ（自作AI Sorekiri）</h3><div class="setup-options" id="optSorekiriLv">' +
+      '<div class="setup-opt active" data-v="easy">やさしい</div><div class="setup-opt" data-v="normal">ふつう</div><div class="setup-opt" data-v="hard">つよい</div>' +
       '</div></div>' +
       '<div class="btn-row" style="margin-top:20px"><button class="btn btn-primary btn-large" id="btnStartBattle">対局開始！</button></div></div>';
 
@@ -5458,13 +5457,12 @@ var App = {
       el.addEventListener('click', function() {
         document.querySelectorAll('#optType .setup-opt').forEach(function(x){x.classList.remove('active');}); el.classList.add('active'); gameType=el.dataset.v;});
     });
-    document.querySelectorAll('#optDiff .setup-opt').forEach(function(el) {
-      el.addEventListener('click', function() {
-        document.querySelectorAll('#optDiff .setup-opt').forEach(function(x){x.classList.remove('active');}); el.classList.add('active'); difficulty=el.dataset.v;
-        var secLv = document.getElementById('secSorekiriLv');
-        if (secLv) secLv.style.display = difficulty === 'sorekiri' ? '' : 'none';
-        if (difficulty === 'sorekiri' && typeof Sorekiri !== 'undefined') Sorekiri.load(playerCount === 3 ? 'sanma' : 'yonma');});
-    });
+    // 重み（約2.5MB）は、開始ボタンを押す前に先読みしておく（人数を切り替えたら、その人数用を読む）
+    var preloadSorekiri = function() {
+      if (typeof Sorekiri !== 'undefined') Sorekiri.load(playerCount === 3 ? 'sanma' : 'yonma');
+    };
+    preloadSorekiri();
+    document.querySelectorAll('#optPlayers .setup-opt').forEach(function(el) { el.addEventListener('click', preloadSorekiri); });
     document.querySelectorAll('#optSorekiriLv .setup-opt').forEach(function(el) {
       el.addEventListener('click', function() {
         document.querySelectorAll('#optSorekiriLv .setup-opt').forEach(function(x){x.classList.remove('active');});
@@ -5472,11 +5470,11 @@ var App = {
     });
     document.getElementById('btnStartBattle').addEventListener('click', function() {
       // Sorekiriは強さを難易度名に含める（sorekiri_easy / sorekiri_normal / sorekiri_hard）
-      var diff = difficulty === 'sorekiri' ? 'sorekiri_' + sorekiriLevel : difficulty;
+      var diff = 'sorekiri_' + sorekiriLevel;
       sendEvent('cpu_battle_start', { difficulty: diff, game_type: gameType, player_count: playerCount });
       var go = function() { self.navigate('battle', { difficulty: diff, gameType: gameType, playerCount: playerCount }); };
       // Sorekiriは重み（約2.5MB）を読み込んでから始める。読めなかったときは従来のCPUの判断で進む
-      if (difficulty === 'sorekiri' && typeof Sorekiri !== 'undefined') Sorekiri.load(playerCount === 3 ? 'sanma' : 'yonma').then(go, go);
+      if (typeof Sorekiri !== 'undefined') Sorekiri.load(playerCount === 3 ? 'sanma' : 'yonma').then(go, go);
       else go();
     });
   },
