@@ -63,8 +63,11 @@ button { font-family: inherit; cursor: pointer; }
    なので、帯の色・金の枠・影・絵文字・枠つきボタンをやめ、ページと同じ背景に細い線を1本引き、
    タイトルは左寄せ、操作は文字だけにした。 */
 .app-header {
-  background: var(--page-bg, var(--green-dark));
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  /* 2026-11-10：ゆーしん「透明」→ 線をなくし、背景はほぼ透明にした。スクロールで下を通る内容は、ぼかして文字が重ならないようにする */
+  background: color-mix(in srgb, var(--page-bg, var(--green-dark)) 55%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: none;
   position: sticky;
   top: 0;
   z-index: 100;
