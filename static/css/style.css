@@ -64,7 +64,9 @@ button { font-family: inherit; cursor: pointer; }
    タイトルは左寄せ、操作は文字だけにした。 */
 .app-header {
   /* 2026-11-10：ゆーしん「透明」「スクロールしてもついてこないように」→ 背景なし・線なし・固定しない */
-  background: none;
+  /* 2026-11-10 夕：ゆーしん「上のバーを色つけて」→ 卓の緑（--green-mid）の帯にした。固定しないのはそのまま。
+     背景はログインボーナスで変わる（紫など）ので、ページの色に頼らずアプリの緑で塗る */
+  background: var(--green-mid);
   border-bottom: none;
   position: static;
   z-index: 100;
