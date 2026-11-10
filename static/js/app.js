@@ -5396,7 +5396,9 @@ var App = {
         var coreDone = core.filter(function(c){return Progress.isCleared(c.id);}).length;
         var restMin = all.reduce(function(n,c){return n + (Progress.isCleared(c.id) ? 0 : (c.min||0));}, 0);
         var top = '<div class="pe-big"><div class="pe-top"><div class="pe-pct">'+pct+'<small>%</small></div>' +
-          '<div class="pe-next">'+(nowCh ? 'つぎの章<b>第'+nowCh.id+'章 '+esc(nowCh.short)+'</b>' : 'ぜんぶの章<b>クリア！</b>')+'</div></div>' +
+          // 2026-11-10：右上の「つぎの章」は小さくて分かりにくかった（ゆーしん）。押すとその章が始まるボタンにした。
+          // 全部クリアしたときは100%で分かるので何も出さない。
+          (nowCh ? '<button type="button" class="pe-next" data-ch="'+nowCh.id+'"><span>つづきから</span><b>第'+nowCh.id+'章 '+esc(nowCh.short)+' ▶</b></button>' : '')+'</div>' +
           '<div class="pe-track"><i style="width:'+Math.max(pct,0)+'%"></i></div>' +
           // 2026-11-10：バーの下の「0」「100」「N / 14章クリア」はやめた（ゆーしん「0、100が変」）。章の数はすぐ下の数字と重なるため。
           '</div>' +
@@ -5421,7 +5423,7 @@ var App = {
       var lc = document.getElementById('lookCard');
       if (lc) setTimeout(function() { lc.scrollIntoView({ block: 'start' }); }, 0);
     }
-    main.querySelectorAll('.pa-row[data-ch]').forEach(function(el) {
+    main.querySelectorAll('.pa-row[data-ch], .pe-next[data-ch]').forEach(function(el) {
       el.addEventListener('click', function() { self.navigate('chapter', { id: Number(el.getAttribute('data-ch')) }); });
     });
     main.querySelectorAll('.look-opt[data-type]').forEach(function(el) {
