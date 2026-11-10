@@ -1351,6 +1351,28 @@ button.prog-step { cursor: pointer; }
 .prog-step.now .prog-body > span { opacity: 1; color: #6b5a30; }
 .prog-step.locked .prog-body { opacity: 0.55; }
 button.prog-step.done:hover .prog-body b { text-decoration: underline; text-underline-offset: 4px; }
+/* 2026-11-10 夜：ゆーしん「余白がめっちゃある」「スクロールしなきゃあかんのがめんどい」
+   → スマホは1行を詰めて章名と★を横に並べる。PCは7章×2段の横の道にして、1画面に収める */
+.prog-step { gap: 12px; padding-bottom: 8px; }
+.prog-dot { width: 32px; height: 32px; font-size: 0.8rem; }
+.prog-step::before { left: 14px; top: 32px; }
+.prog-body { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; padding-top: 0; }
+.prog-body b { font-size: 0.9rem; }
+.prog-body b small { font-size: inherit; }
+.prog-step.now .prog-body { padding: 4px 12px; }
+@media (min-width: 720px) {
+  .prog-steps { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 24px; margin-top: 16px; }
+  .prog-step { flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 0 4px; }
+  .prog-step::before { left: 50%; top: 14px; bottom: auto; width: 100%; height: 4px; }
+  .prog-step:nth-child(7n)::before { display: none; }
+  .prog-body { flex-direction: column; justify-content: flex-start; gap: 4px; min-height: 0; width: 100%; }
+  .prog-body b { font-size: 0.88rem; line-height: 1.35; white-space: nowrap; }
+  .prog-body b small { display: block; font-size: 0.7rem; opacity: 0.75; }
+  .prog-more { display: none; }
+  .prog-step.now .prog-body { padding: 8px; }
+}
+/* 押したあとにボタンへ残る白い枠（フォーカス）は、マウスで押したときは出さない */
+.btn-progress:focus:not(:focus-visible), .prog-step:focus:not(:focus-visible) { outline: none; }
 .title-badges { display: flex; flex-wrap: wrap; gap: 8px; }
 .title-badge {
   background: rgba(232,184,75,0.25);

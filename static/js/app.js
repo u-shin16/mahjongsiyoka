@@ -5394,10 +5394,10 @@ var App = {
           var done = Progress.isCleared(c.id), now = nowCh && nowCh.id === c.id;
           var cls = done ? 'done' : (now ? 'now' : 'locked');
           var s = Progress.getStars(c.id);
-          var sub = done ? '<span class="prog-stars">'+starsHtml(s)+'</span>' : (now ? 'いまここ・つづきから' : 'まだ');
+          var sub = done ? '<span class="prog-stars">'+starsHtml(s)+'</span>' : (now ? 'いまここ<span class="prog-more">・つづきから</span>' : 'まだ');
           var tag = (done || now) ? 'button type="button" data-ch="'+c.id+'"' : 'div';
           return '<'+tag+' class="prog-step '+cls+'"><span class="prog-dot">'+(done?'✓':c.id)+'</span>' +
-            '<span class="prog-body"><b>第'+c.id+'章 '+esc(c.short)+'</b><span>'+sub+'</span></span></'+((done||now)?'button':'div')+'>';
+            '<span class="prog-body"><b><small>第'+c.id+'章 </small>'+esc(c.short)+'</b><span>'+sub+'</span></span></'+((done||now)?'button':'div')+'>';
         }).join('') + '</div>';
       })() +
       (titles.length?'<div class="progress-card"><h3>獲得称号</h3><div class="title-badges">'+titles.map(function(t){return '<span class="title-badge">'+t+'</span>';}).join('')+'</div></div>':'')+
