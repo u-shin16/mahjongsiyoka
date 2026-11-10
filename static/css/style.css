@@ -1360,16 +1360,10 @@ button.prog-step.done:hover .prog-body b { text-decoration: underline; text-unde
 .prog-body b { font-size: 0.9rem; }
 .prog-body b small { font-size: inherit; }
 .prog-step.now .prog-body { padding: 4px 12px; }
+/* PCは2列（左に第1〜7章、右に第8〜14章）。1行は「章名…★」のまま左から右へ読める（2026-11-10 夜、4案から3を選んだ。横7章×2段は見にくかった） */
 @media (min-width: 720px) {
-  .prog-steps { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 24px; margin-top: 16px; }
-  .prog-step { flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 0 4px; }
-  .prog-step::before { left: 50%; top: 14px; bottom: auto; width: 100%; height: 4px; }
-  .prog-step:nth-child(7n)::before { display: none; }
-  .prog-body { flex-direction: column; justify-content: flex-start; gap: 4px; min-height: 0; width: 100%; }
-  .prog-body b { font-size: 0.88rem; line-height: 1.35; white-space: nowrap; }
-  .prog-body b small { display: block; font-size: 0.7rem; opacity: 0.75; }
-  .prog-more { display: none; }
-  .prog-step.now .prog-body { padding: 8px; }
+  .prog-steps { display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: column; grid-template-rows: repeat(7, auto); column-gap: 48px; }
+  .prog-step:nth-child(7)::before { display: none; }
 }
 /* 押したあとにボタンへ残る白い枠（フォーカス）は、マウスで押したときは出さない */
 .btn-progress:focus:not(:focus-visible), .prog-step:focus:not(:focus-visible) { outline: none; }
