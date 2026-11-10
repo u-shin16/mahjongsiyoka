@@ -63,13 +63,10 @@ button { font-family: inherit; cursor: pointer; }
    なので、帯の色・金の枠・影・絵文字・枠つきボタンをやめ、ページと同じ背景に細い線を1本引き、
    タイトルは左寄せ、操作は文字だけにした。 */
 .app-header {
-  /* 2026-11-10：ゆーしん「透明」→ 線をなくし、背景はほぼ透明にした。スクロールで下を通る内容は、ぼかして文字が重ならないようにする */
-  background: color-mix(in srgb, var(--page-bg, var(--green-dark)) 55%, transparent);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  /* 2026-11-10：ゆーしん「透明」「スクロールしてもついてこないように」→ 背景なし・線なし・固定しない */
+  background: none;
   border-bottom: none;
-  position: sticky;
-  top: 0;
+  position: static;
   z-index: 100;
 }
 .header-inner {
@@ -105,21 +102,21 @@ button { font-family: inherit; cursor: pointer; }
   zoom: 0.32;
   cursor: pointer;
 }
+/* 2026-11-10：ゆーしん「ボタンはちゃんと色つけて」→ 文字だけをやめ、面のあるボタンにした。
+   ふだんは薄いクリームの面（もどる・進捗・ログイン済みの名前）、まだログインしていないときの「ログイン」だけ金。 */
 .btn-back, .btn-progress {
-  background: none;
+  background: rgba(250,248,240,0.14);
   border: none;
   color: var(--cream);
-  opacity: 0.75;
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
-  font-weight: 500;
-  transition: opacity 0.15s, background 0.15s;
+  font-weight: 700;
+  transition: background 0.15s;
   white-space: nowrap;
 }
 .btn-back:hover, .btn-progress:hover {
-  opacity: 1;
-  background: rgba(255,255,255,0.08);
+  background: rgba(250,248,240,0.24);
 }
 
 /* ===== Main ===== */
@@ -6176,10 +6173,12 @@ body.is-battle-page .app-footer {
   white-space: nowrap;
   margin-left: 6px;
 }
-.btn-account.logged-in {
-  opacity: 1;
-  color: var(--cream);
+/* ログイン前だけ金（押してほしいボタン）。ログイン後は他のボタンと同じ薄い面 */
+.btn-account:not(.logged-in) {
+  background: var(--gold);
+  color: #2e2200;
 }
+.btn-account:not(.logged-in):hover { background: #f0c968; }
 
 /* ===== 友人戦 ===== */
 .fr-wrap  { max-width: 760px; margin: 0 auto; }
