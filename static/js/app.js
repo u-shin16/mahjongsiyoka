@@ -5383,10 +5383,23 @@ var App = {
     var cleared = chs.filter(function(c){return Progress.isCleared(c.id);}).length;
     var titles = Progress.getTitles();
     main.innerHTML = '<div class="progress-wrap">' +
-      '<div class="progress-header"><div class="progress-name">学習進捗</div><div class="progress-sub">クリア章：'+cleared+' / '+chs.length+'</div></div>' +
-      '<div class="progress-card"><h3>チャプター進捗</h3>' +
-      GameData.CHAPTERS.map(function(c){var s=Progress.getStars(c.id);return '<div class="progress-chapter-row"><div class="progress-ch-title">第'+c.id+'章 '+c.short+'</div><div class="progress-ch-stars">'+(s>0?starsHtml(s):'─')+'</div></div>';}).join('')+
-      '</div>' +
+      '<div class="progress-header"><div class="progress-name">学習の道のり</div><div class="progress-sub">'+cleared+' / '+chs.length+'章クリア</div></div>' +
+      // 2026-11-10 夜：章の一覧をステッパー（すごろく）にした（ゆーしんが5案からBを選んだ）。
+      // クリアした章は金の丸、いまの章（一番小さい未クリア章）だけクリームのカード、その先は薄く。
+      // クリア済みといまの章は押すとその章へ飛ぶ。その先はロックされているので押せない。
+      (function(){
+        var all = GameData.CHAPTERS.slice().sort(function(a,b){return a.id-b.id;});
+        var nowCh = all.find(function(c){return !Progress.isCleared(c.id);});
+        return '<div class="prog-steps">' + all.map(function(c){
+          var done = Progress.isCleared(c.id), now = nowCh && nowCh.id === c.id;
+          var cls = done ? 'done' : (now ? 'now' : 'locked');
+          var s = Progress.getStars(c.id);
+          var sub = done ? '<span class="prog-stars">'+starsHtml(s)+'</span>' : (now ? 'いまここ・つづきから' : 'まだ');
+          var tag = (done || now) ? 'button type="button" data-ch="'+c.id+'"' : 'div';
+          return '<'+tag+' class="prog-step '+cls+'"><span class="prog-dot">'+(done?'✓':c.id)+'</span>' +
+            '<span class="prog-body"><b>第'+c.id+'章 '+esc(c.short)+'</b><span>'+sub+'</span></span></'+((done||now)?'button':'div')+'>';
+        }).join('') + '</div>';
+      })() +
       (titles.length?'<div class="progress-card"><h3>獲得称号</h3><div class="title-badges">'+titles.map(function(t){return '<span class="title-badge">'+t+'</span>';}).join('')+'</div></div>':'')+
       self._lookPickerHtml() +
       // 2026-10-15：進捗リセットのボタンは外した（ゆーしん「進捗リセットはできなくしよう」）。
@@ -5397,6 +5410,9 @@ var App = {
       var lc = document.getElementById('lookCard');
       if (lc) setTimeout(function() { lc.scrollIntoView({ block: 'start' }); }, 0);
     }
+    main.querySelectorAll('.prog-step[data-ch]').forEach(function(el) {
+      el.addEventListener('click', function() { self.navigate('chapter', { id: Number(el.getAttribute('data-ch')) }); });
+    });
     main.querySelectorAll('.look-opt[data-type]').forEach(function(el) {
       el.addEventListener('click', function() {
         if (el.classList.contains('locked')) { showToast('「今日の1問」に答えた日が' + el.getAttribute('data-need') + '日になると使えます'); return; }
