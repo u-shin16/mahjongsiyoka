@@ -2153,7 +2153,7 @@ var App = {
       var cached = '';
       try { cached = localStorage.getItem(ACC_KEY) || ''; } catch (e) {}
       if (cached) {
-        btn.innerHTML = '<span class="acc-ico">👤</span><span class="acc-txt">' + esc(cached) + '</span>';
+        btn.innerHTML = '<span class="acc-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M3.8 21c.9-4.4 4.2-7 8.2-7s7.3 2.6 8.2 7z"/></svg></span><span class="acc-txt">' + esc(cached) + '</span>';
         btn.classList.add('logged-in');
         btn.classList.remove('pending');
       } else {
@@ -2168,12 +2168,12 @@ var App = {
     if (u) {
       var name = u.displayName || u.email || 'アカウント';
       try { localStorage.setItem(ACC_KEY, name); } catch (e) {}
-      btn.innerHTML = '<span class="acc-ico">👤</span><span class="acc-txt">' + esc(name) + '</span>';
+      btn.innerHTML = '<span class="acc-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M3.8 21c.9-4.4 4.2-7 8.2-7s7.3 2.6 8.2 7z"/></svg></span><span class="acc-txt">' + esc(name) + '</span>';
       btn.classList.add('logged-in');
       btn.title = u.email || '';
     } else {
       try { localStorage.removeItem(ACC_KEY); } catch (e) {}
-      btn.innerHTML = '<span class="acc-ico">👤</span><span class="acc-txt">ログイン</span>';
+      btn.innerHTML = '<span class="acc-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M3.8 21c.9-4.4 4.2-7 8.2-7s7.3 2.6 8.2 7z"/></svg></span><span class="acc-txt">ログイン</span>';
       btn.classList.remove('logged-in');
       btn.title = 'ログイン';
     }
