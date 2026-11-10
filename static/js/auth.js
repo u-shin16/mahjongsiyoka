@@ -12,6 +12,8 @@ var Auth = (function() {
   var _enabled = false;    // Firebaseが設定済みか
   var _db = null;
   var _listeners = [];     // ログイン状態が変わったとき呼ぶコールバック
+  var _resolved = false;   // 最初のログイン状態（ログイン中か未ログインか）が分かったか
+  var _resolvedListeners = [];
   var _pushTimer = null;
 
   function configured() {
@@ -37,6 +39,10 @@ var Auth = (function() {
       // GoogleログインはFirebase側で確認済みメールとして扱われるが、念のため
       // providerも見る。
       _user = (u && (u.emailVerified || hasProvider(u, 'google.com'))) ? u : null;
+      // 2026-11-10：リロード直後に「ログイン」と一瞬出てから名前に変わるのを防ぐため、
+      // 状態が分かった時点で（進捗のマージを待たずに）ヘッダーへ知らせる
+      _resolved = true;
+      _resolvedListeners.forEach(function(cb) { try { cb(_user); } catch (e) {} });
       if (_user) {
         // ログインしたらクラウドとローカルの進捗をマージしてから通知
         pullAndMerge().then(_notify)['catch'](function(e) {
@@ -175,6 +181,9 @@ var Auth = (function() {
     enabled: function() { return _enabled; },
     user: function() { return _user; },
     onChange: function(cb) { _listeners.push(cb); },
+    onResolved: function(cb) { _resolvedListeners.push(cb); },
+    // Firebaseを使う設定なのに、まだログイン状態が分かっていないとき true
+    pending: function() { return configured() && !_resolved; },
     schedulePush: schedulePush,
     /* 新規登録：アカウント作成 → 確認メール送信 → いったんサインアウト
        （メール内のリンクを承認するまでログイン扱いにしない）

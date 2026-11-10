@@ -2129,6 +2129,7 @@ var App = {
     document.getElementById('btnAccount').addEventListener('click', function() { self.navigate('login'); });
     // ログイン状態が変わったら関連ページを再描画（進捗マージ後の星を反映）
     if (window.Auth) {
+      if (Auth.onResolved) Auth.onResolved(function() { self._updateHeaderAccount(); });
       Auth.onChange(function() {
         self._updateHeaderAccount();
         var p = self.current;
@@ -2145,13 +2146,32 @@ var App = {
     var btn = document.getElementById('btnAccount');
     if (!btn) return;
     var u = (window.Auth && Auth.enabled() && Auth.user()) ? Auth.user() : null;
+    var ACC_KEY = 'mj_account_name';
+    // 2026-11-10：ログイン状態が分かるまでは「ログイン」を出さない（リロード直後に一瞬出てから名前に変わっていた）。
+    // 前回ログインしていた名前を覚えておき、分かるまではそれを出す。覚えが無ければ空のまま隠す
+    if (window.Auth && Auth.pending && Auth.pending()) {
+      var cached = '';
+      try { cached = localStorage.getItem(ACC_KEY) || ''; } catch (e) {}
+      if (cached) {
+        btn.innerHTML = '<span class="acc-ico">👤</span><span class="acc-txt">' + esc(cached) + '</span>';
+        btn.classList.add('logged-in');
+        btn.classList.remove('pending');
+      } else {
+        btn.innerHTML = '';
+        btn.classList.add('pending');
+      }
+      return;
+    }
+    btn.classList.remove('pending');
     // スマホでは「👤 ログ…」と切れていたので、文字と絵を分け、狭い画面は CSS で短く出す
     if (u) {
       var name = u.displayName || u.email || 'アカウント';
+      try { localStorage.setItem(ACC_KEY, name); } catch (e) {}
       btn.innerHTML = '<span class="acc-ico">👤</span><span class="acc-txt">' + esc(name) + '</span>';
       btn.classList.add('logged-in');
       btn.title = u.email || '';
     } else {
+      try { localStorage.removeItem(ACC_KEY); } catch (e) {}
       btn.innerHTML = '<span class="acc-ico">👤</span><span class="acc-txt">ログイン</span>';
       btn.classList.remove('logged-in');
       btn.title = 'ログイン';

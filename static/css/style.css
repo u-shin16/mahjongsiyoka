@@ -6173,6 +6173,8 @@ body.is-battle-page .app-footer {
   white-space: nowrap;
   margin-left: 6px;
 }
+/* ログイン状態が分かるまで場所だけ空けて隠す（ちらつき防止） */
+.btn-account.pending { visibility: hidden; min-width: 96px; }
 /* ログイン前だけ金（押してほしいボタン）。ログイン後は他のボタンと同じ薄い面 */
 .btn-account:not(.logged-in) {
   background: var(--gold);
