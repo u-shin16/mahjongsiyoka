@@ -450,6 +450,8 @@ var FriendGame = (function() {
 
   function addCpu() {
     if (!isHost() || !_room || _room.status !== 'waiting') return Promise.reject(new Error('ホストだけがCPUを追加できます'));
+    // CPUはSorekiriで打つので、重み（約2.5MB）を先に読み込んでおく。読めなくても追加はできる
+    if (typeof Sorekiri !== 'undefined') Sorekiri.load(_room.playerCount === 3 ? 'sanma' : 'yonma').then(null, function() {});
     return db().runTransaction(function(tx) {
       return tx.get(roomRef(_code)).then(function(snap) {
         if (!snap.exists) throw new Error('部屋が見つかりません');
@@ -719,10 +721,43 @@ var FriendGame = (function() {
     return score;
   }
 
+  // 2026-11-10：友人戦のCPU席も自作AI「Sorekiri」で打つ（CPU戦と同じ強さ・同じ降り方）。
+  // 友人戦の state の項目名をSorekiriが読む形（battle.js の state）に合わせて渡す。
+  // 重みを読み込めていないときは -1 を返し、従来のCPUの判断に任せる。
+  function _sorekiriState(state) {
+    return {
+      playerCount: state.playerCount,
+      isSanma: state.isSanma,
+      hands: state.hands, discards: state.discards, melds: state.melds, riichi: state.riichi,
+      doraIndicator: state.doraInd, kanDoraIndicators: state.kanDoraInds || [],
+      roundWind: roundWindNum(state) - 1,
+      dealerSeat: (state.round - 1) % state.playerCount,
+    };
+  }
+  function _sorekiriReady(state) {
+    return typeof Sorekiri !== 'undefined' && Sorekiri.ready(state.isSanma ? 'sanma' : 'yonma');
+  }
+  // 強さはCPU戦の「ふつう」と同じ（でたらめに切る確率0.25・降りる）。友人戦は人どうしの対局に混ざるので、
+  // 強すぎず弱すぎない中間にした。強さを選べるようにするかはゆーしんが決める。
+  var SOREKIRI_FRIEND_EPSILON = 0.25;
+  var SOREKIRI_FRIEND_FOLD = 2;
+  var SOREKIRI_FRIEND_FOLD_DEALER = 1;
+  // 切る牌の位置。使えないときは -1
+  function _sorekiriDiscardIdx(state, seat) {
+    if (!_sorekiriReady(state)) return -1;
+    var st = _sorekiriState(state);
+    var fi = Sorekiri.defenseIndex(st, seat, SOREKIRI_FRIEND_FOLD, SOREKIRI_FRIEND_FOLD_DEALER);
+    if (fi >= 0) return fi;
+    if (Math.random() < SOREKIRI_FRIEND_EPSILON) return Math.floor(Math.random() * (state.hands[seat] || []).length);
+    return Sorekiri.chooseDiscardIndex(st, seat);
+  }
+
   function _cpuChooseDiscard(state, seat) {
     var hand = state.hands[seat] || [];
     var drawn = _findDrawnIdx(state, seat);
     if (state.riichi && state.riichi[seat] && drawn >= 0) return drawn;
+    var si = _sorekiriDiscardIdx(state, seat);
+    if (si >= 0) return si;
     var best = drawn >= 0 ? drawn : Math.max(0, hand.length - 1);
     var bestScore = -999;
     for (var i = 0; i < hand.length; i++) {
@@ -741,6 +776,7 @@ var FriendGame = (function() {
     if ((state.scores[seat] || 0) < 1000) return -1;
     var hand = state.hands[seat] || [];
     var best = -1;
+    var tenpaiIdx = [];
     var bestScore = -999;
     for (var i = 0; i < hand.length; i++) {
       var rest = hand.filter(function(_, ii) { return ii !== i; });
@@ -748,6 +784,12 @@ var FriendGame = (function() {
       if (waits.length === 0) continue;
       var score = _cpuDiscardScore(state, hand, hand[i]);
       if (score > bestScore) { bestScore = score; best = i; }
+      tenpaiIdx.push(i);
+    }
+    // Sorekiriが選ぶ牌が聴牌を保てるなら、それで立直する
+    if (best >= 0) {
+      var si = _sorekiriDiscardIdx(state, seat);
+      if (si >= 0 && tenpaiIdx.indexOf(si) >= 0) return si;
     }
     return best;
   }
@@ -882,7 +924,14 @@ var FriendGame = (function() {
     };
     _deal(state);
     _lastProcessedSeq = -1;
-    return roomRef(_code).update({ status: 'playing', game: JSON.stringify(state), action: null });
+    // CPUがいるなら、Sorekiriの重みを読み込んでから始める（読めなくても始まる：従来のCPUの判断で進む）
+    var hasCpu = (_room.players || []).some(function(p) { return isCpuPlayer(p); });
+    var ready = (hasCpu && typeof Sorekiri !== 'undefined')
+      ? Sorekiri.load(n === 3 ? 'sanma' : 'yonma').then(null, function() {})
+      : Promise.resolve();
+    return ready.then(function() {
+      return roomRef(_code).update({ status: 'playing', game: JSON.stringify(state), action: null });
+    });
   }
 
   /* ---------- プレイヤーの操作送信 ---------- */
@@ -1769,6 +1818,8 @@ var FriendGame = (function() {
     mySeat: mySeat,
     isHost: isHost,
     isCpu: function(seat) { return isCpuSeat(seat); },
+    // 検証用（tests/friend_cpu_test.js）
+    _test: { deal: _deal, cpuChooseDiscard: _cpuChooseDiscard, cpuRiichiDiscardIdx: _cpuRiichiDiscardIdx, drawFor: _drawFor },
     allReady: function() { return allPlayersReady(_room); },
     rules: function() { return normalizeRules(_room && _room.rules, _room && _room.playerCount); },
     autoFlags: function(seat) { return _game ? getAutoFlags(_game, seat) : defaultAutoFlags(seat); },
