@@ -5385,37 +5385,29 @@ var App = {
     var cleared = chs.filter(function(c){return Progress.isCleared(c.id);}).length;
     var titles = Progress.getTitles();
     main.innerHTML = '<div class="progress-wrap">' +
-      // 2026-11-10 夜：進捗画面をA（円グラフ＋称号）にした（ゆーしんが5案から選び直した。参考：goworkshipのプログレスバー記事の「プロフィールの強さ」型）。
-      // 円で全14章のうち何章クリアしたか、横にいまの称号と次の称号まで、下の一覧は章ごとに小さいバーと★。
+      // 2026-11-10 夜：進捗画面をE（大きな％＋太いバー）にした（A→ゆーしん「やっぱE」。参考：goworkshipのプログレスバー記事の確定プログレスバー型）。
+      // 大きな％と光る太いバー、右上に次の章、下に数字3つ（クリアした章・集めた★・★3つの章）、一覧は章ごとの★。
       (function(){
         var all = GameData.CHAPTERS.slice().sort(function(a,b){return a.id-b.id;});
         var done = all.filter(function(c){return Progress.isCleared(c.id);}).length;
+        var pct = Math.round(done/all.length*100);
         var nowCh = all.find(function(c){return !Progress.isCleared(c.id);});
-        var cur = null, curId = 0, next = null, nextId = 0;
-        all.forEach(function(c){
-          if (!CHAPTER_TITLES[c.id]) return;
-          if (Progress.isCleared(c.id)) { cur = CHAPTER_TITLES[c.id]; curId = c.id; }
-          else if (!next) { next = CHAPTER_TITLES[c.id]; nextId = c.id; }
-        });
-        var left = next ? all.filter(function(c){return c.id<=nextId && !Progress.isCleared(c.id);}).length : 0;
-        var span = next ? all.filter(function(c){return c.id>curId && c.id<=nextId;}).length : 1;
-        var pct = next ? Math.round((span-left)/span*100) : 100;
-        var r = 54, circ = 2*Math.PI*r, off = circ*(1-done/all.length);
-        var ring = '<div class="pa-ring"><svg viewBox="0 0 132 132" aria-hidden="true">' +
-          '<circle cx="66" cy="66" r="'+r+'" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="14"/>' +
-          '<circle cx="66" cy="66" r="'+r+'" fill="none" stroke="#e8b84b" stroke-width="14" stroke-linecap="round" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/></svg>' +
-          '<div class="pa-ring-num"><div><b>'+done+'</b><small>/ '+all.length+'章</small></div></div></div>';
-        var rank = '<div class="pa-rank">いまの称号<b>'+(cur?esc(cur):'まだなし')+'</b>' +
-          (next ? 'あと'+left+'章で「'+esc(next)+'」' : 'すべての称号を集めた') +
-          '<div class="pa-minibar"><i style="width:'+pct+'%"></i></div></div>';
+        var starSum = 0, three = 0;
+        all.forEach(function(c){ var st = Progress.getStars(c.id); starSum += st; if (st >= 3) three++; });
+        var top = '<div class="pe-big"><div class="pe-top"><div class="pe-pct">'+pct+'<small>%</small></div>' +
+          '<div class="pe-next">'+(nowCh ? 'つぎの章<b>第'+nowCh.id+'章 '+esc(nowCh.short)+'</b>' : 'ぜんぶの章<b>クリア！</b>')+'</div></div>' +
+          '<div class="pe-track"><i style="width:'+Math.max(pct,0)+'%"></i></div>' +
+          '<div class="pe-ticks"><span>0</span><span>'+done+' / '+all.length+'章クリア</span><span>100</span></div></div>' +
+          '<div class="pe-kv"><div><b>'+done+'</b><span>クリアした章</span></div>' +
+          '<div><b>'+starSum+'</b><span>集めた★ / '+(all.length*3)+'</span></div>' +
+          '<div><b>'+three+'</b><span>★3つの章</span></div></div>';
         var rows = all.map(function(c){
           var st = Progress.getStars(c.id), isNow = nowCh && nowCh.id === c.id, open = st > 0 || isNow;
           var tag = open ? 'button type="button" data-ch="'+c.id+'"' : 'div';
           return '<'+tag+' class="pa-row'+(isNow?' now':'')+(open?'':' locked')+'"><span class="pa-name">第'+c.id+'章 '+esc(c.short)+'</span>' +
-            '<span class="pa-bar"><i style="width:'+Math.round(st/3*100)+'%"></i></span>' +
             '<span class="pa-stars">'+(st ? starsHtml(st) : (isNow ? 'いまここ' : '─'))+'</span></'+(open?'button':'div')+'>';
         }).join('');
-        return '<div class="pa-top">'+ring+rank+'</div><div class="progress-card"><h3>章ごとの星</h3>'+rows+'</div>';
+        return top + '<div class="progress-card"><h3>章ごとの星</h3>'+rows+'</div>';
       })() +
       (titles.length?'<div class="progress-card"><h3>獲得称号</h3><div class="title-badges">'+titles.map(function(t){return '<span class="title-badge">'+t+'</span>';}).join('')+'</div></div>':'')+
       self._lookPickerHtml() +
