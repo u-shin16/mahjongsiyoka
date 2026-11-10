@@ -2163,6 +2163,7 @@ var App = {
       return;
     }
     btn.classList.remove('pending');
+    btn.classList.toggle('logged-out', !u);
     // スマホでは「👤 ログ…」と切れていたので、文字と絵を分け、狭い画面は CSS で短く出す
     if (u) {
       var name = u.displayName || u.email || 'アカウント';

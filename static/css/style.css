@@ -6175,12 +6175,13 @@ body.is-battle-page .app-footer {
 }
 /* ログイン状態が分かるまで場所だけ空けて隠す（ちらつき防止） */
 .btn-account.pending { visibility: hidden; min-width: 96px; }
-/* ログイン前だけ金（押してほしいボタン）。ログイン後は他のボタンと同じ薄い面 */
-.btn-account:not(.logged-in) {
+/* ログイン前（JSが確かめてから .logged-out を付ける）だけ金。最初から金だと、名前に変わるときに金→クリームと色が動いて見えた。ログイン後は他のボタンと同じ薄い面 */
+.btn-account { transition: none; }   /* 色が変わるときに途中の色が見えないようにする */
+.btn-account.logged-out {
   background: var(--gold);
   color: #2e2200;
 }
-.btn-account:not(.logged-in):hover { background: #f0c968; }
+.btn-account.logged-out:hover { background: #f0c968; }
 
 /* ===== 友人戦 ===== */
 .fr-wrap  { max-width: 760px; margin: 0 auto; }
