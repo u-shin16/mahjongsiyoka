@@ -59,34 +59,36 @@ button { font-family: inherit; cursor: pointer; }
 .hidden { display: none !important; }
 
 /* ===== Header ===== */
+/* 2026-11-10：古臭いと言われたので作り直した。目的は「いまどのアプリかが分かる」「戻る・進捗・ログインに触れる」の2つだけ。
+   なので、帯の色・金の枠・影・絵文字・枠つきボタンをやめ、ページと同じ背景に細い線を1本引き、
+   タイトルは左寄せ、操作は文字だけにした。 */
 .app-header {
-  background: linear-gradient(135deg, #0d2018 0%, #1a3a2a 100%);
-  border-bottom: 2px solid var(--gold-dark);
+  background: var(--page-bg, var(--green-dark));
+  border-bottom: 1px solid rgba(255,255,255,0.1);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
 }
 .header-inner {
   max-width: 900px;
   margin: 0 auto;
-  padding: 10px 16px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
 }
 .header-title {
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
-  text-align: center;
-  font-size: 1.15rem;
-  font-weight: 900;
-  color: var(--gold);
+  text-align: left;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--cream);
   cursor: pointer;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 /* ヘッダーのアイコン。絵文字ではなくアプリ内と同じ実物の牌を出す。
@@ -101,18 +103,20 @@ button { font-family: inherit; cursor: pointer; }
   cursor: pointer;
 }
 .btn-back, .btn-progress {
-  background: rgba(232,184,75,0.15);
-  border: 1px solid var(--gold-dark);
-  color: var(--gold);
-  padding: 6px 12px;
+  background: none;
+  border: none;
+  color: var(--cream);
+  opacity: 0.75;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
-  font-weight: 700;
-  transition: background 0.2s;
+  font-weight: 500;
+  transition: opacity 0.15s, background 0.15s;
   white-space: nowrap;
 }
 .btn-back:hover, .btn-progress:hover {
-  background: rgba(232,184,75,0.3);
+  opacity: 1;
+  background: rgba(255,255,255,0.08);
 }
 
 /* ===== Main ===== */
@@ -326,10 +330,9 @@ button { font-family: inherit; cursor: pointer; }
 .daily-reward-login { font-size: 0.82rem; opacity: 0.9; }
 
 /* ヘッダーのログインボタン：スマホでは絵を外して文字だけにし、切れないようにする */
-.btn-account .acc-ico { margin-right: 4px; }
+.btn-account .acc-ico { display: none; }   /* 絵文字はやめた（2026-11-10） */
 @media (max-width: 480px) {
   .btn-account { max-width: 110px; padding: 6px 9px; }
-  .btn-account:not(.logged-in) .acc-ico { display: none; }
 }
 
 /* 復習・辞典 */
@@ -1402,7 +1405,7 @@ button { font-family: inherit; cursor: pointer; }
   .memory-grid { grid-template-columns: repeat(4, 52px); gap: 6px; }
   .choice-grid { max-width: 280px; }
   .btn { padding: 9px 16px; font-size: 0.88rem; }
-  .header-title { font-size: 1rem; }
+  .header-title { font-size: 0.98rem; }
 }
 @media (max-width: 360px) {
   .tile { width: 36px; height: 50px; border-bottom-width: 4px; border-right-width: 2px; }
@@ -6186,8 +6189,8 @@ body.is-battle-page .app-footer {
   margin-left: 6px;
 }
 .btn-account.logged-in {
-  border-color: rgba(240, 200, 100, 0.55);
-  color: #f3d98b;
+  opacity: 1;
+  color: var(--cream);
 }
 
 /* ===== 友人戦 ===== */
