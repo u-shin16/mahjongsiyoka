@@ -301,7 +301,6 @@ document.addEventListener('click', function(e) {
 });
 // 章をクリアするともらえる称号（進捗画面の「いまの称号」もこれで決める）
 var CHAPTER_TITLES = {1:'はじめてのアガリ',5:'役牌マスター',6:'ルールを覚えた',7:'鳴きデビュー',8:'役デビュー',9:'翻デビュー',10:'点数計算入門',12:'中級役マスター',13:'上級役マスター',14:'三麻デビュー'};
-function starsHtml(n) { return '★'.repeat(n) + '☆'.repeat(3 - n); }
 
 // ごほうびで選んだ牌・卓・背景の色を、ページ全体の色の変数に入れる（style.css が使う）
 function applyLook() {
@@ -2527,7 +2526,8 @@ var App = {
         var rightCol = '';
         if (cleared) {
           rightCol = '<div class="chapter-cleared-col">' +
-            '<div class="chapter-stars">'+starsHtml(stars)+'</div>' +
+            // 2026-11-10：★はやめた（クリアすると必ず★3つで、意味が無かった）。クリアしたことだけ出す。
+            '<div class="chapter-stars">✓ クリア</div>' +
             '<span class="chapter-badge chapter-badge-replay">🔄 復習</span>' +
             '</div>';
         } else if (locked) {
@@ -3240,7 +3240,6 @@ var App = {
         var g=qIdx>=10?correct>=10?{g:'もう打てる雀士',s:3}:correct>=8?{g:'期待の雀士',s:3}:correct>=7?{g:'初級雀士',s:2}:{g:'見習い雀士',s:1}:{g:'見習い雀士',s:1};
         Progress.setStars(11,g.s);if(g.s>=2)Progress.addTitle('道場初級クリア');
         main.innerHTML='<div class="clear-screen"><div class="clear-icon">🏆</div><div class="clear-title">道場チャレンジ 終了！</div>' +
-          '<div class="stars-row">'+starsHtml(g.s)+'</div>' +
           '<div style="font-size:1.3rem;font-weight:900;color:var(--gold);margin-bottom:12px">段位：'+g.g+'</div>' +
           '<div style="font-size:1.1rem;color:#a8d8b0;margin-bottom:20px">正解 '+correct+' / '+allQs.length+' 問</div>' +
           (correct<7?'<div class="game-instruction" style="margin-bottom:18px">もう少し！チャプター1〜6を復習するともっと強くなれるよ。</div>':'')+
@@ -5386,28 +5385,30 @@ var App = {
     var titles = Progress.getTitles();
     main.innerHTML = '<div class="progress-wrap">' +
       // 2026-11-10 夜：進捗画面をE（大きな％＋太いバー）にした（A→ゆーしん「やっぱE」。参考：goworkshipのプログレスバー記事の確定プログレスバー型）。
-      // 大きな％と光る太いバー、右上に次の章、下に数字3つ（クリアした章・集めた★・★3つの章）、一覧は章ごとの★。
+      // 同日：★はやめた（ゆーしん「星いらんくない」）。クリアすると必ず★3つで、何も表していなかった。
+      // 数字は「クリアした章・必修の残り・残りの目安時間」、一覧は「✓ クリア／いまここ／─」。
       (function(){
         var all = GameData.CHAPTERS.slice().sort(function(a,b){return a.id-b.id;});
         var done = all.filter(function(c){return Progress.isCleared(c.id);}).length;
         var pct = Math.round(done/all.length*100);
         var nowCh = all.find(function(c){return !Progress.isCleared(c.id);});
-        var starSum = 0, three = 0;
-        all.forEach(function(c){ var st = Progress.getStars(c.id); starSum += st; if (st >= 3) three++; });
+        var core = all.filter(function(c){return c.tier==='core';});
+        var coreDone = core.filter(function(c){return Progress.isCleared(c.id);}).length;
+        var restMin = all.reduce(function(n,c){return n + (Progress.isCleared(c.id) ? 0 : (c.min||0));}, 0);
         var top = '<div class="pe-big"><div class="pe-top"><div class="pe-pct">'+pct+'<small>%</small></div>' +
           '<div class="pe-next">'+(nowCh ? 'つぎの章<b>第'+nowCh.id+'章 '+esc(nowCh.short)+'</b>' : 'ぜんぶの章<b>クリア！</b>')+'</div></div>' +
           '<div class="pe-track"><i style="width:'+Math.max(pct,0)+'%"></i></div>' +
           '<div class="pe-ticks"><span>0</span><span>'+done+' / '+all.length+'章クリア</span><span>100</span></div></div>' +
-          '<div class="pe-kv"><div><b>'+done+'</b><span>クリアした章</span></div>' +
-          '<div><b>'+starSum+'</b><span>集めた★ / '+(all.length*3)+'</span></div>' +
-          '<div><b>'+three+'</b><span>★3つの章</span></div></div>';
+          '<div class="pe-kv"><div><b>'+done+'<small> / '+all.length+'</small></b><span>クリアした章</span></div>' +
+          '<div><b>'+coreDone+'<small> / '+core.length+'</small></b><span>'+(coreDone>=core.length?'必修クリア！':'必修の章')+'</span></div>' +
+          '<div><b>'+(restMin?'約'+restMin+'<small>分</small>':'0<small>分</small>')+'</b><span>残りの目安</span></div></div>';
         var rows = all.map(function(c){
-          var st = Progress.getStars(c.id), isNow = nowCh && nowCh.id === c.id, open = st > 0 || isNow;
+          var ok = Progress.isCleared(c.id), isNow = nowCh && nowCh.id === c.id, open = ok || isNow;
           var tag = open ? 'button type="button" data-ch="'+c.id+'"' : 'div';
-          return '<'+tag+' class="pa-row'+(isNow?' now':'')+(open?'':' locked')+'"><span class="pa-name">第'+c.id+'章 '+esc(c.short)+'</span>' +
-            '<span class="pa-stars">'+(st ? starsHtml(st) : (isNow ? 'いまここ' : '─'))+'</span></'+(open?'button':'div')+'>';
+          return '<'+tag+' class="pa-row'+(isNow?' now':'')+(ok?' done':'')+(open?'':' locked')+'"><span class="pa-name">第'+c.id+'章 '+esc(c.short)+'</span>' +
+            '<span class="pa-stars">'+(ok ? '✓ クリア' : (isNow ? 'いまここ' : '─'))+'</span></'+(open?'button':'div')+'>';
         }).join('');
-        return top + '<div class="progress-card"><h3>章ごとの星</h3>'+rows+'</div>';
+        return top + '<div class="progress-card"><h3>章ごとの進み具合</h3>'+rows+'</div>';
       })() +
       (titles.length?'<div class="progress-card"><h3>獲得称号</h3><div class="title-badges">'+titles.map(function(t){return '<span class="title-badge">'+t+'</span>';}).join('')+'</div></div>':'')+
       self._lookPickerHtml() +
@@ -6836,7 +6837,7 @@ function showClear(chId, stars) {
   if (titleMap[chId]) Progress.addTitle(titleMap[chId]);
   sendEvent('chapter_clear_' + chId, { chapter: chId, stars: stars });
   showOverlay('<div style="text-align:center"><div style="font-size:3rem;margin-bottom:12px">🏆</div>' +
-    '<h2>第'+chId+'章クリア！</h2><div style="font-size:1.8rem;margin:10px 0">'+starsHtml(stars)+'</div>' +
+    '<h2>第'+chId+'章クリア！</h2>' +
     '<p style="color:#a8d8b0;line-height:1.7;margin-bottom:20px">'+(msgs[chId]||'よくできました！')+'</p>' +
     '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
     (chId<14?'<button class="btn btn-primary" id="btnNextCh">次の章へ →</button>':'')+
