@@ -2260,19 +2260,19 @@ var App = {
     var cpuPage = { page:'battle_setup', params:{playerCount:4} };
     var startCard, startExtra = null;
     if (!started) {
-      startCard = { label:'はじめる', icon:'🎮', sub:'数字の牌から始めよう', page:'chapter', params:{id:1} };
+      startCard = { label:'はじめる', sub:'数字の牌から始めよう', page:'chapter', params:{id:1} };
     } else if (next && coreLeft.length) {
-      startCard = { label:'続きから', icon:'🎮', page:'chapter', params:{id:next.id},
+      startCard = { label:'続きから', page:'chapter', params:{id:next.id},
         sub:'第'+next.id+'章 '+esc(next.short) + '<br>打ち始めるまで あと'+coreLeft.length+'章・約'+coreMin+'分' };
     } else if (next && next.tier === 'test') {
-      startCard = { label:'道場チャレンジ', icon:'🥋', page:'chapter', params:{id:next.id},
+      startCard = { label:'道場チャレンジ', page:'chapter', params:{id:next.id},
         sub:'第'+next.id+'章　10問で段位が出る腕試し' };
     } else if (next) {
-      startCard = { label:'CPUと対局', icon:'🀄', page:cpuPage.page, params:cpuPage.params,
+      startCard = { label:'CPUと対局', page:cpuPage.page, params:cpuPage.params,
         sub:'必修クリア！覚えたことを試そう' };
       startExtra = { label:'第'+next.id+'章「'+esc(next.short)+'」から続ける', page:'chapter', params:{id:next.id} };
     } else {
-      startCard = { label:'CPUと対局', icon:'🀄', page:cpuPage.page, params:cpuPage.params,
+      startCard = { label:'CPUと対局', page:cpuPage.page, params:cpuPage.params,
         sub:'全章クリア！対局で腕をみがこう' };
     }
     // 2026-10-15：ホームのボタンを「麻雀牌」の見た目にし、「学ぶ」「打つ」に分けた（ゆーしん「もっとワクワクするように」）。
@@ -2283,13 +2283,13 @@ var App = {
       // 2026-10-15：ゆーしん「メインメニューがごちゃごちゃしすぎ」→ 9個から5個へ。
       // 単語クイズ・役一覧・麻雀用語は「復習・辞典」1つにまとめ、学習進捗は右上の「進捗」と同じなので外した。
       { key:'learn', title:'学ぶ', cards:[
-        { label:'章を選ぶ',   icon:'📚', page:'chapters' },
-        { label:'復習・辞典', icon:'📝', page:'review' },
-        { label:'AI先生',      icon:'💡', page:'ai_coach' },
+        { label:'章を選ぶ',   page:'chapters' },
+        { label:'復習・辞典', page:'review' },
+        { label:'AI先生',      page:'ai_coach' },
       ]},
       { key:'play', title:'打つ', cards:[
-        { label:'CPUと対局', icon:'🤖', page:'battle_setup', params:{playerCount:4} },
-        { label:'友人戦',    icon:'👥', page:'friend' },
+        { label:'CPUと対局', page:'battle_setup', params:{playerCount:4} },
+        { label:'友人戦',    page:'friend' },
       ]},
     ];
     var cards = [startCard];
@@ -2299,7 +2299,6 @@ var App = {
     var cardHtml = function(c) {
       var i = cards.indexOf(c);
       return '<button type="button" class="home-card home-card--' + c.group + (c.disabled ? ' disabled' : '') + '" data-ci="' + i + '">' +
-        '<span class="home-card-icon">' + c.icon + '</span>' +
         '<span class="home-card-text"><span class="home-card-label">' + c.label + '</span>' +
         (c.sub ? '<span class="home-card-sub">' + c.sub + '</span>' : '') + '</span></button>';
     };
@@ -2307,7 +2306,6 @@ var App = {
     main.innerHTML =
       '<div id="homeGrid">' +
         '<button type="button" class="home-start" data-ci="0">' +
-          '<span class="home-start-icon">' + startCard.icon + '</span>' +
           '<span class="home-start-text"><span class="home-start-label">' + startCard.label + '</span>' +
             '<span class="home-start-sub">' + startCard.sub + '</span>' +
             '<span class="home-start-bar"><span style="width:' + pct + '%"></span></span>' +
@@ -2336,15 +2334,14 @@ var App = {
   _renderReview: function(main) {
     var self = this;
     var items = [
-      { label:'単語クイズ', icon:'📝', sub:'用語・役を4択で確認', page:'quiz_select' },
-      { label:'役一覧',     icon:'📖', sub:'全役の翻数・条件・上がり例', page:'yaku' },
-      { label:'麻雀用語',   icon:'💬', sub:'用語の読み方と意味', page:'terms' },
+      { label:'単語クイズ', sub:'用語・役を4択で確認', page:'quiz_select' },
+      { label:'役一覧',     sub:'全役の翻数・条件・上がり例', page:'yaku' },
+      { label:'麻雀用語',   sub:'用語の読み方と意味', page:'terms' },
     ];
     main.innerHTML = '<div class="page-title">復習・辞典</div>' +
       '<div class="review-list">' + items.map(function(c, i) {
         return '<button type="button" class="home-card review-item" data-i="' + i + '">' +
-          '<span class="home-card-icon">' + c.icon + '</span>' +
-          '<span class="home-card-text"><span class="home-card-label">' + c.label + '</span>' +
+            '<span class="home-card-text"><span class="home-card-label">' + c.label + '</span>' +
           '<span class="home-card-sub">' + c.sub + '</span></span></button>';
       }).join('') + '</div>';
     main.querySelectorAll('.review-item').forEach(function(el) {

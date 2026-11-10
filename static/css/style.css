@@ -75,10 +75,10 @@ button { font-family: inherit; cursor: pointer; }
 .header-inner {
   max-width: 900px;
   margin: 0 auto;
-  padding: 12px 16px;
+  padding: 16px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
 }
 .header-title {
   flex: 1;
@@ -110,7 +110,7 @@ button { font-family: inherit; cursor: pointer; }
   border: none;
   color: var(--cream);
   opacity: 0.75;
-  padding: 6px 10px;
+  padding: 8px 16px;
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   font-weight: 500;
@@ -128,7 +128,7 @@ button { font-family: inherit; cursor: pointer; }
   max-width: 900px;
   width: 100%;
   margin: 0 auto;
-  padding: 20px 16px 40px;
+  padding: 24px 16px 40px;
 }
 .app-main.battle-main {
   max-width: min(1280px, 100vw);
@@ -146,8 +146,8 @@ button { font-family: inherit; cursor: pointer; }
   align-items: center;
   gap: 16px;
   width: 100%;
-  margin-top: 18px;
-  padding: 18px 20px;
+  margin-top: 24px;
+  padding: 24px;
   border: 0;
   border-radius: 16px;
   background: linear-gradient(160deg, #f0c968 0%, var(--gold) 100%);
@@ -160,21 +160,13 @@ button { font-family: inherit; cursor: pointer; }
 }
 .home-start:hover { transform: translateY(-2px); box-shadow: 0 calc(var(--press) + 2px) 0 var(--gold-dark), 0 14px 26px rgba(0,0,0,0.45); }
 .home-start:active { transform: translateY(var(--press)); box-shadow: 0 0 0 var(--gold-dark), 0 4px 10px rgba(0,0,0,0.35); }
-.home-start-icon {
-  flex: 0 0 auto;
-  font-size: 2.2rem;
-  width: 62px; height: 62px;
-  display: grid; place-items: center;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.4);
-}
-.home-start-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.home-start-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .home-start-label { font-size: 1.3rem; font-weight: 900; letter-spacing: 0.04em; }
 .home-start-sub { font-size: 0.82rem; font-weight: 700; color: #4a3800; line-height: 1.5; }
 .home-start-bar {
   display: block;
-  height: 7px;
-  margin-top: 4px;
+  height: 8px;
+  margin-top: 8px;
   border-radius: 99px;
   background: rgba(46,34,0,0.15);
   overflow: hidden;
@@ -182,14 +174,14 @@ button { font-family: inherit; cursor: pointer; }
 .home-start-bar span {
   display: block;
   height: 100%;
-  min-width: 7px;
+  min-width: 8px;
   border-radius: 99px;
   background: var(--green-dark);
 }
 .home-start-count { font-size: 0.72rem; font-weight: 700; color: #4a3800; }
 .home-start-go {
   flex: 0 0 auto;
-  width: 44px; height: 44px;
+  width: 48px; height: 48px;
   display: grid; place-items: center;
   border-radius: 50%;
   background: var(--green-dark);
@@ -199,8 +191,8 @@ button { font-family: inherit; cursor: pointer; }
 
 .home-start-extra {
   display: block;
-  margin: 12px 0 0 auto;
-  padding: 4px 2px;
+  margin: 16px 0 0 auto;
+  padding: 8px;
   border: 0;
   background: none;
   color: var(--gold);
@@ -213,8 +205,8 @@ button { font-family: inherit; cursor: pointer; }
 
 /* 今日の1問（ホームの3色にそろえる：クリーム・深緑・金） */
 .home-daily {
-  margin-top: 22px;
-  padding: 16px 18px 14px;
+  margin-top: 24px;
+  padding: 16px 24px;
   border-radius: 16px;
   background: var(--tile-bg);
   border: 1px solid var(--tile-border);
@@ -223,7 +215,8 @@ button { font-family: inherit; cursor: pointer; }
 }
 .home-daily-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .home-daily-badge {
-  padding: 3px 10px;
+  padding: 0 16px;
+  line-height: 24px;
   border-radius: 99px;
   background: var(--green-dark);
   color: var(--gold);
@@ -231,15 +224,15 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 900;
 }
 .home-daily-tag { font-size: 0.75rem; font-weight: 700; color: #7a6f55; }
-.home-daily-key { font-size: 1.25rem; font-weight: 900; margin-bottom: 2px; }
+.home-daily-key { font-size: 1.25rem; font-weight: 900; margin-bottom: 8px; }
 .home-daily-text { font-size: 0.95rem; font-weight: 700; line-height: 1.6; }
 /* 2026-11-07：符・点数の問題の手牌。面子ごとに区切って折り返す */
-.home-daily-tiles { margin: 22px 0 4px; }
+.home-daily-tiles { margin: 24px 0 8px; }
 .home-daily-tiles .tile-group-label { color: #4c6b57; font-weight: 700; }
-.home-daily-tiles .tiles-row { flex-wrap: wrap; justify-content: center; gap: 10px; }
-.home-daily-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.home-daily-tiles .tiles-row { flex-wrap: wrap; justify-content: center; gap: 8px; }
+.home-daily-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
 .home-daily-choice {
-  padding: 11px 8px;
+  padding: 16px 8px;
   border: 1px solid var(--tile-border);
   border-radius: 10px;
   background: #fff;
@@ -253,18 +246,18 @@ button { font-family: inherit; cursor: pointer; }
 }
 .home-daily-choice:hover { transform: translateY(-1px); }
 .home-daily-choice:active { transform: translateY(3px); box-shadow: 0 0 0 #d4c39d; }
-.home-daily-result { margin-top: 12px; font-size: 1rem; font-weight: 900; }
+.home-daily-result { margin-top: 16px; font-size: 1rem; font-weight: 900; }
 .home-daily-result.ok { color: var(--green-mid); }
 .home-daily-result.ng { color: #9a5a00; }
-.home-daily-expl { margin-top: 6px; font-size: 0.85rem; line-height: 1.6; color: #4a4232; }
-.home-daily-done { margin-top: 10px; font-size: 0.85rem; font-weight: 700; }
+.home-daily-expl { margin-top: 8px; font-size: 0.85rem; line-height: 1.6; color: #4a4232; }
+.home-daily-done { margin-top: 8px; font-size: 0.85rem; font-weight: 700; }
 .home-daily-foot {
   display: flex;
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 12px;
-  padding-top: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
   border-top: 1px dashed var(--tile-border);
   font-size: 0.78rem;
   font-weight: 700;
@@ -274,8 +267,8 @@ button { font-family: inherit; cursor: pointer; }
 
 .home-daily-close {
   display: block;
-  margin: 10px auto 0;
-  padding: 6px 18px;
+  margin: 16px auto 0;
+  padding: 8px 16px;
   border: 1px solid var(--tile-border);
   border-radius: 99px;
   background: #fff;
@@ -291,9 +284,9 @@ button { font-family: inherit; cursor: pointer; }
 .home-daily-line {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 12px 14px;
+  padding: 16px;
   border: 0;
   background: none;
   color: var(--green-dark);
@@ -309,17 +302,18 @@ button { font-family: inherit; cursor: pointer; }
 .home-daily-line .home-daily-badge, .home-daily-mark, .home-daily-days { white-space: nowrap; flex-shrink: 0; }
 .home-daily-line .home-daily-days { flex-shrink: 1; }
 @media (max-width: 480px) {
-  .home-daily-line { gap: 7px; padding: 11px 10px; font-size: 0.8rem; }
-  .home-daily-line .home-daily-badge { padding: 3px 8px; font-size: 0.72rem; }
-  .home-daily-gift { margin-right: 8px; padding: 5px 9px; }
+  .home-daily-line { gap: 8px; padding: 16px; font-size: 0.8rem; }
+  .home-daily-line .home-daily-badge { padding: 0 8px; font-size: 0.72rem; }
+  .home-daily-gift { margin-right: 8px; padding: 0 8px; }
 }
 
 .home-daily.compact { display: flex; align-items: center; }
 .home-daily.compact .home-daily-line { flex: 1 1 auto; min-width: 0; }
 .home-daily-gift {
   flex: 0 0 auto;
-  margin-right: 10px;
-  padding: 5px 12px;
+  margin-right: 8px;
+  padding: 0 16px;
+  line-height: 32px;
   border: 1px solid var(--gold-dark);
   border-radius: 99px;
   background: var(--green-dark);
@@ -329,18 +323,18 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 700;
   cursor: pointer;
 }
-.home-daily-gift.inline { margin: 0; padding: 3px 10px; }
+.home-daily-gift.inline { margin: 0; padding: 0 16px; line-height: 24px; }
 .daily-reward-login { font-size: 0.82rem; opacity: 0.9; }
 
 /* ヘッダーのログインボタン：スマホでは絵を外して文字だけにし、切れないようにする */
 .btn-account .acc-ico { display: none; }   /* 絵文字はやめた（2026-11-10） */
 @media (max-width: 480px) {
-  .btn-account { max-width: 110px; padding: 6px 9px; }
+  .btn-account { max-width: 112px; padding: 8px; }
 }
 
 /* 復習・辞典 */
-.review-list { display: grid; gap: 14px; max-width: 520px; margin: 12px auto 0; }
-.home-card.review-item { flex-direction: row; justify-content: flex-start; gap: 14px; padding: 16px; text-align: left; }
+.review-list { display: grid; gap: 16px; max-width: 520px; margin: 16px auto 0; }
+.home-card.review-item { flex-direction: row; justify-content: flex-start; gap: 16px; padding: 24px 16px; text-align: left; }
 .home-card.review-item .home-card-text { align-items: flex-start; }
 
 /* ごほうびのお知らせ */
@@ -400,12 +394,12 @@ button { font-family: inherit; cursor: pointer; }
 .look-state { font-size: 0.7rem; opacity: 0.8; white-space: nowrap; }
 
 /* 学ぶ・打つ のまとまり */
-.home-group { margin-top: 28px; }
+.home-group { margin-top: 32px; }
 .home-group-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0 0 12px;
+  gap: 8px;
+  margin: 0 0 16px;
   font-size: 0.95rem;
   font-weight: 900;
   color: var(--gold);
@@ -420,7 +414,7 @@ button { font-family: inherit; cursor: pointer; }
 .home-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px 14px;
+  gap: 16px;
 }
 .home-group--play .home-grid { grid-template-columns: repeat(2, 1fr); }
 
@@ -430,11 +424,13 @@ button { font-family: inherit; cursor: pointer; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 16px 10px 14px;
+  gap: 8px;
+  min-height: 80px;
+  justify-content: center;
+  padding: 24px 16px;
   border: 1px solid var(--tile-border);
   border-top-color: #fffef8;
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--tile-bg);
   font: inherit;
   text-align: center;
@@ -453,14 +449,7 @@ button { font-family: inherit; cursor: pointer; }
 .home-card:focus-visible, .home-start:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 .home-card.disabled { opacity: 0.5; cursor: not-allowed; }
 .home-card.disabled:hover { transform: none; }
-.home-card-icon {
-  font-size: 1.8rem;
-  width: 52px; height: 52px;
-  display: grid; place-items: center;
-  border-radius: 50%;
-  background: var(--cream-dark);
-}
-.home-card-text { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.home-card-text { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .home-card-label {
   font-size: 0.98rem;
   font-weight: 900;
@@ -475,12 +464,11 @@ button { font-family: inherit; cursor: pointer; }
 .home-group--play .home-card {
   flex-direction: row;
   justify-content: flex-start;
-  gap: 14px;
-  padding: 18px 16px;
+  gap: 16px;
+  padding: 24px 16px;
   text-align: left;
 }
 .home-group--play .home-card-text { align-items: flex-start; }
-.home-group--play .home-card-icon { width: 58px; height: 58px; font-size: 2rem; flex: 0 0 auto; }
 .home-group--play .home-card-label { font-size: 1.1rem; }
 .badge-new {
   position: absolute;
@@ -1379,16 +1367,13 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ===== Responsive ===== */
 @media (max-width: 480px) {
-  .app-main { padding: 14px 12px 32px; }
-  .home-card { padding: 12px 4px 10px; }
-  .home-card-icon { width: 42px; height: 42px; font-size: 1.45rem; }
+  .app-main { padding: 16px 16px 32px; }
+  .home-card { padding: 16px 8px; }
   .home-card-label { font-size: 0.86rem; }
-  .home-group--play .home-card { gap: 10px; padding: 14px 10px; }
-  .home-group--play .home-card-icon { width: 44px; height: 44px; font-size: 1.55rem; }
+  .home-group--play .home-card { gap: 8px; padding: 16px; }
   .home-group--play .home-card-label { font-size: 0.95rem; }
-  .home-start { gap: 12px; padding: 16px 14px; }
-  .home-start-icon { width: 50px; height: 50px; font-size: 1.9rem; }
-  .home-start-go { width: 38px; height: 38px; }
+  .home-start { gap: 16px; padding: 16px; }
+  .home-start-go { width: 40px; height: 40px; }
   .tile { width: 42px; height: 56px; border-bottom-width: 5px; border-right-width: 3px; }
   .tile .tile-num { font-size: 1.2rem; }
   .tile-corner { font-size: 0.48rem; top: 4px; left: 4px; }
