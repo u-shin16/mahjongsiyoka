@@ -144,6 +144,7 @@ button { font-family: inherit; cursor: pointer; }
 .btn-progress:hover { background: none; opacity: 0.85; }
 .btn-progress .acc-ico { display: block; width: 26px; height: 26px; line-height: 0; }
 .btn-progress .acc-ico svg { width: 100%; height: 100%; fill: currentColor; filter: drop-shadow(0 2px 0 #0f2419); }
+.btn-back.btn-progress { order: 0; }   /* もどるも同じ「絵＋小さい文字」にした（2026-11-10 夜） */
 /* ページ全体の薄い柄（牌の形を斜めに並べる）。背景の色はログインボーナスで変わるので、白の薄い線で重ねる */
 body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.06' stroke-width='2'%3E%3Crect x='10' y='8' width='22' height='30' rx='4' transform='rotate(-12 21 23)'/%3E%3Crect x='58' y='56' width='22' height='30' rx='4' transform='rotate(10 69 71)'/%3E%3C/g%3E%3C/svg%3E");
@@ -412,6 +413,9 @@ body {
   cursor: pointer;
 }
 .look-opt.active { border-color: var(--gold); background: rgba(232,184,75,0.12); }
+/* 進捗画面のカードがクリームになったので、選択肢も明るい面に合わせる */
+.progress-card .look-opt { background: rgba(26,58,42,0.06); border-color: rgba(26,58,42,0.18); }
+.progress-card .look-opt.active { border-color: var(--gold-dark); background: rgba(232,184,75,0.25); }
 .look-opt.locked { opacity: 0.55; }
 .look-swatch { width: 34px; height: 44px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.2); border-bottom-width: 5px; }
 .look-swatch.table { width: 56px; height: 40px; border-width: 4px; border-style: solid; }
@@ -1287,30 +1291,40 @@ body {
 /* ===== Progress page ===== */
 .progress-wrap { display: flex; flex-direction: column; gap: 16px; }
 .progress-header { text-align: center; margin-bottom: 8px; }
-.progress-name { font-size: 1.3rem; font-weight: 900; color: var(--gold); }
-.progress-sub { font-size: 0.85rem; color: #8ab89c; margin-top: 4px; }
-.progress-card {
-  background: linear-gradient(145deg, #2a5c3c, #1e4530);
-  border: 1px solid rgba(232,184,75,0.2);
-  border-radius: var(--radius);
-  padding: 16px;
+/* 2026-11-10 夜：ヘッダーをポケモン公式風にしたので、進捗画面もそろえた。
+   見出しはヘッダーのロゴと同じ縁取り、カードはホームの「今日の1問」と同じクリームの面 */
+.progress-name {
+  font-size: 1.6rem; font-weight: 900; color: var(--cream); letter-spacing: 0.06em;
+  -webkit-text-stroke: 6px #0f2419; paint-order: stroke fill; text-shadow: 0 3px 0 #0f2419;
 }
-.progress-card h3 { font-size: 0.85rem; color: #8ab89c; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+.progress-sub { font-size: 0.85rem; font-weight: 700; color: var(--cream); opacity: 0.85; margin-top: 8px; }
+.progress-card {
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  border-radius: 16px;
+  box-shadow: 0 6px 0 #b89d6e, 0 8px 16px rgba(0,0,0,0.3);
+  color: var(--green-dark);
+  padding: 16px 24px;
+}
+.progress-card h3 {
+  display: inline-block; font-size: 0.8rem; font-weight: 900; letter-spacing: 0.06em;
+  color: var(--gold); background: var(--green-dark); border-radius: 99px; padding: 0 16px; line-height: 24px; margin-bottom: 8px;
+}
 .progress-chapter-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(26,58,42,0.18);
 }
 .progress-chapter-row:last-child { border-bottom: none; }
-.progress-ch-title { flex: 1; font-size: 0.88rem; color: var(--text-light); }
-.progress-ch-stars { font-size: 0.95rem; }
+.progress-ch-title { flex: 1; font-size: 0.9rem; font-weight: 700; color: var(--green-dark); }
+.progress-ch-stars { font-size: 1rem; color: var(--gold-dark); letter-spacing: 0.08em; }
 .title-badges { display: flex; flex-wrap: wrap; gap: 8px; }
 .title-badge {
-  background: rgba(232,184,75,0.15);
+  background: rgba(232,184,75,0.25);
   border: 1px solid var(--gold-dark);
-  color: var(--gold);
+  color: #5a4200;
   padding: 5px 12px;
   border-radius: 20px;
   font-size: 0.8rem;

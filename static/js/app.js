@@ -5383,7 +5383,7 @@ var App = {
     var cleared = chs.filter(function(c){return Progress.isCleared(c.id);}).length;
     var titles = Progress.getTitles();
     main.innerHTML = '<div class="progress-wrap">' +
-      '<div class="progress-header"><div class="progress-name">📊 学習進捗</div><div class="progress-sub">クリア章：'+cleared+' / '+chs.length+'</div></div>' +
+      '<div class="progress-header"><div class="progress-name">学習進捗</div><div class="progress-sub">クリア章：'+cleared+' / '+chs.length+'</div></div>' +
       '<div class="progress-card"><h3>チャプター進捗</h3>' +
       GameData.CHAPTERS.map(function(c){var s=Progress.getStars(c.id);return '<div class="progress-chapter-row"><div class="progress-ch-title">第'+c.id+'章 '+c.short+'</div><div class="progress-ch-stars">'+(s>0?starsHtml(s):'─')+'</div></div>';}).join('')+
       '</div>' +
