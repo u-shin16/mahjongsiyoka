@@ -1351,19 +1351,16 @@ button.prog-step { cursor: pointer; }
 .prog-step.now .prog-body > span { opacity: 1; color: #6b5a30; }
 .prog-step.locked .prog-body { opacity: 0.55; }
 button.prog-step.done:hover .prog-body b { text-decoration: underline; text-underline-offset: 4px; }
-/* 2026-11-10 夜：ゆーしん「余白がめっちゃある」「スクロールしなきゃあかんのがめんどい」
-   → スマホは1行を詰めて章名と★を横に並べる。PCは7章×2段の横の道にして、1画面に収める */
-.prog-step { gap: 12px; padding-bottom: 8px; }
-.prog-dot { width: 32px; height: 32px; font-size: 0.8rem; }
-.prog-step::before { left: 14px; top: 32px; }
-.prog-body { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; padding-top: 0; }
-.prog-body b { font-size: 0.9rem; }
+/* 2026-11-10 夜：ゆーしん「文字小さいかも」「スクロールは別にいいから余白をどうにかしよう」
+   → 最初のBの大きさ（縦1列・章名の下に★）に戻し、PCで左に寄って右が空いていたのを、真ん中に置いた幅の決まった列にした */
+.prog-steps { max-width: 560px; margin-left: auto; margin-right: auto; width: 100%; }
 .prog-body b small { font-size: inherit; }
-.prog-step.now .prog-body { padding: 4px 12px; }
-/* PCは2列（左に第1〜7章、右に第8〜14章）。1行は「章名…★」のまま左から右へ読める（2026-11-10 夜、4案から3を選んだ。横7章×2段は見にくかった） */
 @media (min-width: 720px) {
-  .prog-steps { display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: column; grid-template-rows: repeat(7, auto); column-gap: 48px; }
-  .prog-step:nth-child(7)::before { display: none; }
+  .prog-dot { width: 44px; height: 44px; font-size: 0.95rem; }
+  .prog-step::before { left: 20px; top: 44px; }
+  .prog-step { gap: 20px; padding-bottom: 20px; }
+  .prog-body b { font-size: 1.05rem; }
+  .prog-body > span { font-size: 0.85rem; }
 }
 /* 押したあとにボタンへ残る白い枠（フォーカス）は、マウスで押したときは出さない */
 .btn-progress:focus:not(:focus-visible), .prog-step:focus:not(:focus-visible) { outline: none; }
