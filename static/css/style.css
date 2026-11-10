@@ -1320,50 +1320,41 @@ body {
 .progress-chapter-row:last-child { border-bottom: none; }
 .progress-ch-title { flex: 1; font-size: 0.9rem; font-weight: 700; color: var(--green-dark); }
 .progress-ch-stars { font-size: 1rem; color: var(--gold-dark); letter-spacing: 0.08em; }
-/* 学習の道のり（ステッパー）。2026-11-10 夜 */
-.prog-steps { display: flex; flex-direction: column; margin-top: 8px; }
-.prog-step {
-  display: flex; gap: 16px; position: relative; padding: 0 0 16px;
-  background: none; border: 0; font: inherit; color: var(--cream); text-align: left; width: 100%;
-}
-button.prog-step { cursor: pointer; }
-.prog-step::before {
-  content: ""; position: absolute; left: 18px; top: 38px; bottom: 0; width: 4px; border-radius: 2px;
-  background: rgba(255,255,255,0.14);
-}
-.prog-step.done::before { background: var(--gold); }
-.prog-step:last-child::before { display: none; }
-.prog-dot {
-  width: 40px; height: 40px; flex: 0 0 auto; border-radius: 50%; display: grid; place-items: center;
-  font-weight: 900; font-size: 0.9rem; position: relative; z-index: 1;
-  background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.55); border: 2px solid rgba(255,255,255,0.18);
-}
-.prog-step.done .prog-dot { background: var(--gold); color: #2e2200; border-color: #f0c968; box-shadow: 0 3px 0 var(--gold-dark); }
-.prog-step.now .prog-dot { background: var(--cream); color: var(--green-dark); border-color: var(--gold); box-shadow: 0 0 0 6px rgba(232,184,75,0.25); }
-.prog-body { flex: 1; min-width: 0; padding-top: 2px; }
-.prog-body b { display: block; font-size: 0.95rem; font-weight: 900; }
-.prog-body > span { font-size: 0.78rem; font-weight: 700; opacity: 0.8; }
-.prog-stars { color: var(--gold); letter-spacing: 0.08em; }
-.prog-step.now .prog-body {
-  background: var(--tile-bg); color: var(--green-dark); border-radius: 12px; padding: 8px 16px;
-  box-shadow: 0 4px 0 #b89d6e, 0 6px 12px rgba(0,0,0,0.3);
-}
-.prog-step.now .prog-body > span { opacity: 1; color: #6b5a30; }
-.prog-step.locked .prog-body { opacity: 0.55; }
-button.prog-step.done:hover .prog-body b { text-decoration: underline; text-underline-offset: 4px; }
-/* 2026-11-10 夜：ゆーしん「文字小さいかも」「スクロールは別にいいから余白をどうにかしよう」
-   → 最初のBの大きさ（縦1列・章名の下に★）に戻し、PCで左に寄って右が空いていたのを、真ん中に置いた幅の決まった列にした */
-.prog-steps { max-width: 560px; margin-left: auto; margin-right: auto; width: 100%; }
-.prog-body b small { font-size: inherit; }
-@media (min-width: 720px) {
-  .prog-dot { width: 44px; height: 44px; font-size: 0.95rem; }
-  .prog-step::before { left: 20px; top: 44px; }
-  .prog-step { gap: 20px; padding-bottom: 20px; }
-  .prog-body b { font-size: 1.05rem; }
-  .prog-body > span { font-size: 0.85rem; }
+/* 進捗画面 A（円グラフ＋称号）。2026-11-10 夜。前のステッパーは見にくいと言われて外した */
+.pa-top { display: flex; align-items: center; justify-content: center; gap: 24px; margin: 8px 0; }
+.pa-ring { width: 140px; height: 140px; flex: 0 0 auto; position: relative; }
+.pa-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.pa-ring-num { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+.pa-ring-num b { display: block; font-size: 2.6rem; font-weight: 900; line-height: 1; color: var(--cream);
+  -webkit-text-stroke: 6px #0f2419; paint-order: stroke fill; text-shadow: 0 3px 0 #0f2419; }
+.pa-ring-num small { display: block; font-size: 0.8rem; font-weight: 700; opacity: 0.85; margin-top: 4px; }
+.pa-rank { font-size: 0.85rem; font-weight: 700; color: var(--cream); min-width: 0; flex: 0 1 280px; }
+.pa-rank b { display: block; font-size: 1.6rem; font-weight: 900; color: var(--gold); line-height: 1.3; margin: 4px 0 8px;
+  -webkit-text-stroke: 6px #0f2419; paint-order: stroke fill; text-shadow: 0 3px 0 #0f2419; }
+.pa-minibar { height: 8px; border-radius: 99px; background: rgba(0,0,0,0.35); overflow: hidden; margin-top: 8px; }
+.pa-minibar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--gold), #f0c968); }
+.pa-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 0; border: 0; border-bottom: 1px dashed rgba(26,58,42,0.18);
+  background: none; font: inherit; color: var(--green-dark); text-align: left; }
+.pa-row:last-child { border-bottom: none; }
+button.pa-row { cursor: pointer; }
+button.pa-row:hover .pa-name { text-decoration: underline; text-underline-offset: 4px; }
+.pa-name { flex: 1; min-width: 0; font-size: 0.95rem; font-weight: 700; }
+.pa-bar { width: 96px; height: 8px; border-radius: 99px; background: rgba(26,58,42,0.12); overflow: hidden; flex: 0 0 auto; }
+.pa-bar i { display: block; height: 100%; border-radius: 99px; background: var(--gold-dark); }
+.pa-stars { width: 4.8em; text-align: right; font-size: 1rem; color: var(--gold-dark); letter-spacing: 0.08em; flex: 0 0 auto; white-space: nowrap; }
+.pa-row.now .pa-name { color: var(--green-mid); }
+.pa-row.now .pa-stars { font-size: 0.8rem; font-weight: 900; letter-spacing: 0; color: var(--green-mid); }
+.pa-row.locked { opacity: 0.5; }
+@media (max-width: 480px) {
+  .pa-top { gap: 16px; }
+  .pa-ring { width: 120px; height: 120px; }
+  .pa-ring-num b { font-size: 2.2rem; }
+  .pa-rank b { font-size: 1.3rem; }
+  .pa-bar { display: none; }   /* スマホは章名が折り返すので、★と同じ内容のバーは外す */
+  .pa-name { font-size: 0.9rem; }
 }
 /* 押したあとにボタンへ残る白い枠（フォーカス）は、マウスで押したときは出さない */
-.btn-progress:focus:not(:focus-visible), .prog-step:focus:not(:focus-visible) { outline: none; }
+.btn-progress:focus:not(:focus-visible), .pa-row:focus:not(:focus-visible) { outline: none; }
 .title-badges { display: flex; flex-wrap: wrap; gap: 8px; }
 .title-badge {
   background: rgba(232,184,75,0.25);

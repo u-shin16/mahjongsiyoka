@@ -299,6 +299,8 @@ document.addEventListener('click', function(e) {
   var ov = document.getElementById('overlay');
   if (!ov.classList.contains('hidden') && e.target === ov) hideOverlay();
 });
+// 章をクリアするともらえる称号（進捗画面の「いまの称号」もこれで決める）
+var CHAPTER_TITLES = {1:'はじめてのアガリ',5:'役牌マスター',6:'ルールを覚えた',7:'鳴きデビュー',8:'役デビュー',9:'翻デビュー',10:'点数計算入門',12:'中級役マスター',13:'上級役マスター',14:'三麻デビュー'};
 function starsHtml(n) { return '★'.repeat(n) + '☆'.repeat(3 - n); }
 
 // ごほうびで選んだ牌・卓・背景の色を、ページ全体の色の変数に入れる（style.css が使う）
@@ -5383,22 +5385,37 @@ var App = {
     var cleared = chs.filter(function(c){return Progress.isCleared(c.id);}).length;
     var titles = Progress.getTitles();
     main.innerHTML = '<div class="progress-wrap">' +
-      '<div class="progress-header"><div class="progress-name">学習の道のり</div><div class="progress-sub">'+cleared+' / '+chs.length+'章クリア</div></div>' +
-      // 2026-11-10 夜：章の一覧をステッパー（すごろく）にした（ゆーしんが5案からBを選んだ）。
-      // クリアした章は金の丸、いまの章（一番小さい未クリア章）だけクリームのカード、その先は薄く。
-      // クリア済みといまの章は押すとその章へ飛ぶ。その先はロックされているので押せない。
+      // 2026-11-10 夜：進捗画面をA（円グラフ＋称号）にした（ゆーしんが5案から選び直した。参考：goworkshipのプログレスバー記事の「プロフィールの強さ」型）。
+      // 円で全14章のうち何章クリアしたか、横にいまの称号と次の称号まで、下の一覧は章ごとに小さいバーと★。
       (function(){
         var all = GameData.CHAPTERS.slice().sort(function(a,b){return a.id-b.id;});
+        var done = all.filter(function(c){return Progress.isCleared(c.id);}).length;
         var nowCh = all.find(function(c){return !Progress.isCleared(c.id);});
-        return '<div class="prog-steps">' + all.map(function(c){
-          var done = Progress.isCleared(c.id), now = nowCh && nowCh.id === c.id;
-          var cls = done ? 'done' : (now ? 'now' : 'locked');
-          var s = Progress.getStars(c.id);
-          var sub = done ? '<span class="prog-stars">'+starsHtml(s)+'</span>' : (now ? 'いまここ<span class="prog-more">・つづきから</span>' : 'まだ');
-          var tag = (done || now) ? 'button type="button" data-ch="'+c.id+'"' : 'div';
-          return '<'+tag+' class="prog-step '+cls+'"><span class="prog-dot">'+(done?'✓':c.id)+'</span>' +
-            '<span class="prog-body"><b><small>第'+c.id+'章 </small>'+esc(c.short)+'</b><span>'+sub+'</span></span></'+((done||now)?'button':'div')+'>';
-        }).join('') + '</div>';
+        var cur = null, curId = 0, next = null, nextId = 0;
+        all.forEach(function(c){
+          if (!CHAPTER_TITLES[c.id]) return;
+          if (Progress.isCleared(c.id)) { cur = CHAPTER_TITLES[c.id]; curId = c.id; }
+          else if (!next) { next = CHAPTER_TITLES[c.id]; nextId = c.id; }
+        });
+        var left = next ? all.filter(function(c){return c.id<=nextId && !Progress.isCleared(c.id);}).length : 0;
+        var span = next ? all.filter(function(c){return c.id>curId && c.id<=nextId;}).length : 1;
+        var pct = next ? Math.round((span-left)/span*100) : 100;
+        var r = 54, circ = 2*Math.PI*r, off = circ*(1-done/all.length);
+        var ring = '<div class="pa-ring"><svg viewBox="0 0 132 132" aria-hidden="true">' +
+          '<circle cx="66" cy="66" r="'+r+'" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="14"/>' +
+          '<circle cx="66" cy="66" r="'+r+'" fill="none" stroke="#e8b84b" stroke-width="14" stroke-linecap="round" stroke-dasharray="'+circ.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/></svg>' +
+          '<div class="pa-ring-num"><div><b>'+done+'</b><small>/ '+all.length+'章</small></div></div></div>';
+        var rank = '<div class="pa-rank">いまの称号<b>'+(cur?esc(cur):'まだなし')+'</b>' +
+          (next ? 'あと'+left+'章で「'+esc(next)+'」' : 'すべての称号を集めた') +
+          '<div class="pa-minibar"><i style="width:'+pct+'%"></i></div></div>';
+        var rows = all.map(function(c){
+          var st = Progress.getStars(c.id), isNow = nowCh && nowCh.id === c.id, open = st > 0 || isNow;
+          var tag = open ? 'button type="button" data-ch="'+c.id+'"' : 'div';
+          return '<'+tag+' class="pa-row'+(isNow?' now':'')+(open?'':' locked')+'"><span class="pa-name">第'+c.id+'章 '+esc(c.short)+'</span>' +
+            '<span class="pa-bar"><i style="width:'+Math.round(st/3*100)+'%"></i></span>' +
+            '<span class="pa-stars">'+(st ? starsHtml(st) : (isNow ? 'いまここ' : '─'))+'</span></'+(open?'button':'div')+'>';
+        }).join('');
+        return '<div class="pa-top">'+ring+rank+'</div><div class="progress-card"><h3>章ごとの星</h3>'+rows+'</div>';
       })() +
       (titles.length?'<div class="progress-card"><h3>獲得称号</h3><div class="title-badges">'+titles.map(function(t){return '<span class="title-badge">'+t+'</span>';}).join('')+'</div></div>':'')+
       self._lookPickerHtml() +
@@ -5410,7 +5427,7 @@ var App = {
       var lc = document.getElementById('lookCard');
       if (lc) setTimeout(function() { lc.scrollIntoView({ block: 'start' }); }, 0);
     }
-    main.querySelectorAll('.prog-step[data-ch]').forEach(function(el) {
+    main.querySelectorAll('.pa-row[data-ch]').forEach(function(el) {
       el.addEventListener('click', function() { self.navigate('chapter', { id: Number(el.getAttribute('data-ch')) }); });
     });
     main.querySelectorAll('.look-opt[data-type]').forEach(function(el) {
@@ -6822,7 +6839,7 @@ function showClear(chId, stars) {
   // 2026-09-07に章を組み替えたので番号を振り直した（全13章）
   // 2026-09-15：対局のルールを必修の最後（第6章）に移動。メッセージも章の内容に合わせて付け替えた。
   var msgs = {1:'はじめてのアガリ！麻雀は「セット」と「頭」を作るゲームだよ。',2:'色の違いを理解したね！',3:'本物の麻雀牌を使いこなせるようになってきた！',4:'字牌をすべて覚えたかな？',5:'役牌をマスターした！',6:'一局の回し方が分かった！',7:'ポンとチーを使いこなせるようになった！',8:'立直・タンヤオ・平和・門前清自摸和・一発を覚えた！ここまでで必修はぜんぶ終わり。もう対局できるよ！',9:'翻とドラが数えられるようになった！',10:'符を数えて、点数が出せるようになった！',11:'道場チャレンジ完了！',12:'中級役（七対子・対々和など）をマスター！',13:'清一色などの上級役まで到達！すごい！',14:'三人麻雀のルールもバッチリ！'};
-  var titleMap = {1:'はじめてのアガリ',5:'役牌マスター',6:'ルールを覚えた',7:'鳴きデビュー',8:'役デビュー',9:'翻デビュー',10:'点数計算入門',12:'中級役マスター',13:'上級役マスター',14:'三麻デビュー'};
+  var titleMap = CHAPTER_TITLES;
   Progress.setStars(chId, stars);
   if (titleMap[chId]) Progress.addTitle(titleMap[chId]);
   sendEvent('chapter_clear_' + chId, { chapter: chId, stars: stars });
