@@ -5398,7 +5398,8 @@ var App = {
         var top = '<div class="pe-big"><div class="pe-top"><div class="pe-pct">'+pct+'<small>%</small></div>' +
           '<div class="pe-next">'+(nowCh ? 'つぎの章<b>第'+nowCh.id+'章 '+esc(nowCh.short)+'</b>' : 'ぜんぶの章<b>クリア！</b>')+'</div></div>' +
           '<div class="pe-track"><i style="width:'+Math.max(pct,0)+'%"></i></div>' +
-          '<div class="pe-ticks"><span>0</span><span>'+done+' / '+all.length+'章クリア</span><span>100</span></div></div>' +
+          // 2026-11-10：バーの下の「0」「100」「N / 14章クリア」はやめた（ゆーしん「0、100が変」）。章の数はすぐ下の数字と重なるため。
+          '</div>' +
           '<div class="pe-kv"><div><b>'+done+'<small> / '+all.length+'</small></b><span>クリアした章</span></div>' +
           '<div><b>'+coreDone+'<small> / '+core.length+'</small></b><span>'+(coreDone>=core.length?'必修クリア！':'必修の章')+'</span></div>' +
           '<div><b>'+(restMin?'約'+restMin+'<small>分</small>':'0<small>分</small>')+'</b><span>残りの目安</span></div></div>';
