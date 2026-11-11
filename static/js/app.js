@@ -5544,12 +5544,12 @@ var App = {
       }).join('');
     };
     return '<div class="progress-card" id="lookCard"><h3>見た目（今日の1問のごほうび）</h3>' +
-      '<p class="look-note">「今日の1問」に答えた日が合計' + days + '日。日数がたまると、牌や卓や背景の模様が増えます。</p>' +
-      '<div class="look-label">牌（表と裏）</div><div class="look-row">' +
+      '<p class="look-note">「今日の1問」に答えた日が合計' + days + '日。日数がたまると、牌の色や卓・背景の模様が増えます。</p>' +
+      '<div class="look-label">牌（表の色・裏の模様）</div><div class="look-row">' +
       row('tile', Daily.TILES, function(c) {
         // 見本は表と裏を並べて見せる（左が表、右が裏）
-        // 右半分（裏）には模様も重ねる。いちばん上の層で左半分だけ表の色で覆う
-        return 'background:linear-gradient(90deg,' + c.face.a + ' 0%,' + c.face.b + ' 50%,transparent 50%),' +
+        // 見えるのは表なので表を広く（左64%）、右に裏の模様を少し見せる
+        return 'background:linear-gradient(90deg,' + c.face.a + ' 0%,' + c.face.b + ' 64%,transparent 64%),' +
           Daily.patternUrl(c.pat) + ',linear-gradient(145deg,' + c.back.a + ',' + c.back.b + ');' +
           'background-size:auto,' + Daily.patternSize(c.pat, 0.5) + ',auto;border-bottom-color:' + c.back.c;
       }) + '</div>' +

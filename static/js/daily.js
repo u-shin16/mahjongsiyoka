@@ -74,32 +74,34 @@ var Daily = (function() {
   }
 
   // 牌のデザイン（表と裏のセット）
+  // 2026-11-11：ゆーしん「うらみえなくない?」→ 対局で相手の牌の裏はスマホだと1枚11pxほどで、模様は見えない。
+  // いつも見えるのは自分の手牌の表なので、名前は表の色にした。裏の模様はおまけとして残す。どの牌も表の色が変わるようにした
   //   sheet：本物の牌の画像（白い面だけを色づけしたもの）。null ならもとの画像
   //   face：数字だけの牌（CSSで描く）の面の色 a〜c ／ back：牌の裏の色 a=明るい側, b=中, c=厚みの暗い側
   //   pat：牌の裏に重ねる模様（無ければ無地）
   var TILES = {
     'default': { name: '定番', sheet: null,
       face: { a: '#fffef8', b: '#f6efd9', c: '#e8d7b6' }, back: { a: '#f7b943', b: '#d67718', c: '#8f3f0a' } },
-    'ivory':   { name: '七宝', sheet: '/static/img/mahjong-tiles-ivory.jpg',
+    'ivory':   { name: '象牙', sheet: '/static/img/mahjong-tiles-ivory.jpg',
       face: { a: '#fff6e0', b: '#f7e6bf', c: '#e8cf9c' }, back: { a: '#efe0bd', b: '#c9a96e', c: '#7d6033' },
       pat: { name: 'shippo', color: 'rgba(110,80,35,.45)' } },
-    'indigo':  { name: '青海波', sheet: '/static/img/mahjong-tiles-sky.jpg',
+    'indigo':  { name: '藍', sheet: '/static/img/mahjong-tiles-sky.jpg',
       face: { a: '#f4f9ff', b: '#e1ecfb', c: '#c9d9ee' }, back: { a: '#6f8fd0', b: '#3c5ea8', c: '#1d3268' },
       pat: { name: 'seigaiha', color: 'rgba(255,255,255,.55)' } },
-    'gold':    { name: '金の麻の葉', sheet: '/static/img/mahjong-tiles-gold.jpg',
+    'gold':    { name: '金', sheet: '/static/img/mahjong-tiles-gold.jpg',
       face: { a: '#fff1c4', b: '#ffd970', c: '#e0a92c' }, back: { a: '#ffe27a', b: '#e0a514', c: '#7a5200' },
       pat: { name: 'asanoha', color: 'rgba(122,82,0,.55)' } },
-    'yagasuri':{ name: '矢絣', sheet: null,
-      face: { a: '#fffef8', b: '#f6efd9', c: '#e8d7b6' }, back: { a: '#c4456a', b: '#8c2448', c: '#4a1024' },
+    'yagasuri':{ name: '藤', sheet: '/static/img/mahjong-tiles-fuji.jpg',
+      face: { a: '#f8f3fd', b: '#e8ddf6', c: '#d0bfe6' }, back: { a: '#c4456a', b: '#8c2448', c: '#4a1024' },
       pat: { name: 'yagasuri', color: 'rgba(255,255,255,.38)' } },
     'sakura':  { name: '桜', sheet: '/static/img/mahjong-tiles-sakura.jpg',
       face: { a: '#fff6f8', b: '#fbe3ea', c: '#efc9d4' }, back: { a: '#eda3b7', b: '#c96f8a', c: '#86364f' },
       pat: { name: 'sakura', color: 'rgba(255,255,255,.7)' } },
-    'jade':    { name: '翡翠の市松', sheet: '/static/img/mahjong-tiles-jade.jpg',
+    'jade':    { name: '翡翠', sheet: '/static/img/mahjong-tiles-jade.jpg',
       face: { a: '#f0fff4', b: '#c9eed4', c: '#9fd6b2' }, back: { a: '#4fd6a0', b: '#0f9a68', c: '#04452c' },
       pat: { name: 'ichimatsu', color: 'rgba(0,40,20,.22)' } },
-    'hoshi':   { name: '星空', sheet: null,
-      face: { a: '#fffef8', b: '#f6efd9', c: '#e8d7b6' }, back: { a: '#2c4a8a', b: '#162a5a', c: '#0a1430' },
+    'hoshi':   { name: '銀', sheet: '/static/img/mahjong-tiles-silver.jpg',
+      face: { a: '#f7f8fb', b: '#e2e6ee', c: '#c6ccd8' }, back: { a: '#2c4a8a', b: '#162a5a', c: '#0a1430' },
       pat: { name: 'hoshi', color: 'rgba(255,226,140,.85)' } },
   };
   // アプリ全体の背景（color＝地の色、pat＝重ねる模様）
