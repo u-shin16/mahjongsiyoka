@@ -95,11 +95,18 @@ check('10日目で背景「紺」', Daily.isUnlocked('bg', 'navy', 10) && !Daily
 check('50日目は牌の表「桜」と称号', Daily.rewardsBetween(49, 50).map(function(r) { return r.id; }).join(',') === 'sakura,麻雀の達人');
 check('100日目は称号と金の卓', Daily.rewardsBetween(99, 100).map(function(r) { return r.id; }).join(',') === '百日の打ち手,gold' && Daily.nextReward(100) === null);
 // 2026-11-03に足した派手な特典。今の特典の日数は変えない（もらった人が失わないように）
-check('20日目は紅の卓・25日目は金の牌', Daily.rewardsBetween(19, 25).map(function(r) { return r.id; }).join(',') === 'crimson,gold');
-check('足した特典に名前がある', Daily.rewardName({ type: 'tile', id: 'jade' }) === '牌「翡翠」' && Daily.rewardName({ type: 'table', id: 'kokukin' }) === '卓「黒金の卓」' && Daily.rewardName({ type: 'bg', id: 'murasaki' }) === '背景「紫」');
+check('20日目は紅の卓（と千鳥の背景）・25日目は金の牌', Daily.rewardsBetween(19, 25).map(function(r) { return r.id; }).join(',') === 'crimson,chidori,gold');
+check('足した特典に名前がある', Daily.rewardName({ type: 'tile', id: 'jade' }) === '牌「翡翠の市松」' && Daily.rewardName({ type: 'table', id: 'kokukin' }) === '卓「黒金の卓」' && Daily.rewardName({ type: 'bg', id: 'murasaki' }) === '背景「桜」');
 var sheetsOk = Object.keys(Daily.TILES).every(function(id) { var t = Daily.TILES[id]; return t.face && t.back && (t.sheet === null || /^\/static\/img\/mahjong-tiles-[a-z]+\.jpg$/.test(t.sheet)); });
 check('牌はどれも表と裏の色を持つ', sheetsOk);
-check('特典の名前', Daily.rewardName({ type: 'tile', id: 'sakura' }) === '牌「桜」' && Daily.rewardName({ type: 'bg', id: 'sumi' }) === '背景「墨」');
+check('特典の名前', Daily.rewardName({ type: 'tile', id: 'sakura' }) === '牌「桜」' && Daily.rewardName({ type: 'bg', id: 'sumi' }) === '背景「麻の葉」');
+// 2026-11-11 模様。定番以外はどれも模様を持ち、どの特典にもREWARDSの日数がある
+var allLooks = [['tile', Daily.TILES], ['table', Daily.TABLES], ['bg', Daily.BGS]];
+check('定番以外はどれも模様を持つ', allLooks.every(function(x) { return Object.keys(x[1]).every(function(id) { var p = x[1][id].pat; return id === 'default' ? !p : !!(p && Daily.PATTERNS[p.name]); }); }));
+check('どの見た目にももらえる日数がある', allLooks.every(function(x) { return Object.keys(x[1]).every(function(id) { return id === 'default' || Daily.requiredDays(x[0], id) > 0; }); }));
+var u = Daily.patternUrl(Daily.TILES.indigo.pat);
+check('模様はstyle属性に書ける形（引用符・かっこが中に無い）', /^url\(data:image\/svg\+xml,[^'"()]+\)$/.test(u) && Daily.patternUrl(null) === 'none');
+check('牌の裏の模様は半分の大きさ', Daily.patternSize(Daily.TILES.indigo.pat, 0.5) === '20px 10px' && Daily.patternSize(null, 1) === 'auto');
 var allNamed = Daily.REWARDS.every(function(r) { return Daily.rewardName(r).length > 0; });
 check('すべての特典に名前がある', allNamed);
 var ordered = Daily.REWARDS.every(function(r, i, a) { return i === 0 || a[i - 1].days <= r.days; });

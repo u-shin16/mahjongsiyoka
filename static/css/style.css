@@ -774,7 +774,10 @@ body {
 .tile.face-down {
   background:
     linear-gradient(145deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 26%),
+    var(--back-pat, none),
     linear-gradient(145deg, var(--back-a), var(--back-b) 62%, var(--back-c));
+  background-size: auto, var(--back-pat-size, auto), auto;
+  background-position: center;
   border-color: var(--back-a);
   border-bottom-color: var(--back-c);
   color: #fff7d8;
@@ -1916,8 +1919,10 @@ button.pa-row:hover .pa-name { text-decoration: underline; text-underline-offset
 /* Table board */
 .mj-table {
   background:
+    var(--felt-pat, none),
     radial-gradient(ellipse at 50% 50%, var(--felt-a) 0%, var(--felt-b) 100%),
     repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 10px);
+  background-size: var(--felt-pat-size, auto), auto, auto;
   border: 8px solid var(--felt-frame);
   border-radius: 14px;
   overflow: hidden;
@@ -2554,8 +2559,10 @@ button.pa-row:hover .pa-name { text-decoration: underline; text-underline-offset
   min-width: 0;
   display: flex; flex-direction: column;
   background:
+    var(--felt-pat, none),
     radial-gradient(ellipse at 50% 50%, var(--felt-a) 0%, var(--felt-b) 100%),
     repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 10px);
+  background-size: var(--felt-pat-size, auto), auto, auto;
   border: 7px solid var(--felt-frame);
   overflow: hidden;
 }
@@ -3433,7 +3440,9 @@ body.is-battle-page .app-main.battle-main {
   border-radius: 4px;
   border-right-width: 2px;
   border-bottom-width: 4px;
-  background: linear-gradient(180deg, var(--back-a) 0%, var(--back-b) 58%, var(--back-c) 100%);
+  background: var(--back-pat, none), linear-gradient(180deg, var(--back-a) 0%, var(--back-b) 58%, var(--back-c) 100%);
+  background-size: var(--back-pat-size, auto), auto;
+  background-position: center;
 }
 .battle-main .jt-hidden-hand .tile-back-pattern {
   width: 14px;
@@ -7900,3 +7909,17 @@ body.is-battle-page .jt-table {
 .page-login .ai-input { background: #fff; border: 1px solid var(--tile-border); color: var(--green-dark); min-height: 44px; font-weight: 700; }
 .page-login .ai-input::placeholder { color: rgba(26,58,42,0.4); }
 .page-login > div[style*="max-width:460px"] .btn-secondary { background: var(--green-dark); color: var(--gold); border-color: var(--green-dark); }
+
+/* 2026-11-11 牌の裏に模様があるときは、中の縞模様を消して牌そのものの模様を見せる（枠だけ残す） */
+.has-back-pat .tile-back-pattern { background: transparent; box-shadow: inset 0 1px 2px rgba(255,255,255,0.3); }
+.has-back-pat .face-down .tile-shine { opacity: 0.3; }
+/* 背景に模様をもらって選んでいるときは、ふだんの牌の形の柄のかわりにその模様を敷く */
+body.has-page-pat { background-image: var(--page-pat); background-size: var(--page-pat-size, auto); }
+/* 2026-11-11 ごほうびの卓を選んだときは、対局画面の卓（ふだんは紺）もその卓にする */
+body.has-felt-look .battle-main .jt-table {
+  background:
+    var(--felt-pat, none),
+    radial-gradient(ellipse at 50% 45%, var(--felt-a) 0%, var(--felt-b) 100%) !important;
+  background-size: var(--felt-pat-size, auto), auto !important;
+  border-color: var(--felt-frame) !important;
+}

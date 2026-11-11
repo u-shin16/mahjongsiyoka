@@ -13,6 +13,9 @@ var Daily = (function() {
   var RETRY_AFTER_DAYS = 2;
 
   // 合計日数ごとのごほうび。数字は小さい順に並べる
+  // 2026-11-11：ゆーしん「単色じゃなくてキャラとか模様とかのやつがいい」→「キャラなくしてじっそう」
+  // → 牌の裏・卓・背景に和柄などの模様を入れた（定番だけは無地のまま）。今の色を選んでいる人の見た目が
+  // 急に変わらないよう、IDと色はそのままにして模様を重ねた。模様だけの新しいごほうびも5つ足した
   // 2026-11-03：ゆーしん「もらっても嬉しくない」「もうちょっと派手にする」→ 落ち着いた色しか無かったので、
   // 紅・金・紫・翡翠・黒金・金の卓を足した。日数が多いほど派手にしてある
   // 2026-10-15：牌の表と裏を別々の特典にしていたが、ゆーしん「牌だけで一つのものにして」→
@@ -25,53 +28,100 @@ var Daily = (function() {
     { days: 10,  type: 'bg',    id: 'navy' },
     { days: 14,  type: 'tile',  id: 'indigo' },
     { days: 20,  type: 'table', id: 'crimson' },
+    { days: 20,  type: 'bg',    id: 'chidori' },
     { days: 25,  type: 'tile',  id: 'gold' },
     { days: 30,  type: 'title', id: '麻雀の常連' },
     { days: 30,  type: 'table', id: 'wine' },
     { days: 40,  type: 'bg',    id: 'sumi' },
+    { days: 45,  type: 'tile',  id: 'yagasuri' },
     { days: 50,  type: 'tile',  id: 'sakura' },
     { days: 50,  type: 'title', id: '麻雀の達人' },
+    { days: 55,  type: 'table', id: 'ichimatsu' },
     { days: 60,  type: 'bg',    id: 'murasaki' },
     { days: 70,  type: 'tile',  id: 'jade' },
     { days: 80,  type: 'table', id: 'kokukin' },
+    { days: 85,  type: 'bg',    id: 'hoshi' },
+    { days: 90,  type: 'tile',  id: 'hoshi' },
     { days: 100, type: 'title', id: '百日の打ち手' },
     { days: 100, type: 'table', id: 'gold' },
   ];
 
+  // 模様（SVGを繰り返して敷く）。c＝線や塗りの色。w,h＝1マスの大きさ
+  var PATTERNS = {
+    seigaiha: { w: 40, h: 20, svg: function(c) { return '<g fill="none" stroke="' + c + '" stroke-width="1.6">' + [18, 13, 8, 3].map(function(r) { return '<circle cx="20" cy="20" r="' + r + '"/><circle cx="0" cy="10" r="' + r + '"/><circle cx="40" cy="10" r="' + r + '"/>'; }).join('') + '</g>'; } },
+    asanoha:  { w: 30, h: 52, svg: function(c) { return '<path stroke="' + c + '" stroke-width="1.2" fill="none" d="M15 0L15 52M0 8.7L30 43.3M30 8.7L0 43.3M0 8.7L15 17.3L30 8.7M0 43.3L15 34.7L30 43.3M15 0L0 8.7M15 0L30 8.7M15 52L0 43.3M15 52L30 43.3M0 26L15 17.3M30 26L15 17.3M0 26L15 34.7M30 26L15 34.7"/>'; } },
+    ichimatsu:{ w: 20, h: 20, svg: function(c) { return '<rect width="10" height="10" fill="' + c + '"/><rect x="10" y="10" width="10" height="10" fill="' + c + '"/>'; } },
+    shippo:   { w: 24, h: 24, svg: function(c) { return '<g fill="none" stroke="' + c + '" stroke-width="1.4"><circle cx="0" cy="0" r="12"/><circle cx="24" cy="0" r="12"/><circle cx="0" cy="24" r="12"/><circle cx="24" cy="24" r="12"/><circle cx="12" cy="12" r="12"/></g>'; } },
+    yagasuri: { w: 20, h: 28, svg: function(c) { return '<path d="M0 0L10 7L10 21L0 14ZM10 7L20 0L20 14L10 21Z" fill="' + c + '"/>'; } },
+    sakura:   { w: 36, h: 36, svg: function(c) { return '<g fill="' + c + '">' + [[9, 9], [27, 27]].map(function(p) { return [0, 72, 144, 216, 288].map(function(a) { return '<ellipse cx="' + p[0] + '" cy="' + (p[1] - 3.6) + '" rx="2.4" ry="3.6" transform="rotate(' + a + ' ' + p[0] + ' ' + p[1] + ')"/>'; }).join(''); }).join('') + '</g>'; } },
+    chidori:  { w: 32, h: 28, svg: function(c) { return '<path d="M4 14q5-8 12-4q4-6 10-4q-4 2-5 6q4 4 1 8q-3-4-8-3q-6 1-10-3z" fill="' + c + '" transform="scale(.8) translate(4 4)"/>'; } },
+    hoshi:    { w: 34, h: 34, svg: function(c) { return '<g fill="' + c + '"><path d="M8 3L9.4 6.6L13 7L10.2 9.4L11 13L8 11L5 13L5.8 9.4L3 7L6.6 6.6Z"/><circle cx="25" cy="22" r="1.6"/><circle cx="18" cy="30" r="1"/><circle cx="29" cy="7" r="1.2"/></g>'; } },
+  };
+
+  // 模様をCSSの background-image に入れられる形にする。HTMLの style="" の中にも書けるよう、
+  // 引用符とかっこを使わない形にしてある
+  function patternUrl(pat) {
+    if (!pat || !PATTERNS[pat.name]) return 'none';
+    var P = PATTERNS[pat.name];
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + P.w + '" height="' + P.h + '">' + P.svg(pat.color) + '</svg>';
+    return 'url(data:image/svg+xml,' + encodeURIComponent(svg).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29') + ')';
+  }
+  // 模様1マスの大きさ（scale 倍）。牌の裏は小さいので半分にして使う
+  function patternSize(pat, scale) {
+    if (!pat || !PATTERNS[pat.name]) return 'auto';
+    var P = PATTERNS[pat.name];
+    return (P.w * scale) + 'px ' + (P.h * scale) + 'px';
+  }
+
   // 牌のデザイン（表と裏のセット）
   //   sheet：本物の牌の画像（白い面だけを色づけしたもの）。null ならもとの画像
   //   face：数字だけの牌（CSSで描く）の面の色 a〜c ／ back：牌の裏の色 a=明るい側, b=中, c=厚みの暗い側
+  //   pat：牌の裏に重ねる模様（無ければ無地）
   var TILES = {
     'default': { name: '定番', sheet: null,
       face: { a: '#fffef8', b: '#f6efd9', c: '#e8d7b6' }, back: { a: '#f7b943', b: '#d67718', c: '#8f3f0a' } },
-    'ivory':   { name: '象牙', sheet: '/static/img/mahjong-tiles-ivory.jpg',
-      face: { a: '#fff6e0', b: '#f7e6bf', c: '#e8cf9c' }, back: { a: '#efe0bd', b: '#c9a96e', c: '#7d6033' } },
-    'indigo':  { name: '藍',   sheet: '/static/img/mahjong-tiles-sky.jpg',
-      face: { a: '#f4f9ff', b: '#e1ecfb', c: '#c9d9ee' }, back: { a: '#6f8fd0', b: '#3c5ea8', c: '#1d3268' } },
-    'sakura':  { name: '桜',   sheet: '/static/img/mahjong-tiles-sakura.jpg',
-      face: { a: '#fff6f8', b: '#fbe3ea', c: '#efc9d4' }, back: { a: '#eda3b7', b: '#c96f8a', c: '#86364f' } },
-    'gold':    { name: '金',   sheet: '/static/img/mahjong-tiles-gold.jpg',
-      face: { a: '#fff1c4', b: '#ffd970', c: '#e0a92c' }, back: { a: '#ffe27a', b: '#e0a514', c: '#7a5200' } },
-    'jade':    { name: '翡翠', sheet: '/static/img/mahjong-tiles-jade.jpg',
-      face: { a: '#f0fff4', b: '#c9eed4', c: '#9fd6b2' }, back: { a: '#4fd6a0', b: '#0f9a68', c: '#04452c' } },
+    'ivory':   { name: '七宝', sheet: '/static/img/mahjong-tiles-ivory.jpg',
+      face: { a: '#fff6e0', b: '#f7e6bf', c: '#e8cf9c' }, back: { a: '#efe0bd', b: '#c9a96e', c: '#7d6033' },
+      pat: { name: 'shippo', color: 'rgba(110,80,35,.45)' } },
+    'indigo':  { name: '青海波', sheet: '/static/img/mahjong-tiles-sky.jpg',
+      face: { a: '#f4f9ff', b: '#e1ecfb', c: '#c9d9ee' }, back: { a: '#6f8fd0', b: '#3c5ea8', c: '#1d3268' },
+      pat: { name: 'seigaiha', color: 'rgba(255,255,255,.55)' } },
+    'gold':    { name: '金の麻の葉', sheet: '/static/img/mahjong-tiles-gold.jpg',
+      face: { a: '#fff1c4', b: '#ffd970', c: '#e0a92c' }, back: { a: '#ffe27a', b: '#e0a514', c: '#7a5200' },
+      pat: { name: 'asanoha', color: 'rgba(122,82,0,.55)' } },
+    'yagasuri':{ name: '矢絣', sheet: null,
+      face: { a: '#fffef8', b: '#f6efd9', c: '#e8d7b6' }, back: { a: '#c4456a', b: '#8c2448', c: '#4a1024' },
+      pat: { name: 'yagasuri', color: 'rgba(255,255,255,.38)' } },
+    'sakura':  { name: '桜', sheet: '/static/img/mahjong-tiles-sakura.jpg',
+      face: { a: '#fff6f8', b: '#fbe3ea', c: '#efc9d4' }, back: { a: '#eda3b7', b: '#c96f8a', c: '#86364f' },
+      pat: { name: 'sakura', color: 'rgba(255,255,255,.7)' } },
+    'jade':    { name: '翡翠の市松', sheet: '/static/img/mahjong-tiles-jade.jpg',
+      face: { a: '#f0fff4', b: '#c9eed4', c: '#9fd6b2' }, back: { a: '#4fd6a0', b: '#0f9a68', c: '#04452c' },
+      pat: { name: 'ichimatsu', color: 'rgba(0,40,20,.22)' } },
+    'hoshi':   { name: '星空', sheet: null,
+      face: { a: '#fffef8', b: '#f6efd9', c: '#e8d7b6' }, back: { a: '#2c4a8a', b: '#162a5a', c: '#0a1430' },
+      pat: { name: 'hoshi', color: 'rgba(255,226,140,.85)' } },
   };
-  // アプリ全体の背景色
+  // アプリ全体の背景（color＝地の色、pat＝重ねる模様）
   var BGS = {
     'default': { name: '深緑', color: '#1a3a2a' },
-    'navy':    { name: '紺',   color: '#16263d' },
-    'sumi':    { name: '墨',   color: '#1f2124' },
-    'murasaki':{ name: '紫',   color: '#2c1745' },
+    'navy':    { name: '青海波', color: '#16263d', pat: { name: 'seigaiha', color: 'rgba(255,255,255,.06)' } },
+    'chidori': { name: '千鳥',   color: '#1a3a2a', pat: { name: 'chidori',  color: 'rgba(255,255,255,.07)' } },
+    'sumi':    { name: '麻の葉', color: '#1f2124', pat: { name: 'asanoha',  color: 'rgba(255,255,255,.06)' } },
+    'murasaki':{ name: '桜',     color: '#2c1745', pat: { name: 'sakura',   color: 'rgba(255,190,210,.12)' } },
+    'hoshi':   { name: '星空',   color: '#101a38', pat: { name: 'hoshi',    color: 'rgba(255,230,150,.3)' } },
   };
   var LOOK_TYPES = ['tile', 'table', 'bg'];
 
-  // 卓の色（a=中央, b=外側, frame=縁）
+  // 卓（a=中央, b=外側, frame=縁, pat＝フェルトに重ねる模様。牌が見にくくならない濃さにする）
   var TABLES = {
-    'default': { name: '緑の卓',   a: '#1e7040', b: '#124d2a', frame: '#5a3012' },
-    'night':   { name: '夜の卓',   a: '#24476f', b: '#122740', frame: '#3a2a1a' },
-    'wine':    { name: 'えんじの卓', a: '#7a2e3a', b: '#45161e', frame: '#2e1a10' },
-    'crimson': { name: '紅の卓',   a: '#c8172f', b: '#6e0814', frame: '#d4a537' },
-    'kokukin': { name: '黒金の卓', a: '#34343a', b: '#0b0b0d', frame: '#e3b742' },
-    'gold':    { name: '金の卓',   a: '#e2b043', b: '#8a5d0e', frame: '#3a1f05' },
+    'default':  { name: '緑の卓',   a: '#1e7040', b: '#124d2a', frame: '#5a3012' },
+    'night':    { name: '星空の卓', a: '#24476f', b: '#122740', frame: '#3a2a1a', pat: { name: 'hoshi', color: 'rgba(255,230,150,.3)' } },
+    'crimson':  { name: '桜の卓',   a: '#c8172f', b: '#6e0814', frame: '#d4a537', pat: { name: 'sakura', color: 'rgba(255,200,210,.14)' } },
+    'wine':     { name: '七宝の卓', a: '#7a2e3a', b: '#45161e', frame: '#2e1a10', pat: { name: 'shippo', color: 'rgba(255,220,180,.09)' } },
+    'ichimatsu':{ name: '市松の卓', a: '#1e7040', b: '#124d2a', frame: '#5a3012', pat: { name: 'ichimatsu', color: 'rgba(0,0,0,.12)' } },
+    'kokukin':  { name: '黒金の卓', a: '#34343a', b: '#0b0b0d', frame: '#e3b742', pat: { name: 'asanoha', color: 'rgba(227,183,66,.16)' } },
+    'gold':     { name: '金の卓',   a: '#e2b043', b: '#8a5d0e', frame: '#3a1f05', pat: { name: 'seigaiha', color: 'rgba(58,31,5,.16)' } },
   };
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -264,6 +314,7 @@ var Daily = (function() {
 
   return {
     REWARDS: REWARDS, TILES: TILES, TABLES: TABLES, BGS: BGS, LOOK_TYPES: LOOK_TYPES,
+    PATTERNS: PATTERNS, patternUrl: patternUrl, patternSize: patternSize,
     RETRY_AFTER_DAYS: RETRY_AFTER_DAYS,
     today: today, addDays: addDays, emptyState: emptyState, normalize: normalize,
     pickKey: pickKey, questionFor: questionFor, answer: answer, fuList: fuList,

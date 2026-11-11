@@ -314,6 +314,14 @@ function applyLook() {
   st.setProperty('--back-a', tile.back.a); st.setProperty('--back-b', tile.back.b); st.setProperty('--back-c', tile.back.c);
   st.setProperty('--felt-a', table.a); st.setProperty('--felt-b', table.b); st.setProperty('--felt-frame', table.frame);
   st.setProperty('--page-bg', bg.color);
+  // 2026-11-11：模様（無地のものは none）。牌の裏は小さいので模様を半分の大きさで敷く
+  st.setProperty('--back-pat', Daily.patternUrl(tile.pat)); st.setProperty('--back-pat-size', Daily.patternSize(tile.pat, 0.5));
+  st.setProperty('--felt-pat', Daily.patternUrl(table.pat)); st.setProperty('--felt-pat-size', Daily.patternSize(table.pat, 1));
+  st.setProperty('--page-pat', Daily.patternUrl(bg.pat)); st.setProperty('--page-pat-size', Daily.patternSize(bg.pat, 1));
+  document.body.classList.toggle('has-back-pat', !!tile.pat);
+  document.body.classList.toggle('has-page-pat', !!bg.pat);
+  // 対局画面の卓は紺のデザインで固定していたため、選んだ卓が対局に出ていなかった。定番以外を選んだときはその卓にする
+  document.body.classList.toggle('has-felt-look', table !== Daily.TABLES['default']);
   window.MJ_TILE_SHEET = tile.sheet || null;
 }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -2471,9 +2479,10 @@ var App = {
     }).join('') + Tiles.renderTile({ suit: 'back', num: 0, id: 'rewardBack' }, { faceDown: true, noHover: true });
     window.MJ_TILE_SHEET = saved;
     var vars = '--face-a:' + tile.face.a + ';--face-b:' + tile.face.b + ';--face-c:' + tile.face.c +
-      ';--back-a:' + tile.back.a + ';--back-b:' + tile.back.b + ';--back-c:' + tile.back.c;
-    return '<div class="daily-reward-stage" style="background:' + bg.color + '">' +
-      '<div class="daily-reward-felt" style="' + vars + ';background:radial-gradient(ellipse at 50% 50%,' + table.a + ' 0%,' + table.b + ' 100%);border-color:' + table.frame + '">' +
+      ';--back-a:' + tile.back.a + ';--back-b:' + tile.back.b + ';--back-c:' + tile.back.c +
+      ';--back-pat:' + Daily.patternUrl(tile.pat) + ';--back-pat-size:' + Daily.patternSize(tile.pat, 0.5);
+    return '<div class="daily-reward-stage' + (tile.pat ? ' has-back-pat' : '') + '" style="background:' + Daily.patternUrl(bg.pat) + ',' + bg.color + '">' +
+      '<div class="daily-reward-felt" style="' + vars + ';background:' + Daily.patternUrl(table.pat) + ',radial-gradient(ellipse at 50% 50%,' + table.a + ' 0%,' + table.b + ' 100%);border-color:' + table.frame + '">' +
       tiles + '</div></div>';
   },
 
@@ -2498,7 +2507,7 @@ var App = {
       '<h3>ごほうびをもらいました</h3>' +
       this._rewardStageHtml(rewards) +
       '<ul>' + rewards.map(function(r) { return '<li' + (r.type === 'title' ? ' class="title"' : '') + '>' + Daily.rewardName(r) + '</li>'; }).join('') + '</ul>' +
-      (looks.length ? '<p>牌の裏や卓の色は「学習進捗」で選べます。</p>' : '') +
+      (looks.length ? '<p>牌の裏や卓の模様は「学習進捗」で選べます。</p>' : '') +
       (loggedIn ? '' : '<p class="daily-reward-login">ログインすると、特典と日数がずっと残ります。<br>（ログインしないと、このブラウザにしか残りません）</p>') +
       '<div class="btn-row">' +
       (looks.length ? '<button class="btn btn-primary" id="dailyRewardUse">さっそく使う</button>' : '') +
@@ -5512,16 +5521,19 @@ var App = {
       }).join('');
     };
     return '<div class="progress-card" id="lookCard"><h3>見た目（今日の1問のごほうび）</h3>' +
-      '<p class="look-note">「今日の1問」に答えた日が合計' + days + '日。日数がたまると、牌や卓や背景の色が増えます。</p>' +
+      '<p class="look-note">「今日の1問」に答えた日が合計' + days + '日。日数がたまると、牌や卓や背景の模様が増えます。</p>' +
       '<div class="look-label">牌（表と裏）</div><div class="look-row">' +
       row('tile', Daily.TILES, function(c) {
         // 見本は表と裏を並べて見せる（左が表、右が裏）
-        return 'background:linear-gradient(90deg,' + c.face.a + ' 0%,' + c.face.b + ' 50%,' + c.back.a + ' 50%,' + c.back.b + ' 100%);border-bottom-color:' + c.back.c;
+        // 右半分（裏）には模様も重ねる。いちばん上の層で左半分だけ表の色で覆う
+        return 'background:linear-gradient(90deg,' + c.face.a + ' 0%,' + c.face.b + ' 50%,transparent 50%),' +
+          Daily.patternUrl(c.pat) + ',linear-gradient(145deg,' + c.back.a + ',' + c.back.b + ');' +
+          'background-size:auto,' + Daily.patternSize(c.pat, 0.5) + ',auto;border-bottom-color:' + c.back.c;
       }) + '</div>' +
       '<div class="look-label">卓</div><div class="look-row">' +
-      row('table', Daily.TABLES, function(c) { return 'background:radial-gradient(ellipse at 50% 50%,' + c.a + ' 0%,' + c.b + ' 100%);border-color:' + c.frame; }) + '</div>' +
+      row('table', Daily.TABLES, function(c) { return 'background:' + Daily.patternUrl(c.pat) + ',radial-gradient(ellipse at 50% 50%,' + c.a + ' 0%,' + c.b + ' 100%);background-size:' + Daily.patternSize(c.pat, 0.6) + ',auto;border-color:' + c.frame; }) + '</div>' +
       '<div class="look-label">背景</div><div class="look-row">' +
-      row('bg', Daily.BGS, function(c) { return 'background:' + c.color + ';border-color:rgba(232,184,75,0.4)'; }) + '</div></div>';
+      row('bg', Daily.BGS, function(c) { return 'background:' + Daily.patternUrl(c.pat) + ',' + c.color + ';background-size:' + Daily.patternSize(c.pat, 0.6) + ',auto;border-color:rgba(232,184,75,0.4)'; }) + '</div></div>';
   },
 
   // ===== Battle Setup =====
