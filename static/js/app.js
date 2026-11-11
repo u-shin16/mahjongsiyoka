@@ -3620,8 +3620,9 @@ var App = {
         '</div>';
       }
       setBattleZoomLock(false);
+      // 2026-11-11：待機室も進捗画面と同じクリーム色のカードにした（まとめときや）。対局中の .fr-panel には効かないよう fr-waiting で囲う
       main.innerHTML = '<div class="page-title">待機室</div>' +
-        '<div class="fr-wrap">' +
+        '<div class="fr-wrap fr-waiting">' +
         '<div class="game-instruction"><div class="fr-room-code-line">ルームID：' +
         '<strong class="fr-room-code">' + esc(room.code) + '</strong>' +
         '<button class="fr-copy-code-btn" id="btnFrCopyCode" type="button" aria-label="ルームIDをコピー" title="ルームIDをコピー">' +
