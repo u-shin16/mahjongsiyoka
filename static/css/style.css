@@ -7733,3 +7733,32 @@ body.is-battle-page .jt-table {
   .aic-wrap { padding: 14px 14px 16px; }
   .aic-msg { max-width: 92%; }
 }
+
+/* ============================================================
+   2026-11-11：友人戦の最初の画面（作成／参加を選ぶ・IDを入れる）も待機室に合わせた（ゆーしん「変えて」）
+   ============================================================ */
+.fr-lobby-lead { text-align: center; color: var(--cream); font-weight: 700; font-size: 0.95rem; line-height: 1.7; margin: 0 0 8px; }
+.fr-lobby .fr-choice-card,
+.fr-lobby .fr-join-card {
+  background: var(--tile-bg); border: 1px solid var(--tile-border); border-radius: 16px;
+  box-shadow: 0 5px 0 #b89d6e, 0 7px 14px rgba(0,0,0,0.28); color: var(--green-dark);
+}
+.fr-lobby .fr-choice-card { padding: 28px 20px; gap: 8px; }
+.fr-lobby .fr-choice-card:hover { background: var(--tile-bg); border-color: var(--gold-dark); transform: translateY(-2px); }
+.fr-lobby .fr-choice-card:active { transform: translateY(2px); box-shadow: 0 2px 0 #b89d6e; }
+.fr-lobby .fr-choice-card[disabled]:hover { background: var(--tile-bg); border-color: var(--tile-border); transform: none; }
+.fr-lobby .fr-choice-title {
+  display: inline-block; font-size: 1.05rem; color: var(--gold); background: var(--green-dark);
+  border-radius: 99px; padding: 0 20px; line-height: 34px;
+}
+.fr-lobby .fr-choice-sub { color: rgba(26,58,42,0.75); font-weight: 700; font-size: 0.85rem; }
+.fr-lobby .fr-join-card { padding: 20px; }
+.fr-join-lead { font-weight: 700; font-size: 0.95rem; line-height: 1.6; text-align: center; }
+.fr-join-lead strong { color: var(--green-mid); }
+.fr-lobby .fr-room-input { background: #fff; border-color: rgba(26,58,42,0.3); color: var(--green-dark); font-size: 1.2rem; font-weight: 900; letter-spacing: 0.1em; min-height: 46px; }
+.fr-lobby .fr-room-input::placeholder { color: rgba(26,58,42,0.35); letter-spacing: 0; font-weight: 700; font-size: 1rem; }
+.fr-lobby .fr-join-row .btn-secondary { background: var(--green-dark); color: var(--gold); border-color: var(--green-dark); min-height: 46px; }
+.fr-lobby .fr-join-card .btn-row { justify-content: center !important; }
+.fr-lobby .fr-join-card #btnFrJoin { min-width: 160px; }
+.fr-lobby .fr-room-input:focus { outline: none; border-color: var(--gold-dark); box-shadow: 0 0 0 2px rgba(232,184,75,0.35); }
+@media (max-width: 480px) { .fr-lobby-lead { font-size: 0.85rem; } }

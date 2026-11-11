@@ -3449,18 +3449,17 @@ var App = {
       var joining = this._frLobbyMode === 'join';
 
       if (!joining) {
+        // 2026-11-11：待機室に合わせてクリーム色のカードにし、🏠🚪の絵文字をやめた（ゆーしん「変えて」）
         main.innerHTML = '<div class="page-title">友人戦</div>' +
-          '<div class="fr-wrap">' +
-          '<div class="game-instruction">友だちと同じ部屋に入って対局します。<br>' +
-          '<span style="font-size:0.82rem;color:#8ab89c">部屋を作る人が1人、あとの人はそのIDで参加します。</span></div>' +
+          '<div class="fr-wrap fr-lobby">' +
+          '<p class="fr-lobby-lead">友だちと同じ部屋に入って対局します。<br>' +
+          '部屋を作る人が1人、あとの人はそのIDで参加します。</p>' +
           '<div class="fr-choice-row">' +
             '<button class="fr-choice-card" id="btnFrCreate">' +
-              '<span class="fr-choice-emoji" aria-hidden="true">🏠</span>' +
               '<span class="fr-choice-title">ルームを作成</span>' +
               '<span class="fr-choice-sub">人数やルールを決めて、IDを友だちに伝える</span>' +
             '</button>' +
             '<button class="fr-choice-card" id="btnFrModeJoin">' +
-              '<span class="fr-choice-emoji" aria-hidden="true">🚪</span>' +
               '<span class="fr-choice-title">ルームに参加</span>' +
               '<span class="fr-choice-sub">友だちに教えてもらった6桁のIDで入る</span>' +
             '</button>' +
@@ -3469,15 +3468,15 @@ var App = {
           '</div>';
       } else {
         main.innerHTML = '<div class="page-title">ルームに参加</div>' +
-          '<div class="fr-wrap">' +
-          '<div class="game-instruction">友だちに教えてもらった<strong>6桁のルームID</strong>を入れてください。</div>' +
+          '<div class="fr-wrap fr-lobby"><div class="fr-join-card">' +
+          '<div class="fr-join-lead">友だちに教えてもらった<strong>6桁のルームID</strong>を入れてください。</div>' +
           '<div class="fr-join-row">' +
             '<input class="ai-input fr-room-input" id="frCode" type="text" inputmode="numeric" maxlength="6" placeholder="例：123456">' +
             '<button class="btn btn-secondary" id="btnFrPaste">貼り付け</button>' +
           '</div>' +
           '<div class="btn-row" style="justify-content:flex-start;margin-top:12px">' +
             '<button class="btn btn-primary" id="btnFrJoin">参加</button>' +
-          '</div>' +
+          '</div></div>' +
           '<div id="frErr" style="color:#ff9a8a;font-size:0.85rem;margin-top:10px;min-height:1.3em"></div>' +
           '</div>';
       }
