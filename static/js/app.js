@@ -2242,7 +2242,8 @@ var App = {
       });
       this._missionReadingsObserver.observe(main, { childList: true, subtree: true });
     }
-    main.className = 'app-main' + (page === 'battle' ? ' battle-main' : '');
+    // 2026-11-11：画面ごとに見た目をそろえるため、どの画面かをクラスで持たせる（page-quiz など）
+    main.className = 'app-main page-' + page + (page === 'battle' ? ' battle-main' : '');
     document.body.classList.toggle('is-battle-page', page === 'battle');
     // :has()未対応の実機ブラウザでもhtml側のスクロール制御CSSが効くよう、
     // bodyと同時にhtmlにも同じクラスを付ける
