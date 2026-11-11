@@ -302,11 +302,28 @@ document.addEventListener('click', function(e) {
 // 章をクリアするともらえる称号（進捗画面の「いまの称号」もこれで決める）
 var CHAPTER_TITLES = {1:'はじめてのアガリ',5:'役牌マスター',6:'ルールを覚えた',7:'鳴きデビュー',8:'役デビュー',9:'翻デビュー',10:'点数計算入門',12:'中級役マスター',13:'上級役マスター',14:'三麻デビュー'};
 
+// 2026-11-11：ゆーしん「俺は全部使えるように」→ 運営者のアカウントでログインしているときは、見た目をすべて選べる。
+// メールアドレスをそのまま公開のJSに書かないよう、SHA-256にした値と比べる。見た目だけで、日数や記録は変えない
+var LOOK_OWNER_HASHES = ['e75a521d52edb8c215c370f8ae492aaca366a8895fce389fa39ec5a21b37aa09'];
+var _lookOwner = false;
+function checkLookOwner(done) {
+  var u = (window.Auth && Auth.enabled() && Auth.user()) ? Auth.user() : null;
+  var email = u && u.email ? String(u.email).trim().toLowerCase() : '';
+  if (!email || !window.crypto || !crypto.subtle || !window.TextEncoder) { _lookOwner = false; done(); return; }
+  crypto.subtle.digest('SHA-256', new TextEncoder().encode(email)).then(function(buf) {
+    var hex = Array.prototype.map.call(new Uint8Array(buf), function(b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+    _lookOwner = LOOK_OWNER_HASHES.indexOf(hex) >= 0;
+    done();
+  }, function() { _lookOwner = false; done(); });
+}
+// 見た目のロックを判定するときの日数（運営者はすべて開いている扱い）
+function lookDays() { return _lookOwner ? 100000 : Progress.getDaily().days; }
+
 // ごほうびで選んだ牌・卓・背景の色を、ページ全体の色の変数に入れる（style.css が使う）
 function applyLook() {
   if (!window.Daily || !document.body) return;
   var look = Progress.getLook();
-  var days = Progress.getDaily().days;
+  var days = lookDays();
   var pick = function(type, list) { return Daily.isUnlocked(type, look[type], days) && list[look[type]] ? list[look[type]] : list['default']; };
   var tile = pick('tile', Daily.TILES), table = pick('table', Daily.TABLES), bg = pick('bg', Daily.BGS);
   var st = document.body.style;
@@ -2157,6 +2174,12 @@ var App = {
         if (p === 'home' || p === 'login' || p === 'progress' || p === 'chapters') {
           self._render(p, self.currentParams);
         }
+        // 運営者かどうかは非同期で分かるので、分かってから見た目と進捗画面を描き直す
+        var was = _lookOwner;
+        checkLookOwner(function() {
+          applyLook();
+          if (was !== _lookOwner && self.current === 'progress') self._render('progress', self.currentParams);
+        });
       });
     }
     this.navigate('home');
@@ -5511,7 +5534,7 @@ var App = {
     var look = Progress.getLook();
     var row = function(type, list, swatch) {
       return Object.keys(list).map(function(id) {
-        var open = Daily.isUnlocked(type, id, days);
+        var open = Daily.isUnlocked(type, id, lookDays());
         var need = Daily.requiredDays(type, id);
         return '<button type="button" class="look-opt' + (open ? '' : ' locked') + (look[type] === id ? ' active' : '') +
           '" data-type="' + type + '" data-id="' + id + '" data-need="' + need + '">' +
