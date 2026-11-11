@@ -7696,3 +7696,40 @@ body.is-battle-page .jt-table {
 .fr-waiting .fr-mini-btn { background: rgba(26,58,42,0.08); border-color: rgba(26,58,42,0.25); color: var(--green-dark); }
 .fr-waiting .fr-panel > div[style*="8ab89c"] { color: rgba(26,58,42,0.7) !important; font-weight: 700; }
 .fr-waiting .fr-panel .btn-secondary { background: var(--green-dark); color: var(--gold); border-color: var(--green-dark); }
+
+/* ============================================================
+   2026-11-11：AI先生を対話型にした（まとめときや「麻雀のことなら何でも答えてくれる対話型AI」）。
+   進捗画面と同じクリーム色のカードの中に、やりとりを吹き出しで積む。
+   ============================================================ */
+.aic-wrap {
+  max-width: 760px; margin: 0 auto;
+  background: var(--tile-bg); border: 1px solid var(--tile-border); border-radius: 16px;
+  box-shadow: 0 6px 0 #b89d6e, 0 8px 16px rgba(0,0,0,0.3);
+  color: var(--green-dark); padding: 16px 20px 20px;
+}
+.aic-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.aic-lead { display: inline-block; font-size: 0.8rem; font-weight: 900; letter-spacing: 0.06em; color: var(--gold); background: var(--green-dark); border-radius: 99px; padding: 0 16px; line-height: 26px; }
+.aic-level { display: flex; background: rgba(26,58,42,0.08); border-radius: 99px; padding: 3px; }
+.aic-level button { font: inherit; font-size: 0.78rem; font-weight: 900; border: none; background: none; color: rgba(26,58,42,0.7); padding: 4px 14px; border-radius: 99px; cursor: pointer; }
+.aic-level button.active { background: var(--green-dark); color: var(--gold); }
+.aic-log { display: flex; flex-direction: column; gap: 12px; }
+.aic-msg { display: flex; flex-direction: column; max-width: 86%; }
+.aic-ai { align-self: flex-start; }
+.aic-user { align-self: flex-end; align-items: flex-end; }
+.aic-who { font-size: 0.72rem; font-weight: 900; color: var(--green-mid); margin: 0 0 4px 4px; }
+.aic-bubble { font-size: 0.95rem; line-height: 1.7; padding: 10px 14px; border-radius: 16px; word-break: break-word; }
+.aic-ai .aic-bubble { background: #fff; border: 1px solid rgba(26,58,42,0.14); border-top-left-radius: 4px; color: var(--green-dark); }
+.aic-user .aic-bubble { background: var(--green-dark); color: var(--cream); border-top-right-radius: 4px; font-weight: 700; }
+.aic-wait .aic-bubble { color: rgba(26,58,42,0.55); font-weight: 700; }
+.aic-examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.aic-chip { font: inherit; font-size: 0.8rem; font-weight: 700; padding: 6px 12px; border-radius: 99px; border: 1px solid rgba(26,58,42,0.25); background: rgba(26,58,42,0.05); color: var(--green-dark); cursor: pointer; }
+.aic-chip:hover { background: rgba(232,184,75,0.25); border-color: var(--gold-dark); }
+.aic-form { display: flex; gap: 8px; align-items: flex-end; margin-top: 16px; }
+.aic-input { flex: 1; font: inherit; font-size: 1rem; line-height: 1.5; resize: none; min-height: 44px; max-height: 140px; padding: 10px 14px; border-radius: 22px; border: 1px solid rgba(26,58,42,0.3); background: #fff; color: var(--green-dark); }
+.aic-input:focus { outline: none; border-color: var(--gold-dark); box-shadow: 0 0 0 2px rgba(232,184,75,0.35); }
+.aic-send { font: inherit; font-size: 0.95rem; font-weight: 900; min-height: 44px; padding: 0 20px; border-radius: 22px; border: none; background: var(--gold); color: #0f2419; box-shadow: 0 3px 0 var(--gold-dark); cursor: pointer; }
+.aic-send:disabled { opacity: 0.5; cursor: default; }
+@media (max-width: 480px) {
+  .aic-wrap { padding: 14px 14px 16px; }
+  .aic-msg { max-width: 92%; }
+}

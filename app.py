@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 from xml.sax.saxutils import escape
 from flask import Flask, render_template, request, jsonify, make_response
@@ -401,6 +402,9 @@ def ai_advice():
     if not api_key:
         return jsonify({'advice': 'AI機能を使うにはGEMINI_API_KEYを.envに設定してください。'}), 500
 
+    if mode == 'chat':
+        return ai_chat_reply(data, context, level)
+
     try:
         hand_str = '、'.join([tile_to_str(t) for t in hand]) if hand else '（手牌なし）'
 
@@ -456,6 +460,60 @@ def ai_advice():
 
     except Exception as e:
         app.logger.exception('Gemini advice request failed')
+        return jsonify({'advice': gemini_error_message(e)}), 500
+
+def ai_chat_reply(data, question, level):
+    """AI先生（対話）：麻雀のことなら何でも、前のやりとりをふまえて答える。
+
+    2026-11-11：AI先生を「麻雀のことなら何でも答えてくれる対話型AI」にした（ゆーしん、まとめときや）。
+    それまでは1問1答で、答えも1文に切り詰めていた。前のやりとりは画面側が持ち、直近8件だけ送ってくる。
+    """
+    raw = data.get('history', [])
+    history = []
+    if isinstance(raw, list):
+        for m in raw[-8:]:
+            if not isinstance(m, dict):
+                continue
+            role = 'あなた（AI先生）' if m.get('role') == 'ai' else '利用者'
+            text = str(m.get('text', '')).strip()[:500]
+            if text:
+                history.append(f'{role}：{text}')
+
+    if level == 'advanced':
+        style = (
+            '【答え方：くわしく】\n'
+            '・麻雀を打てる人向けに、専門用語はそのまま使ってよい。\n'
+            '・打ち方の質問には、受け入れ枚数・打点・安全度など根拠を具体的に示す。\n'
+        )
+    else:
+        style = (
+            '【答え方：やさしく】\n'
+            '・麻雀を始めたばかりの人向けに、専門用語は使わないか、使うときはすぐ後に「（〇〇のこと）」と日常語で補う。\n'
+            '・たとえ話を使って、覚えやすく説明する。\n'
+        )
+
+    prompt = (
+        'あなたは麻雀学習アプリ「まーじゃんしよか」のAI先生です。'
+        '麻雀に関することなら、ルール・役・点数計算・打ち方・用語・マナー・歴史・プロの世界まで何でも答えます。\n'
+        '麻雀と関係のない質問には、答えずに「麻雀のことなら何でも聞いてね」と一言で伝えてください。\n'
+        'これまでの会話があれば、その流れをふまえて答えてください（「それ」「さっきの」などは前の話を指します）。\n\n'
+        + style +
+        '・答えは2〜4文、長くても200字くらいにまとめる。箇条書きやMarkdownの記号（**や#）は使わない。\n'
+        '・分からないことは推測で答えず、分からないと言う。\n\n'
+        + ('【これまでの会話】\n' + '\n'.join(history) + '\n\n' if history else '')
+        + '【今の質問】\n' + question
+    )
+    try:
+        reply, model = generate_gemini_text(
+            prompt,
+            MAHJONG_KNOWLEDGE,
+            max_output_tokens=400,
+            temperature=0.5 if level == 'advanced' else 0.4,
+        )
+        reply = re.sub(r'\*\*|^#+\s*', '', str(reply or ''), flags=re.M).strip()
+        return jsonify({'advice': reply or 'うまく答えられませんでした。聞き方を変えてもう一度どうぞ。', 'model': model})
+    except Exception as e:
+        app.logger.exception('Gemini chat request failed')
         return jsonify({'advice': gemini_error_message(e)}), 500
 
 def gemini_error_message(error):

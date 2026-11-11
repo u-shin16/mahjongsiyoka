@@ -5106,60 +5106,107 @@ var App = {
     // 2026-09-16：手牌を作って相談する役割はCPU戦の在局中アドバイス（実際の
     // 対局を見て助言する）と丸かぶりしていたため、AI先生は手牌を持たず、
     // ルール・役・用語について何でも聞ける質問役にした。
+    // 2026-11-11：「麻雀のことなら何でも答えてくれる対話型AI」にした（ゆーしん、まとめときや）。
+    // 1問1答・1文の答えをやめ、やりとりを吹き出しで積み、前の話をふまえて答える（直近8件をサーバーへ送る）。
+    // やりとりはこの画面を開いている間だけ持つ（保存しない）。
     var EXAMPLE_QUESTIONS = [
       'フリテンって何？',
       '役なしでもアガれる？',
       'リーチとダマ、どっちがいい？',
-      'タンヤオの条件は？',
-      'ドラと役の違いは？',
-      '鳴くと門前じゃなくなるってどういうこと？',
+      '初心者が最初に覚える役は？',
+      '親と子で点数はどう違う？',
+      '強くなるには何を練習すればいい？',
     ];
+    var GREETING = '麻雀のことなら何でも聞いてください。ルール・役・点数・打ち方・用語、どれでも大丈夫です。分からなかったら「もっとやさしく」と言ってくれれば言い直します。';
+    var history = [];
+    var level = 'beginner';
+    var busy = false;
 
     main.innerHTML = '<div class="page-title">AI先生</div>' +
-      '<div class="ai-coach-wrap">' +
-        '<div class="ai-coach-card">' +
-          '<div class="ai-coach-label">麻雀のルール・役・用語について何でも聞いてください</div>' +
-          '<div class="ai-example-row" id="aiExampleRow">' +
-            EXAMPLE_QUESTIONS.map(function(q) {
-              return '<button type="button" class="ai-example-chip">' + esc(q) + '</button>';
-            }).join('') +
+      '<div class="aic-wrap">' +
+        '<div class="aic-head">' +
+          '<div class="aic-lead">麻雀のことなら、何でも答えます</div>' +
+          '<div class="aic-level" id="aicLevel" role="group" aria-label="答え方">' +
+            '<button type="button" class="active" data-lv="beginner">やさしく</button>' +
+            '<button type="button" data-lv="advanced">くわしく</button>' +
           '</div>' +
-          '<div class="ai-level-row" id="coachLevel">' +
-            '<button class="ai-level-btn active" data-lv="beginner">🔰 初心者（やさしい）</button>' +
-            '<button class="ai-level-btn" data-lv="advanced">⚡ 上級者（プロ視点）</button>' +
-          '</div>' +
-          '<div class="ai-level-desc" id="levelDesc" style="font-size:0.78rem;color:#8ab89c;margin-bottom:8px;min-height:32px">' +
-            '🔰 麻雀用語を使わず、日常語でやさしく解説します。' +
-          '</div>' +
-          '<textarea class="ai-textarea" id="aiCoachInput" rows="4" placeholder="例：フリテンって何？ リーチとダマ、どっちがいい？"></textarea>' +
-          '<div class="btn-row"><button class="btn btn-primary" id="btnCoachAsk">質問する</button></div>' +
         '</div>' +
-        '<div class="ai-panel ai-coach-response"><div class="ai-panel-title"><span>🤖</span> AIの返答</div><div id="aiCoachResp" class="ai-response">質問を送るとここに表示されます。</div></div>' +
+        '<div class="aic-log" id="aicLog" aria-live="polite"></div>' +
+        '<div class="aic-examples" id="aicExamples">' +
+          EXAMPLE_QUESTIONS.map(function(q) { return '<button type="button" class="aic-chip">' + esc(q) + '</button>'; }).join('') +
+        '</div>' +
+        '<form class="aic-form" id="aicForm">' +
+          '<textarea class="aic-input" id="aicInput" rows="1" maxlength="800" placeholder="麻雀について聞いてみよう"></textarea>' +
+          '<button type="submit" class="aic-send" id="aicSend">送る</button>' +
+        '</form>' +
       '</div>';
 
-    document.querySelectorAll('#aiExampleRow .ai-example-chip').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        document.getElementById('aiCoachInput').value = btn.textContent;
-      });
-    });
+    var logEl = document.getElementById('aicLog');
+    var inputEl = document.getElementById('aicInput');
+    var sendEl = document.getElementById('aicSend');
+    var exEl = document.getElementById('aicExamples');
 
-    var LEVEL_DESCS = {
-      beginner: '🔰 麻雀用語を使わず、日常語でやさしく解説します。',
-      advanced: '⚡ プロ棋士の打牌選択・牌効率・打点期待値を踏まえて解説します。'
+    var bubble = function(role, text) {
+      var el = document.createElement('div');
+      el.className = 'aic-msg aic-' + role;
+      el.innerHTML = (role === 'ai' ? '<div class="aic-who">AI先生</div>' : '') +
+        '<div class="aic-bubble">' + esc(text).replace(/\n/g, '<br>') + '</div>';
+      logEl.appendChild(el);
+      el.scrollIntoView({ block: 'end', behavior: 'smooth' });
+      return el;
     };
-    var level = 'beginner';
-    document.querySelectorAll('#coachLevel .ai-level-btn').forEach(function(b) {
+    var fitInput = function() {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
+    };
+
+    bubble('ai', GREETING);
+
+    var send = function(text) {
+      text = String(text || '').trim();
+      if (!text || busy) return;
+      busy = true;
+      sendEl.disabled = true;
+      exEl.style.display = 'none';
+      bubble('user', text);
+      inputEl.value = '';
+      fitInput();
+      var wait = bubble('ai', '考えています…');
+      wait.classList.add('aic-wait');
+      sendEvent('ai_ask', { mode: 'chat', level: level, turn: history.length / 2 + 1 });
+      fetch('/api/ai-advice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'chat', level: level, context: text, history: history.slice(-8) })
+      }).then(function(r) { return r.json(); }).then(function(d) {
+        var reply = String((d && d.advice) || 'うまく答えられませんでした。もう一度どうぞ。');
+        wait.remove();
+        bubble('ai', reply);
+        history.push({ role: 'user', text: text }, { role: 'ai', text: reply });
+      }).catch(function() {
+        wait.remove();
+        bubble('ai', '通信がうまくいきませんでした。少し待ってから、もう一度送ってください。');
+      }).then(function() {
+        busy = false;
+        sendEl.disabled = false;
+      });
+    };
+
+    document.getElementById('aicForm').addEventListener('submit', function(e) { e.preventDefault(); send(inputEl.value); });
+    inputEl.addEventListener('input', fitInput);
+    inputEl.addEventListener('keydown', function(e) {
+      // 日本語の変換を確定するEnterでは送らない。Shift+Enterは改行
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); send(inputEl.value); }
+    });
+    exEl.querySelectorAll('.aic-chip').forEach(function(b) {
+      b.addEventListener('click', function() { send(b.textContent); });
+    });
+    document.querySelectorAll('#aicLevel button').forEach(function(b) {
       b.addEventListener('click', function() {
-        document.querySelectorAll('#coachLevel .ai-level-btn').forEach(function(x){x.classList.remove('active');});
+        document.querySelectorAll('#aicLevel button').forEach(function(x) { x.classList.remove('active'); });
         b.classList.add('active');
         level = b.dataset.lv;
-        var desc = document.getElementById('levelDesc');
-        if (desc) desc.textContent = LEVEL_DESCS[level] || '';
       });
-    });
-    document.getElementById('btnCoachAsk').addEventListener('click', function() {
-      var q = document.getElementById('aiCoachInput').value.trim() || '麻雀で最初に意識するとよいことを教えてください。';
-      askAI([], q, level, document.getElementById('aiCoachResp'), 'rule');
     });
   },
 
