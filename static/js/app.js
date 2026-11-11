@@ -1303,6 +1303,18 @@ function positionDiscardRivers() {
   var pRight  = (cp.right  - table.left) / tableScale - borderL;
   var pCenterY = (pTop + pBottom) / 2;
 
+  // 2026-11-11：点数の札を大きくしたので、札が点数板の外へはみ出す分だけ河を離す。
+  // 左右の札は横に長く、三麻の抜き北が付くと上下にも伸びるため、方向ごとに測る。
+  var gapOf = function(edge, horizontal) {
+    var e = cpEl.querySelector('.jt-diamond-edge-' + edge);
+    if (!e) return RIVER_GAP;
+    var r = e.getBoundingClientRect();
+    var half = (horizontal ? r.width : r.height) / 2 / tableScale;
+    return Math.max(RIVER_GAP, Math.round(half + 8));
+  };
+  var gapTop = gapOf('top', false), gapBottom = gapOf('bottom', false);
+  var gapLeft = gapOf('left', true), gapRight = gapOf('right', true);
+
   // 共通スタイルセッター（pTop等は既にローカル座標系に変換済みなのでそのまま代入）
   var set = function(el, obj) {
     for (var k in obj) el.style.setProperty(k, obj[k], 'important');
@@ -1312,7 +1324,7 @@ function positionDiscardRivers() {
   var sv = document.querySelector('.disc-river-self');
   if (sv) {
     set(sv, {
-      top:              (pBottom + RIVER_GAP) + 'px',
+      top:              (pBottom + gapBottom) + 'px',
       left:             pLeft + 'px',
       right:            'auto',
       transform:        'none',
@@ -1330,7 +1342,7 @@ function positionDiscardRivers() {
     ov.style.setProperty('direction',   'ltr',  'important');
     var oH = ov.offsetHeight || 153;       // 実際の高さ（CSS height:153px 固定）
     set(ov, {
-      top:              (pTop - RIVER_GAP - oH) + 'px',
+      top:              (pTop - gapTop - oH) + 'px',
       left:             pLeft + 'px',      // ← selfと同じ点数板左端基準
       right:            'auto',
       transform:        'none',
@@ -1347,7 +1359,7 @@ function positionDiscardRivers() {
     var lW = lv.offsetWidth  || 171;
     var lH = lv.offsetHeight || 153;
     set(lv, {
-      left:             (pLeft - RIVER_GAP - lW / 2 - lH / 2) + 'px',
+      left:             (pLeft - gapLeft - lW / 2 - lH / 2) + 'px',
       top:              (pCenterY - lH / 2) + 'px',
       right:            'auto',
       transform:        'rotate(90deg)',
@@ -1363,7 +1375,7 @@ function positionDiscardRivers() {
     var rW = rv.offsetWidth  || 171;
     var rH = rv.offsetHeight || 153;
     set(rv, {
-      left:             (pRight + RIVER_GAP - rW / 2 + rH / 2) + 'px',
+      left:             (pRight + gapRight - rW / 2 + rH / 2) + 'px',
       top:              (pCenterY - rH / 2) + 'px',
       right:            'auto',
       transform:        'rotate(-90deg)',

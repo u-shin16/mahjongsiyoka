@@ -6976,8 +6976,10 @@ body.is-battle-page .app-footer {
    ============================================================ */
 .battle-main .jt-center-panel.jt-center-panel-diamond {
   position: relative !important;
-  width: 148px !important;
-  height: 148px !important;
+  /* 2026-11-11：点数が見にくい（ゆーしん、まとめときや）。点数の文字が約9px、
+     スマホ横向きでは卓ごと縮んで約6pxだったため、ひと回り大きくして文字を倍近くにした */
+  width: 184px !important;
+  height: 184px !important;
   aspect-ratio: 1 !important;
   min-height: 0 !important;
   display: block !important;
@@ -6992,8 +6994,8 @@ body.is-battle-page .app-footer {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 104px;
-  height: 104px;
+  width: 128px;
+  height: 128px;
   transform: translate(-50%, -50%) rotate(45deg);
   border: 2px solid rgba(91, 103, 127, 0.9);
   border-radius: 3px;
@@ -7012,12 +7014,13 @@ body.is-battle-page .app-footer {
   white-space: nowrap;
 }
 .jt-diamond-roundline {
-  font-size: 0.66rem;
+  font-size: 1rem;
   font-weight: 900;
   color: #ffd56d;
 }
 .jt-diamond-wall {
-  font-size: 0.56rem;
+  font-size: 0.8rem;
+  font-weight: 700;
   color: #9ed3ff;
   margin-top: 2px;
 }
@@ -7029,20 +7032,21 @@ body.is-battle-page .app-footer {
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: rgba(0,0,0,0.55);
-  border: 1px solid rgba(232, 196, 85, 0.35);
-  font-size: 0.58rem;
-  color: #dae9ff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(6, 12, 24, 0.92);
+  border: 1px solid rgba(232, 196, 85, 0.45);
+  font-size: 0.95rem;
+  line-height: 1.15;
+  color: #ffffff;
   white-space: nowrap;
   z-index: 1;
 }
-.jt-diamond-edge .wind   { color: var(--gold); font-weight: 900; font-size: 0.62rem; }
-.jt-diamond-edge .pts    { font-weight: 700; }
+.jt-diamond-edge .wind   { color: var(--gold); font-weight: 900; font-size: 0.8rem; }
+.jt-diamond-edge .pts    { font-weight: 900; font-variant-numeric: tabular-nums; }
 .jt-diamond-edge .riichi { color: #ff9a8a; font-weight: 900; }
 .jt-diamond-edge .nuki   { color: #72c7ff; font-weight: 900; }
-.jt-diamond-edge.me      { border-color: rgba(232,196,85,0.8); }
+.jt-diamond-edge.me      { border: 2px solid var(--gold); }
 
 .jt-diamond-edge-top    { top: 0;    left: 50%; transform: translate(-50%, -50%); }
 .jt-diamond-edge-bottom { top: 100%; left: 50%; transform: translate(-50%, -50%); }
@@ -7051,12 +7055,14 @@ body.is-battle-page .app-footer {
 
 @media (max-width: 480px) {
   .battle-main .jt-center-panel.jt-center-panel-diamond {
-    width: 112px !important;
-    height: 112px !important;
+    width: 140px !important;
+    height: 140px !important;
   }
-  .jt-center-diamond { width: 78px; height: 78px; }
-  .jt-diamond-edge { font-size: 0.5rem; padding: 1px 4px; }
-  .jt-diamond-edge .wind { font-size: 0.54rem; }
+  .jt-center-diamond { width: 96px; height: 96px; }
+  .jt-diamond-roundline { font-size: 0.8rem; }
+  .jt-diamond-wall { font-size: 0.68rem; }
+  .jt-diamond-edge { font-size: 0.78rem; padding: 2px 5px; }
+  .jt-diamond-edge .wind { font-size: 0.68rem; }
 }
 
 /* ============================================================
