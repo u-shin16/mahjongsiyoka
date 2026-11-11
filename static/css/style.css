@@ -7584,3 +7584,72 @@ body.is-battle-page .jt-table {
 .tile-group-label { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 0.72rem; color: #a8d8b0; white-space: nowrap; }
 .win-tile { position: relative; display: inline-flex; }
 .win-label { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 0.66rem; color: var(--gold, #f5c542); white-space: nowrap; font-weight: 700; }
+
+/* ============================================================
+   2026-11-11：章を選ぶ画面を新しいヘッダー・進捗画面に合わせた
+   （まとめときや「章を選ぶ画面も他に合わせる」）。
+   見出しは縁取りの白文字、章はクリーム色のカード・濃い緑の文字。
+   ============================================================ */
+.page-title {
+  color: var(--cream);
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
+  -webkit-text-stroke: 6px #0f2419; paint-order: stroke fill; text-shadow: 0 3px 0 #0f2419;
+  margin-bottom: 24px;
+}
+/* 対局の結果パネルの中の見出しは、パネルの中なので縁取りしない */
+.fr-result-float .page-title { -webkit-text-stroke: 0; text-shadow: none; color: var(--gold); }
+
+.chapter-tier-head { border-bottom: none; padding: 0 2px; margin-bottom: 12px; align-items: center; }
+.chapter-tier-label,
+.chapter-tier.tier-core .chapter-tier-label,
+.chapter-tier.tier-advanced .chapter-tier-label,
+.chapter-tier.tier-test .chapter-tier-label {
+  font-size: 0.8rem; color: var(--gold); background: #0f2419;
+  border-radius: 99px; padding: 0 16px; line-height: 26px;
+}
+.chapter-tier-sub, .chapter-tier-count { color: var(--cream); opacity: 0.85; font-weight: 700; }
+
+.chapter-list .chapter-card {
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
+  border-radius: 16px;
+  box-shadow: 0 5px 0 #b89d6e, 0 7px 14px rgba(0,0,0,0.28);
+  color: var(--green-dark);
+  margin-bottom: 4px;
+}
+.chapter-list .chapter-card:hover { transform: translateY(-2px); border-color: var(--gold-dark); }
+.chapter-list .chapter-card.cleared { border-color: var(--tile-border); }
+.chapter-list .chapter-card.locked { opacity: 0.55; }
+.chapter-list .chapter-num {
+  background: var(--green-dark); border: none; color: var(--gold); font-size: 1rem;
+}
+.chapter-list .chapter-card.cleared .chapter-num { background: var(--green-mid); border: none; color: var(--cream); }
+.chapter-list .chapter-title { color: var(--green-dark); font-size: 1.05rem; font-weight: 900; }
+.chapter-list .chapter-meta { color: rgba(26,58,42,0.72); font-weight: 700; }
+.chapter-list .chapter-stars { color: var(--green-mid); }
+.chapter-list .chapter-badge { background: var(--green-dark); color: var(--gold); font-size: 0.75rem; padding: 4px 12px; }
+.chapter-list .chapter-badge.coming { background: rgba(26,58,42,0.12); color: rgba(26,58,42,0.6); }
+.chapter-list .chapter-badge-replay { background: rgba(44,110,73,0.12); color: var(--green-mid); border-color: rgba(44,110,73,0.45); }
+.chapter-list .chapter-card.cleared:hover .chapter-badge-replay { background: rgba(44,110,73,0.22); }
+.chapter-list .chapter-mg-trigger {
+  background-color: rgba(26,58,42,0.06); border-color: rgba(26,58,42,0.3); color: var(--green-dark);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231a3a2a' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.chapter-list .chapter-mg-trigger:hover { background-color: rgba(232,184,75,0.22); border-color: var(--gold-dark); }
+.chapter-list .chapter-mg-dropdown.open .chapter-mg-trigger {
+  border-color: var(--gold-dark); box-shadow: 0 0 0 2px rgba(232,184,75,0.3);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 7l5-5 5 5' stroke='%231a3a2a' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.chapter-list .chapter-mg-menu { background: #fffdf5; border-color: var(--tile-border); box-shadow: 0 10px 24px rgba(0,0,0,0.3); }
+.chapter-list .chapter-mg-option { color: var(--green-dark); border-bottom-color: rgba(26,58,42,0.1); font-weight: 700; }
+.chapter-list .chapter-mg-option:hover { background: rgba(232,184,75,0.25); color: var(--green-dark); }
+.chapter-list .chapter-card { margin-bottom: 14px; }
+/* ロック中は背景が透けると濁って見えるので、カードは不透明のまま中身だけ薄くする */
+.chapter-list .chapter-card.locked { opacity: 1; background: #e6dfcc; box-shadow: 0 5px 0 #b3a27e, 0 7px 14px rgba(0,0,0,0.2); }
+.chapter-list .chapter-card.locked > * { opacity: 0.5; }
+@media (max-width: 480px) {
+  .chapter-list .chapter-card { padding: 14px 12px; gap: 10px; }
+  .chapter-list .chapter-num { width: 38px; height: 38px; }
+  .chapter-list .chapter-mg-trigger { padding-left: 10px; padding-right: 24px; background-position: right 8px center; }
+}
