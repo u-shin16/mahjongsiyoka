@@ -5,6 +5,9 @@
 // ・ホームを開くと、その日の1問だけが出ている（選ばせない）
 // ・間違えた問題は2日後にもう一度出す（忘れたころに出すほうが身につく）
 // ・答えた日を「合計」で数える。連続日数にはしない（途切れた日にやめる理由になるため）
+// ・2026-11-12：ゆーしん「一番大事なのは学習パート。牌の見た目と関わっても意味なくない？」→
+//   数える日を「学んだ日」に広げた。今日の1問に答えた日に加えて、章のミニゲームをクリアした日も1日と数える（同じ日は1回だけ）。
+//   ごほうびを、学習パートを繰り返すことにもつなげるため。間違えた問題からは、その章へ戻れるようにした（sourceOf）
 // ・合計日数でごほうび（称号・牌のデザイン・卓の色・背景）がもらえる
 //
 // 画面を持たない計算だけをここに置き、app.js から使う。テストは tests/daily_test.js。
@@ -163,7 +166,7 @@ var Daily = (function() {
     return a;
   }
 
-  function emptyState() { return { days: 0, last: null, lastKey: null, lastCorrect: null, wrong: {} }; }
+  function emptyState() { return { days: 0, last: null, lastKey: null, lastCorrect: null, lastLearn: null, wrong: {} }; }
 
   function normalize(state) {
     var s = state || {};
@@ -172,6 +175,8 @@ var Daily = (function() {
       last: s.last || null,
       lastKey: s.lastKey || null,
       lastCorrect: typeof s.lastCorrect === 'boolean' ? s.lastCorrect : null,
+      // 学んだ日として最後に数えた日。この項目が無かったころの記録は、今日の1問に答えた日（last）で代わりにする
+      lastLearn: s.lastLearn || s.last || null,
       wrong: s.wrong && typeof s.wrong === 'object' ? s.wrong : {},
     };
   }
@@ -262,16 +267,45 @@ var Daily = (function() {
     return null;
   }
 
+  // 学んだ日を1日数える。同じ日はもう数えない（今日の1問と章のミニゲームのどちらで来ても同じ）
+  function countDay(s, day) {
+    if (s.lastLearn === day) return false;
+    s.days += 1; s.lastLearn = day;
+    return true;
+  }
+
   // 答えた結果を反映する。同じ日の2回目は日数を増やさない
   function answer(state, day, key, isCorrect) {
     var s = normalize(state);
     var before = s.days;
     var first = s.last !== day;
-    if (first) s.days += 1;
+    if (first) countDay(s, day);
     s.last = day; s.lastKey = key; s.lastCorrect = !!isCorrect;
     if (isCorrect) delete s.wrong[key];
     else s.wrong[key] = { due: addDays(day, RETRY_AFTER_DAYS) };
     return { state: s, firstToday: first, newRewards: rewardsBetween(before, s.days) };
+  }
+
+  // 章のミニゲームをクリアしたとき。その日まだ数えていなければ、学んだ日を1日増やす
+  function learn(state, day) {
+    var s = normalize(state);
+    var before = s.days;
+    var counted = countDay(s, day);
+    return { state: s, counted: counted, newRewards: rewardsBetween(before, s.days) };
+  }
+
+  // 問題がどの章で習うことか。間違えたときに「その章でおさらい」へ案内するため
+  //   用語は章が決まっていないので、用語辞典へ案内する（chapter: null）
+  function sourceOf(key, data) {
+    var parts = String(key).split(':');
+    if (parts[0] === 'f') return { chapter: 10, label: '第10章「符と点数」' };
+    if (parts[0] === 'y') {
+      var y = (data.YAKU || []).filter(function(v) { return v.id === parts[1]; })[0];
+      if (y && y.chapter) return { chapter: y.chapter, label: '第' + y.chapter + '章' };
+      return y ? { chapter: null, page: 'yaku_detail', params: { id: y.id }, label: '役の説明' } : null;
+    }
+    if (parts[0] === 't') return { chapter: null, page: 'terms', params: {}, label: '用語辞典' };
+    return null;
   }
 
   function rewardsBetween(fromDays, toDays) {
@@ -311,7 +345,8 @@ var Daily = (function() {
         if (!wrong[k] || (w[k] && w[k].due > wrong[k].due)) wrong[k] = w[k];
       });
     });
-    return { days: base.days, last: base.last, lastKey: base.lastKey, lastCorrect: base.lastCorrect, wrong: wrong };
+    var lastLearn = [a.lastLearn, b.lastLearn].filter(Boolean).sort().pop() || null;
+    return { days: base.days, last: base.last, lastKey: base.lastKey, lastCorrect: base.lastCorrect, lastLearn: lastLearn, wrong: wrong };
   }
 
   return {
@@ -319,7 +354,7 @@ var Daily = (function() {
     PATTERNS: PATTERNS, patternUrl: patternUrl, patternSize: patternSize,
     RETRY_AFTER_DAYS: RETRY_AFTER_DAYS,
     today: today, addDays: addDays, emptyState: emptyState, normalize: normalize,
-    pickKey: pickKey, questionFor: questionFor, answer: answer, fuList: fuList,
+    pickKey: pickKey, questionFor: questionFor, answer: answer, learn: learn, sourceOf: sourceOf, fuList: fuList,
     rewardsBetween: rewardsBetween, nextReward: nextReward, isUnlocked: isUnlocked,
     requiredDays: requiredDays, rewardName: rewardName, merge: merge,
   };

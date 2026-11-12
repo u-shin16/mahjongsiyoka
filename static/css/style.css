@@ -7923,3 +7923,10 @@ body.has-felt-look .battle-main .jt-table {
   background-size: var(--felt-pat-size, auto), auto !important;
   border-color: var(--felt-frame) !important;
 }
+/* 2026-11-12 今日の1問から、その章へおさらいに戻るボタン */
+.home-daily-review { display: block; width: 100%; margin-top: 12px; padding: 13px 16px; border: none; border-radius: 12px;
+  background: var(--green-dark, #1a3a2a); color: var(--gold, #e8b84b); font-size: 1rem; font-weight: 900; text-align: center;
+  box-shadow: 0 3px 0 #0f2419; }
+.home-daily-review:hover { filter: brightness(1.1); }
+.home-daily-review.sub { background: transparent; color: var(--green-dark, #1a3a2a); border: 2px solid var(--green-dark, #1a3a2a); box-shadow: none; padding: 9px 14px; font-size: 0.9rem; }
+.home-daily-review-note { margin-top: 6px; font-size: 0.78rem; font-weight: 700; opacity: 0.7; text-align: center; }

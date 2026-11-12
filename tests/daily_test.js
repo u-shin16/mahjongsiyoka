@@ -138,4 +138,25 @@ var rf = Daily.answer(s0, '2026-11-07', 'f:4-3', false);
 check('間違えた符の問題は2日後に先に出る', Daily.pickKey(rf.state, '2026-11-09', fuData, 10) === 'f:4-3');
 check('符のデータが無くても用語・役は出る', Daily.pickKey(s0, '2026-11-07', GameData, 10).indexOf('f:') !== 0);
 
+// 2026-11-12 学んだ日：今日の1問か章のミニゲーム、どちらでも同じ日は1日だけ
+var L0 = Daily.emptyState();
+var l1 = Daily.learn(L0, '2026-11-12');
+check('ミニゲームのクリアで学んだ日が1日増える', l1.counted && l1.state.days === 1);
+var l2 = Daily.learn(l1.state, '2026-11-12');
+check('同じ日の2回目のクリアは数えない', !l2.counted && l2.state.days === 1);
+var l3 = Daily.answer(l2.state, '2026-11-12', 't:和了:r', true);
+check('同じ日に今日の1問に答えても、学んだ日は増えない', l3.state.days === 1 && l3.firstToday && l3.state.last === '2026-11-12');
+check('ミニゲームをしても、今日の1問は答えていない扱いのまま', Daily.pickKey(l2.state, '2026-11-12', GameData, 8) !== null && l2.state.last === null);
+var l4 = Daily.learn(l3.state, '2026-11-13');
+check('次の日のミニゲームで2日目', l4.counted && l4.state.days === 2);
+var legacy = Daily.normalize({ days: 5, last: '2026-11-12', lastKey: 'x', wrong: {} });
+check('前の記録（lastLearnが無い）でも、答えた日にはもう数えない', !Daily.learn(legacy, '2026-11-12').counted);
+check('ごほうびの日数をこえたら、ミニゲームでももらえる', Daily.learn({ days: 2, last: '2026-11-10', wrong: {} }, '2026-11-12').newRewards.some(function(r) { return r.days === 3; }));
+check('ログインでまとめても学んだ日の最後は新しいほう', Daily.merge({ days: 3, lastLearn: '2026-11-10' }, { days: 2, lastLearn: '2026-11-12' }).lastLearn === '2026-11-12');
+// 間違えた問題から戻る先
+check('符の問題は第10章へ', Daily.sourceOf('f:4-3', fuData).chapter === 10);
+var yk = GameData.YAKU.filter(function(y) { return y.chapter; })[0];
+check('役の問題はその役を習う章へ', Daily.sourceOf('y:' + yk.id + ':h', GameData).chapter === yk.chapter);
+check('用語の問題は用語辞典へ', Daily.sourceOf('t:和了:r', GameData).page === 'terms');
+
 print('通過: ' + __pass + ' / 失敗: ' + __fail);

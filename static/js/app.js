@@ -2430,7 +2430,7 @@ var App = {
     if (!q) { box.remove(); return; }
     var done = st.last === day;
     var next = Daily.nextReward(st.days);
-    var footer = '<div class="home-daily-foot"><span>答えた日 合計<strong>' + st.days + '</strong>日</span>' +
+    var footer = '<div class="home-daily-foot"><span>学んだ日 合計<strong>' + st.days + '</strong>日</span>' +
       (next ? '<span>次のごほうびまで あと' + (next.days - st.days) + '日</span>' : '<span>ごほうびを全部もらいました</span>') +
       '<button type="button" class="home-daily-gift inline">特典を見る ›</button></div>';
     var head = '<div class="home-daily-head"><span class="home-daily-badge">今日の1問</span><span class="home-daily-tag">' + q.tag + '</span></div>';
@@ -2456,9 +2456,11 @@ var App = {
         '<div class="home-daily-result ' + (st.lastCorrect ? 'ok' : 'ng') + '">' + (st.lastCorrect ? '正解！' : '不正解') +
         '　答え：' + esc(q.correct) + '</div>' +
         '<div class="home-daily-expl">' + q.explanation + '</div>' +
+        self._dailyReviewHtml(key, data, st.lastCorrect) +
         '<div class="home-daily-done">今日の1問はおしまい。また明日！' + (st.lastCorrect ? '' : '（この問題は2日後にもう一度出ます）') + '</div>' + footer +
         '<button type="button" class="home-daily-close">閉じる ▲</button>';
       box.querySelector('.home-daily-gift.inline').addEventListener('click', function() { self.navigate('progress', { focus: 'look' }); });
+      self._bindDailyReview(box);
       // 開いた解説を1行に戻す（ゆーしん「開いた時しまう方法は」）
       box.querySelector('.home-daily-close').addEventListener('click', function() {
         box.removeAttribute('data-just'); self._renderDaily(box, clearedCount);
@@ -2484,6 +2486,46 @@ var App = {
         if (res.newRewards.length) self._showDailyRewards(res.newRewards, res.state.days);
       });
     });
+  },
+
+  // 2026-11-12：今日の1問から学習パートへ戻す（ゆーしん「一番大事なのは学習パート」）。
+  // 間違えたときは大きく、正解したときは小さく「その章でおさらい」を出す。まだ開けない章なら役の説明か用語辞典へ
+  _dailyReviewHtml: function(key, data, correct) {
+    var src = Daily.sourceOf(key, data);
+    if (!src) return '';
+    var page = 'chapter', params = { id: src.chapter }, label = src.label;
+    var reachable = src.chapter && (src.chapter <= 8 || Progress.isCleared(src.chapter) || Progress.isCleared(src.chapter - 1));
+    if (!reachable) {
+      if (!src.page) return '';
+      page = src.page; params = src.params || {};
+      if (src.chapter) label = src.page === 'yaku_detail' ? '役の説明' : src.label;
+    }
+    var text = page === 'chapter' ? label + 'でおさらいする' : label + 'で確かめる';
+    return '<button type="button" class="home-daily-review' + (correct ? ' sub' : '') + '" data-page="' + page + '" data-params="' +
+      esc(JSON.stringify(params)).replace(/"/g, '&quot;') + '">' + text + ' ›</button>' +
+      (page === 'chapter' ? '<div class="home-daily-review-note">章のミニゲームをクリアした日も「学んだ日」に数えます</div>' : '');
+  },
+  _bindDailyReview: function(box) {
+    var self = this;
+    var b = box.querySelector('.home-daily-review');
+    if (!b) return;
+    b.addEventListener('click', function() {
+      var page = b.getAttribute('data-page');
+      sendEvent('daily_review', { page: page });
+      self.navigate(page, JSON.parse(b.getAttribute('data-params') || '{}'));
+    });
+  },
+
+  // 章のミニゲームをクリアしたとき、学んだ日を数える。その日はじめてなら知らせ、ごほうびがあれば出す
+  _recordLearn: function() {
+    if (!window.Daily) return;
+    var res = Daily.learn(Progress.getDaily(), Daily.today());
+    if (!res.counted) return;
+    Progress.setDaily(res.state);
+    res.newRewards.forEach(function(r) { if (r.type === 'title') Progress.addTitle(r.id); });
+    sendEvent('learn_day', { days: res.state.days });
+    var names = res.newRewards.map(function(r) { return Daily.rewardName(r); });
+    showToast('学んだ日 合計' + res.state.days + '日' + (names.length ? '　ごほうび：' + names.join('・') + '（進捗で選べます）' : ''));
   },
 
   // もらった牌・卓・背景で組んだ見本。もらっていないものは今使っている見た目で埋める
@@ -2526,7 +2568,7 @@ var App = {
     // 2026-11-03：ゆーしん「もらった瞬間の演出も派手に」→ 文字だけだったのを、
     // もらった牌・卓・背景で組んだ見本を大きく出し、紙吹雪で祝う形にした
     showOverlay('<div class="daily-reward">' + this._rewardConfettiHtml() +
-      '<div class="daily-reward-days">答えた日 合計' + days + '日</div>' +
+      '<div class="daily-reward-days">学んだ日 合計' + days + '日</div>' +
       '<h3>ごほうびをもらいました</h3>' +
       this._rewardStageHtml(rewards) +
       '<ul>' + rewards.map(function(r) { return '<li' + (r.type === 'title' ? ' class="title"' : '') + '>' + Daily.rewardName(r) + '</li>'; }).join('') + '</ul>' +
@@ -5520,7 +5562,7 @@ var App = {
     });
     main.querySelectorAll('.look-opt[data-type]').forEach(function(el) {
       el.addEventListener('click', function() {
-        if (el.classList.contains('locked')) { showToast('「今日の1問」に答えた日が' + el.getAttribute('data-need') + '日になると使えます'); return; }
+        if (el.classList.contains('locked')) { showToast('学んだ日が合計' + el.getAttribute('data-need') + '日になると使えます'); return; }
         Progress.setLook(el.getAttribute('data-type'), el.getAttribute('data-id'));
         self._renderProgress(main);
       });
@@ -5544,7 +5586,7 @@ var App = {
       }).join('');
     };
     return '<div class="progress-card" id="lookCard"><h3>見た目（今日の1問のごほうび）</h3>' +
-      '<p class="look-note">「今日の1問」に答えた日が合計' + days + '日。日数がたまると、牌の色や卓・背景の模様が増えます。</p>' +
+      '<p class="look-note">学んだ日が合計' + days + '日（今日の1問に答えた日と、章のミニゲームをクリアした日を数えます）。日数がたまると、牌の色や卓・背景の模様が増えます。</p>' +
       '<div class="look-label">牌（表の色・裏の模様）</div><div class="look-row">' +
       row('tile', Daily.TILES, function(c) {
         // 見本は表と裏を並べて見せる（左が表、右が裏）
@@ -6918,6 +6960,7 @@ function chHeader(chTitle, mgTitle, pct, correct, passNeeded) {
 }
 
 function showMgClear(completedIdx, nextRender) {
+  App._recordLearn();
   var msgs = ['最初のミニゲームクリア！','2つ目のミニゲームクリア！','3つ目のミニゲームクリア！','4つ目のミニゲームクリア！'];
   showOverlay('<div style="text-align:center"><div style="font-size:2.5rem;margin-bottom:10px">🎉</div>' +
     '<h2>'+(msgs[completedIdx]||'ミニゲームクリア！')+'</h2>' +
@@ -6932,6 +6975,7 @@ function showClear(chId, stars) {
   var msgs = {1:'はじめてのアガリ！麻雀は「セット」と「頭」を作るゲームだよ。',2:'色の違いを理解したね！',3:'本物の麻雀牌を使いこなせるようになってきた！',4:'字牌をすべて覚えたかな？',5:'役牌をマスターした！',6:'一局の回し方が分かった！',7:'ポンとチーを使いこなせるようになった！',8:'立直・タンヤオ・平和・門前清自摸和・一発を覚えた！ここまでで必修はぜんぶ終わり。もう対局できるよ！',9:'翻とドラが数えられるようになった！',10:'符を数えて、点数が出せるようになった！',11:'道場チャレンジ完了！',12:'中級役（七対子・対々和など）をマスター！',13:'清一色などの上級役まで到達！すごい！',14:'三人麻雀のルールもバッチリ！'};
   var titleMap = CHAPTER_TITLES;
   Progress.setStars(chId, stars);
+  App._recordLearn();
   if (titleMap[chId]) Progress.addTitle(titleMap[chId]);
   sendEvent('chapter_clear_' + chId, { chapter: chId, stars: stars });
   showOverlay('<div style="text-align:center"><div style="font-size:3rem;margin-bottom:12px">🏆</div>' +
