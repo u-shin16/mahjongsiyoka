@@ -7930,3 +7930,16 @@ body.has-felt-look .battle-main .jt-table {
 .home-daily-review:hover { filter: brightness(1.1); }
 .home-daily-review.sub { background: transparent; color: var(--green-dark, #1a3a2a); border: 2px solid var(--green-dark, #1a3a2a); box-shadow: none; padding: 9px 14px; font-size: 0.9rem; }
 .home-daily-review-note { margin-top: 6px; font-size: 0.78rem; font-weight: 700; opacity: 0.7; text-align: center; }
+/* 2026-11-13 学習パートで押した答えに目印（押したものが埋まり、正解は緑・不正解は赤） */
+.btn-choice.picked, .btn-yes.picked, .btn-no.picked, #nakiBtns .btn.picked {
+  transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.25) !important;
+  outline: 3px solid currentColor; outline-offset: 2px;
+}
+.btn-choice.picked-ok { background: #27ae60 !important; border-color: #1e8449 !important; color: #fff !important; }
+.btn-choice.picked-ng { background: #e74c3c !important; border-color: #b03a2e !important; color: #fff !important; }
+.btn-yes.picked-ok, .btn-no.picked-ok, #nakiBtns .btn.picked-ok { outline-color: #27ae60; }
+.btn-yes.picked-ng, .btn-no.picked-ng, #nakiBtns .btn.picked-ng { outline-color: #e74c3c; }
+.choice-tile.picked { border-radius: 10px; outline: 3px solid #e74c3c; outline-offset: 3px; transform: translateY(-6px); }
+.choice-tile.picked-ok { outline-color: #27ae60; }
+.answer-locked { opacity: 0.45; pointer-events: none; }
+.btn-choice.answer-locked.correct-ans { opacity: 1; }

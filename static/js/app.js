@@ -1175,10 +1175,31 @@ function showMgIntro(main, chapterTitle, mgTitle, intro, onStart) {
   });
 }
 
+// 2026-11-13 学習パートで押した答えに目印を付ける。
+// 各問題のクリック処理より先に（キャプチャで）押した要素を覚えておき、showFeedbackで色を付ける
+var ANSWER_SEL = '.btn-choice, .btn-yes, .btn-no, .choice-tile, #nakiBtns .btn';
+var lastAnswerEl = null;
+document.addEventListener('click', function(e) {
+  var t = e.target && e.target.closest ? e.target.closest(ANSWER_SEL) : null;
+  if (t) lastAnswerEl = t;
+}, true);
+function markPickedAnswer(ok, fbEl) {
+  var el = lastAnswerEl; lastAnswerEl = null;
+  if (!el || !el.isConnected) return;
+  var area = fbEl.closest('.game-area') || fbEl.parentNode;
+  if (!area || !area.contains(el)) return;
+  el.classList.add('picked', ok ? 'picked-ok' : 'picked-ng');
+  // 答えたあとは他の選択肢を押せない見た目にする
+  area.querySelectorAll(ANSWER_SEL).forEach(function(b) {
+    if (b !== el) b.classList.add('answer-locked');
+  });
+}
+
 // Show feedback + next button (replaces auto-advance setTimeout)
 function showFeedback(ok, msg, onNext) {
   var fbEl = document.getElementById('feedback');
   if (!fbEl) return;
+  markPickedAnswer(ok, fbEl);
   var cls = ok ? 'feedback correct' : 'feedback incorrect';
   var icon = ok ? '✅ 正解！' : '❌ おしい！';
   fbEl.innerHTML =
