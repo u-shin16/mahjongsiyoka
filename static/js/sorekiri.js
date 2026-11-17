@@ -370,6 +370,44 @@ var Sorekiri = (function() {
     return { riichiCount: riichiRels.length, prob: ronProbability(tile, filled, riichiRels, visible) };
   }
 
+  // ---------- 「AIに聞く」用：リーチが無くても出す安全度（2026-11-17 ゆーしんの要望） ----------
+  // リーチしていない相手には、リーチ相手と同じ計算（待ちの形ごとの組み合わせ数×重み）に、
+  // 相手の鳴きの数（0・1・2以上）と河の枚数（〜5・6〜11・12〜）ごとの倍率を掛ける。
+  // 倍率は Sorekiri のシミュレーターで学習（制作物/sorekiri/fit_danger_dama.py、記録は data/fit_danger_dama_log.txt）。
+  // アプリのCPUは門前でテンパイすると必ずリーチするので、鳴いていない相手の倍率は0。
+  var DAMA_SCALE = [0, 0, 0, 0.0455, 0.3061, 1.0129, 0.1507, 0.6091, 1.5221];
+
+  function damaBucket(nCalls, nDiscards) {
+    var t = nDiscards >= 12 ? 2 : nDiscards >= 6 ? 1 : 0;
+    return Math.min(nCalls, 2) * 3 + t;
+  }
+
+  // 相手全員（リーチしている人もしていない人も）に対して、その牌を切ったときに振り込む確率の見積もり。
+  // riichiCount はリーチしている人数（表示の言い方を変えるため）。
+  function dangerOfTileAll(sample, tile) {
+    if (TILE_INDEX[tile] === undefined) return null;
+    var filled = {
+      hand: sample.hand || [], discards: sample.discards || {}, calls: sample.calls || {},
+      doraIndicators: sample.doraIndicators || [], gameMode: sample.gameMode,
+    };
+    var visible = visibleCounts(filled);
+    var rels = OTHER_SEATS.filter(function(rel) { return !(sample.gameMode === 'sanma' && rel === 'left'); });
+    var safe = 1, riichiCount = 0;
+    rels.forEach(function(rel) {
+      var discards = filled.discards[rel] || [];
+      var x = formCounts(tile, discards, visible);
+      var s = 0;
+      for (var k = 0; k < 5; k++) s += DANGER_WEIGHTS[k] * x[k];
+      if (sample.riichi && sample.riichi[rel]) {
+        riichiCount++;
+      } else {
+        s *= DAMA_SCALE[damaBucket((filled.calls[rel] || []).length, discards.length)];
+      }
+      safe *= Math.exp(-s);
+    });
+    return { riichiCount: riichiCount, prob: 1 - safe };
+  }
+
   // ---------- まーじゃんしよかの対局状態とのつなぎ ----------
   function tileId(t) {
     if (t.suit === 'man') return t.num + 'm';
@@ -449,7 +487,7 @@ var Sorekiri = (function() {
   var api = {
     load: load, ready: ready, setWeights: setWeights,
     chooseDiscardIndex: chooseDiscardIndex, defenseIndex: defenseIndex, decideCall: decideCall,
-    dangerOfTile: dangerOfTile,
+    dangerOfTile: dangerOfTile, dangerOfTileAll: dangerOfTileAll,
     // 検証用
     _encode: encode, _forward: forward, _chooseDiscardFromSample: chooseDiscardFromSample,
     _decideCallFromSample: decideCallFromSample, _defensePickFromSample: defensePickFromSample, _shanten: shanten, _countsOf: countsOf,
