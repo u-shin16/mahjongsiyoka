@@ -405,7 +405,39 @@ var Sorekiri = (function() {
       }
       safe *= Math.exp(-s);
     });
-    return { riichiCount: riichiCount, prob: 1 - safe };
+    return { riichiCount: riichiCount, prob: 1 - safe, callProb: callProbability(tile, sample, visible, rels) };
+  }
+
+  // ---------- 「AIに聞く」用：鳴かれる確率の見積もり（2026-11-17 ゆーしんの要望） ----------
+  // ポン：リーチしていない相手がその牌の対子を持つ組み合わせ数（牌の種類ごとに重み）。
+  // チー：下家（right）だけ。その牌でチーできる2枚の組み合わせ数。三人麻雀はチーが無い。
+  // 重みは巡目（自分の河の枚数 〜5・6〜11・12〜）ごとに、Sorekiriのシミュレーターで学習
+  // （制作物/sorekiri/fit_call.py、記録は data/fit_call_log.txt）。
+  var CALL_WEIGHTS = [[0.01030, 0.00606, 0.00010, 0.00118, 0.00050], [0.02714, 0.02269, 0.00033, 0.00300, 0.00115], [0.14338, 0.01613, 0.00084, 0.00698, 0.00081]];   // 三元牌ポン・風牌ポン・1/9ポン・2〜8ポン・チー
+
+  function callProbability(tile, sample, visible, rels) {
+    var openRels = rels.filter(function(rel) { return !(sample.riichi && sample.riichi[rel]); });
+    if (openRels.length === 0) return 0;
+    var unseen = visible.map(function(c) { return Math.max(0, 4 - c); });
+    var i = TILE_INDEX[tile];
+    var x = [0, 0, 0, 0, 0];
+    var u = unseen[i];
+    var pairs = u * (u - 1) / 2 * openRels.length;
+    if (i >= 31) x[0] = pairs;
+    else if (i >= 27) x[1] = pairs;
+    else if (i % 9 === 0 || i % 9 === 8) x[2] = pairs;
+    else x[3] = pairs;
+    if (sample.gameMode !== 'sanma' && openRels.indexOf('right') >= 0 && i < 27) {
+      var base = i - i % 9, n = i % 9;
+      [[n - 2, n - 1], [n - 1, n + 1], [n + 1, n + 2]].forEach(function(ab) {
+        if (ab[0] >= 0 && ab[1] <= 8) x[4] += unseen[base + ab[0]] * unseen[base + ab[1]];
+      });
+    }
+    var myDiscards = ((sample.discards || {}).self || []).length;
+    var w = CALL_WEIGHTS[myDiscards >= 12 ? 2 : myDiscards >= 6 ? 1 : 0];
+    var s = 0;
+    for (var k = 0; k < 5; k++) s += w[k] * x[k];
+    return 1 - Math.exp(-s);
   }
 
   // ---------- まーじゃんしよかの対局状態とのつなぎ ----------

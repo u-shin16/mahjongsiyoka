@@ -36,6 +36,17 @@ ok('2回鳴いて河が12枚の相手がいると、真ん中の数牌は危な�
 ok('鳴いている相手にも現物は0%', Sorekiri.dangerOfTileAll(open2, '9p').prob === 0 || Sorekiri.dangerOfTileAll(open2, '9p').prob < 1e-12);
 ok('リーチ相手だけの場面は dangerOfTile と同じ', Math.abs(Sorekiri.dangerOfTileAll(r, '5s').prob - Sorekiri.dangerOfTile(r, '5s').prob) < 1e-12);
 ok('リーチ相手の数を返す', Sorekiri.dangerOfTileAll(two, '5s').riichiCount === 2);
+// 2026-11-17：鳴かれる確率（callProb）
+var c = function(s, t) { return Sorekiri.dangerOfTileAll(s, t).callProb; };
+ok('鳴かれる確率は0〜1', c(noR, '5s') >= 0 && c(noR, '5s') < 1);
+ok('見えていない白（三元牌）は、2枚見えている東より鳴かれやすい', c(noR, 'white') > c(noR, 'east'));
+var allR = Object.assign({}, base, { riichi: { right: true, top: true, left: true } });
+ok('全員リーチなら鳴かれない', c(allR, 'white') === 0);
+var sanma = Object.assign({}, noR, { gameMode: 'sanma' });
+var noPairs = Object.assign({}, noR, { discards: { self: [], right: ['5s', '5s'], top: ['5s'], left: [] } });
+ok('ポンできない（残り1枚）数牌でも、下家のチーの分は残る', c(noPairs, '5s') > 0);
+ok('三人麻雀ではチーが無いので、残り1枚の数牌は鳴かれない', c(Object.assign({}, noPairs, { gameMode: 'sanma' }), '5s') === 0);
+ok('三人麻雀でも値は出る', c(sanma, 'white') > 0);
 print('=== 安全度の目安のテスト（Sorekiri本体との答え合わせ' + cases.length + '通り） ===');
 print('通過: ' + __pass + ' / 失敗: ' + __fail);
 if (__fails.length) { print('--- 失敗した項目 ---'); __fails.slice(0, 10).forEach(function(f) { print(f); }); }
