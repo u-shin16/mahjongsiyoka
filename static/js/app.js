@@ -1249,13 +1249,11 @@ function adviceSafetyHtml(payload, tileId) {
   if (!payload || !tileId || typeof Sorekiri === 'undefined' || !Sorekiri.dangerOfTileAll) return '';
   var d = Sorekiri.dangerOfTileAll(payload, tileId);
   if (!d) return '';
-  // 2026-11-17：鳴かれる確率も入れ、振り込む・鳴かれるを合わせた%を1つだけ出す（ゆーしんの要望）。
-  var basis = (d.riichiCount > 0 ? 'リーチした人の捨て牌' : 'リーチしている人はいません。相手の鳴きと捨て牌') +
-    '、まだ見えていない牌の枚数から計算した目安です';
-  var bothPct = (1 - (1 - d.prob) * (1 - (d.callProb || 0))) * 100;
-  var bothText = bothPct < 1 ? '1%未満' : '約' + Math.round(bothPct) + '%';
-  return '<div class="battle-ai-safety">振り込む・鳴かれる確率：' + bothText + '</div>' +
-    '<div class="battle-ai-note">' + basis + '</div>';
+  // 2026-11-17：鳴かれる確率も入れた安全度（振り込まず、鳴かれもしない確率）を、%だけ1行で出す。
+  // 内訳や根拠の説明は出さない（ゆーしん「あくまで目安やから%だけでいい」）。
+  var safePct = (1 - d.prob) * (1 - (d.callProb || 0)) * 100;
+  var safeText = safePct > 99 ? '99%以上' : '約' + Math.round(safePct) + '%';
+  return '<div class="battle-ai-safety">安全度の目安：' + safeText + '</div>';
 }
 
 function serializeMeldsForAdviceShared(melds) {
