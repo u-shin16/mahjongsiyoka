@@ -1256,8 +1256,10 @@ function adviceSafetyHtml(payload, tileId) {
   var callP = d.callProb || 0;
   var safePct = (1 - d.prob) * (1 - callP) * 100;
   var safeText = safePct > 99 ? '99%以上' : '約' + Math.round(safePct) + '%';
+  // 2026-11-17：振り込む・鳴かれるを合わせた%も出す（ゆーしんの要望）
+  var bothText = safePct > 99 ? '1%未満' : '約' + Math.round(100 - safePct) + '%';
   return '<div class="battle-ai-safety">安全度の目安：' + safeText +
-    '（振り込む ' + pctText(d.prob) + '・鳴かれる ' + pctText(callP) + '）</div>' +
+    '（振り込む ' + pctText(d.prob) + '・鳴かれる ' + pctText(callP) + '・合わせて ' + bothText + '）</div>' +
     '<div class="battle-ai-note">' + basis + '</div>';
 }
 
