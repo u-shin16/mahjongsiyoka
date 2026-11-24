@@ -103,7 +103,8 @@ check('特典の名前', Daily.rewardName({ type: 'tile', id: 'sakura' }) === '�
 // 2026-11-11 模様。定番以外はどれも模様を持ち、どの特典にもREWARDSの日数がある
 var allLooks = [['tile', Daily.TILES], ['table', Daily.TABLES], ['bg', Daily.BGS]];
 check('定番以外はどれも模様を持つ', allLooks.every(function(x) { return Object.keys(x[1]).every(function(id) { var p = x[1][id].pat; return id === 'default' ? !p : !!(p && Daily.PATTERNS[p.name]); }); }));
-check('どの見た目にももらえる日数がある', allLooks.every(function(x) { return Object.keys(x[1]).every(function(id) { return id === 'default' || x[0] === 'tile' || Daily.requiredDays(x[0], id) > 0; }); }));
+check('外した卓はもらえる一覧に出ず、残した卓は7種類', Daily.REWARDS.every(function(r) { return !(r.type === 'table' && Daily.HIDDEN_TABLES.indexOf(r.id) >= 0); }) && Object.keys(Daily.TABLES).filter(function(id) { return Daily.HIDDEN_TABLES.indexOf(id) < 0; }).length === 7);
+check('どの見た目にももらえる日数がある', allLooks.every(function(x) { return Object.keys(x[1]).every(function(id) { return id === 'default' || x[0] === 'tile' || (x[0] === 'table' && Daily.HIDDEN_TABLES.indexOf(id) >= 0) || Daily.requiredDays(x[0], id) > 0; }); }));
 var u = Daily.patternUrl(Daily.TILES.indigo.pat);
 check('模様はstyle属性に書ける形（引用符・かっこが中に無い）', /^url\(data:image\/svg\+xml,[^'"()]+\)$/.test(u) && Daily.patternUrl(null) === 'none');
 check('どの牌も表の色が変わる（画像を持つ）', Object.keys(Daily.TILES).every(function(id) { return id === 'default' || !!Daily.TILES[id].sheet; }));

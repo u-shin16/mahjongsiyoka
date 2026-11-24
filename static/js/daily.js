@@ -23,6 +23,7 @@ var Daily = (function() {
   // 紅・金・紫・翡翠・黒金・金の卓を足した。日数が多いほど派手にしてある
   // 2026-10-15：牌の表と裏を別々の特典にしていたが、ゆーしん「牌だけで一つのものにして」→
   // 表の色と裏の色をセットにした「牌」1つにまとめた
+  var HIDDEN_TABLES = ['wine', 'ichimatsu', 'aqua', 'candy', 'cosmic', 'forest'];  // 七宝・市松・アクア・キャンディ・コズミック・フォレスト
   var REWARDS = [
     { days: 1,   type: 'title', id: 'はじめの一歩' },
     { days: 3,   type: 'tile',  id: 'ivory' },
@@ -65,7 +66,9 @@ var Daily = (function() {
     { days: 90,  type: 'tile',  id: 'hoshi' },
     { days: 100, type: 'title', id: '百日の打ち手' },
     { days: 100, type: 'table', id: 'gold' },
-  ].filter(function(r) { return r.type !== 'tile'; });
+  ].filter(function(r) { return r.type !== 'tile' && !(r.type === 'table' && HIDDEN_TABLES.indexOf(r.id) >= 0); });
+  // 2026-11-24：ゆーしん「卓の種類多い」→ 13種類から7種類に減らした。外した卓は画面に出さず、もらえる一覧からも外す
+  // （TABLES には残してあるので、戻すときは下の一覧から消す。すでに選んでいた人は、使えない扱いになり緑の卓になる）
   // 2026-11-24：ゆーしん「牌の色が変わるやつ全部消して」→ 牌のごほうびは出さない。
   // 上の表と TILES は、もとに戻せるよう残してある（もらえる日数の一覧からだけ外している）
 
@@ -415,7 +418,7 @@ var Daily = (function() {
   }
 
   return {
-    REWARDS: REWARDS, TILES: TILES, TABLES: TABLES, BGS: BGS, LOOK_TYPES: LOOK_TYPES,
+    REWARDS: REWARDS, HIDDEN_TABLES: HIDDEN_TABLES, TILES: TILES, TABLES: TABLES, BGS: BGS, LOOK_TYPES: LOOK_TYPES,
     PATTERNS: PATTERNS, patternUrl: patternUrl, patternSize: patternSize,
     RETRY_AFTER_DAYS: RETRY_AFTER_DAYS,
     today: today, addDays: addDays, emptyState: emptyState, normalize: normalize,
