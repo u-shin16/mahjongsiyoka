@@ -23,6 +23,8 @@ var Daily = (function() {
   // 紅・金・紫・翡翠・黒金・金の卓を足した。日数が多いほど派手にしてある
   // 2026-10-15：牌の表と裏を別々の特典にしていたが、ゆーしん「牌だけで一つのものにして」→
   // 表の色と裏の色をセットにした「牌」1つにまとめた
+  // 2026-11-24：背景も同じように、これまでの11種類は画面に出さず、新しい6つ＋深緑にした
+  var HIDDEN_BGS = ['navy', 'chidori', 'sumi', 'murasaki', 'hoshi', 'neon', 'latte', 'aqua', 'candy', 'cosmic', 'forest'];
   var HIDDEN_TABLES = ['night', 'crimson', 'wine', 'ichimatsu', 'kokukin', 'gold', 'neon', 'latte', 'aqua', 'candy', 'cosmic', 'forest'];  // 2026-11-24：卓は「緑の卓＋新しい6つ」に差し替え。これまでの卓はすべて画面に出さない
   var REWARDS = [
     { days: 1,   type: 'title', id: 'はじめの一歩' },
@@ -34,10 +36,12 @@ var Daily = (function() {
     { days: 7,   type: 'table', id: 'night' },
     { days: 7,  type: 'table', id: 'seiza' },
     { days: 10,  type: 'bg',    id: 'navy' },
+    { days: 10, type: 'bg',    id: 'nami' },
     { days: 12, type: 'tile',  id: 'latte' },
     { days: 12, type: 'table', id: 'latte' },
     { days: 12, type: 'bg',    id: 'latte' },
     { days: 14,  type: 'tile',  id: 'indigo' },
+    { days: 15, type: 'bg',    id: 'seiza' },
     { days: 17, type: 'tile',  id: 'candy' },
     { days: 17, type: 'table', id: 'candy' },
     { days: 17, type: 'bg',    id: 'candy' },
@@ -45,6 +49,7 @@ var Daily = (function() {
     { days: 20,  type: 'bg',    id: 'chidori' },
     { days: 20, type: 'table', id: 'fubuki' },
     { days: 25,  type: 'tile',  id: 'gold' },
+    { days: 25, type: 'bg',    id: 'fubuki' },
     { days: 30,  type: 'title', id: '麻雀の常連' },
     { days: 30,  type: 'table', id: 'wine' },
     { days: 30, type: 'table', id: 'nami' },
@@ -52,6 +57,7 @@ var Daily = (function() {
     { days: 33, type: 'table', id: 'aqua' },
     { days: 33, type: 'bg',    id: 'aqua' },
     { days: 40,  type: 'bg',    id: 'sumi' },
+    { days: 40, type: 'bg',    id: 'trump' },
     { days: 45,  type: 'tile',  id: 'yagasuri' },
     { days: 48, type: 'tile',  id: 'cosmic' },
     { days: 48, type: 'table', id: 'cosmic' },
@@ -61,6 +67,7 @@ var Daily = (function() {
     { days: 55,  type: 'table', id: 'ichimatsu' },
     { days: 55, type: 'table', id: 'trump' },
     { days: 60,  type: 'bg',    id: 'murasaki' },
+    { days: 60, type: 'bg',    id: 'hanabi' },
     { days: 65, type: 'tile',  id: 'forest' },
     { days: 65, type: 'table', id: 'forest' },
     { days: 65, type: 'bg',    id: 'forest' },
@@ -68,11 +75,12 @@ var Daily = (function() {
     { days: 80,  type: 'table', id: 'kokukin' },
     { days: 80, type: 'table', id: 'kikko' },
     { days: 85,  type: 'bg',    id: 'hoshi' },
+    { days: 85, type: 'bg',    id: 'kikko' },
     { days: 90,  type: 'tile',  id: 'hoshi' },
     { days: 100, type: 'title', id: '百日の打ち手' },
     { days: 100, type: 'table', id: 'gold' },
     { days: 100, type: 'table', id: 'hanabi' },
-  ].filter(function(r) { return r.type !== 'tile' && !(r.type === 'table' && HIDDEN_TABLES.indexOf(r.id) >= 0); });
+  ].filter(function(r) { return r.type !== 'tile' && !(r.type === 'table' && HIDDEN_TABLES.indexOf(r.id) >= 0) && !(r.type === 'bg' && HIDDEN_BGS.indexOf(r.id) >= 0); });
   // 2026-11-24：ゆーしん「卓の種類多い」→ 13種類から7種類に減らした。外した卓は画面に出さず、もらえる一覧からも外す
   // （TABLES には残してあるので、戻すときは下の一覧から消す。すでに選んでいた人は、使えない扱いになり緑の卓になる）
   // 2026-11-24：ゆーしん「牌の色が変わるやつ全部消して」→ 牌のごほうびは出さない。
@@ -127,7 +135,9 @@ var Daily = (function() {
   function patternUrl(pat) {
     if (!pat || !PATTERNS[pat.name]) return 'none';
     var P = PATTERNS[pat.name];
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + P.w + '" height="' + P.h + '">' + P.svg(pat.color) + '</svg>';
+    var body = P.svg(pat.color);
+    if (pat.opacity) body = '<g opacity="' + pat.opacity + '">' + body + '</g>';   // 2026-11-24：背景は文字が読めるよう、柄をうすくする
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + P.w + '" height="' + P.h + '">' + body + '</svg>';
     return 'url(data:image/svg+xml,' + encodeURIComponent(svg).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29') + ')';
   }
   // 卓に敷く模様の拡大率（柄ごとの zoom）。対局画面の大きさに合わせる
@@ -204,6 +214,13 @@ var Daily = (function() {
     'candy':   { name: 'キャンディ',   color: '#3a2358', pat: { name: 'polka',   color: 'rgba(244,167,197,.28)' } },
     'cosmic':  { name: 'コズミック',   color: '#110D24', pat: { name: 'hoshi',   color: 'rgba(216,190,255,.55)' } },
     'forest':  { name: 'フォレスト',   color: '#1e2b23', pat: { name: 'tree',    color: 'rgba(156,165,138,.25)' } },
+    // 2026-11-24：ごほうびの背景。卓と同じ6つの柄を、文字が読める暗い色で（opacity で柄をうすくしてある）
+    'fubuki':   { name: '桜吹雪', color: '#2a0d18', pat: { name: 'fubuki', color: '#ffffff', zoom: 2, opacity: .38 } },
+    'nami':     { name: '青海波', color: '#0c1a33', pat: { name: 'nami',   color: '#ffffff', zoom: 2, opacity: .42 } },
+    'kikko':    { name: '亀甲',   color: '#121214', pat: { name: 'kikko',  color: '#ffffff', zoom: 2, opacity: .5 } },
+    'seiza':    { name: '星座',   color: '#0a1026', pat: { name: 'seiza',  color: '#ffffff', zoom: 2.2, opacity: .8 } },
+    'trump':    { name: 'トランプ', color: '#0b2a1b', pat: { name: 'suits', color: '#ffffff', zoom: 2, opacity: .42 } },
+    'hanabi':   { name: '花火',   color: '#070a1f', pat: { name: 'hanabi', color: '#ffffff', zoom: 2.2, opacity: .6 } },
   };
   var LOOK_TYPES = ['tile', 'table', 'bg'];
 
@@ -453,7 +470,7 @@ var Daily = (function() {
   }
 
   return {
-    REWARDS: REWARDS, HIDDEN_TABLES: HIDDEN_TABLES, TILES: TILES, TABLES: TABLES, BGS: BGS, LOOK_TYPES: LOOK_TYPES,
+    REWARDS: REWARDS, HIDDEN_TABLES: HIDDEN_TABLES, HIDDEN_BGS: HIDDEN_BGS, TILES: TILES, TABLES: TABLES, BGS: BGS, LOOK_TYPES: LOOK_TYPES,
     PATTERNS: PATTERNS, patternUrl: patternUrl, patternZoom: patternZoom, patternSize: patternSize,
     RETRY_AFTER_DAYS: RETRY_AFTER_DAYS,
     today: today, addDays: addDays, emptyState: emptyState, normalize: normalize,

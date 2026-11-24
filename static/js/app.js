@@ -335,7 +335,7 @@ function applyLook() {
   // 2026-11-11：模様（無地のものは none）。牌の裏は小さいので模様を半分の大きさで敷く
   st.setProperty('--back-pat', Daily.patternUrl(tile.pat)); st.setProperty('--back-pat-size', Daily.patternSize(tile.pat, 0.5));
   st.setProperty('--felt-pat', Daily.patternUrl(table.pat)); st.setProperty('--felt-pat-size', Daily.patternSize(table.pat, Daily.patternZoom(table.pat)));
-  st.setProperty('--page-pat', Daily.patternUrl(bg.pat)); st.setProperty('--page-pat-size', Daily.patternSize(bg.pat, 1));
+  st.setProperty('--page-pat', Daily.patternUrl(bg.pat)); st.setProperty('--page-pat-size', Daily.patternSize(bg.pat, Daily.patternZoom(bg.pat)));
   document.body.classList.toggle('has-back-pat', !!tile.pat);
   document.body.classList.toggle('has-page-pat', !!bg.pat);
   // 対局画面の卓は紺のデザインで固定していたため、選んだ卓が対局に出ていなかった。定番以外を選んだときはその卓にする
@@ -5613,7 +5613,7 @@ var App = {
       '<div class="look-label">卓</div><div class="look-row">' +
       row('table', (function() { var o = {}; Object.keys(Daily.TABLES).forEach(function(id) { if (Daily.HIDDEN_TABLES.indexOf(id) < 0) o[id] = Daily.TABLES[id]; }); return o; })(), function(c) { return 'background:' + Daily.patternUrl(c.pat) + ',radial-gradient(ellipse at 50% 50%,' + c.a + ' 0%,' + c.b + ' 100%);background-size:' + Daily.patternSize(c.pat, 0.6) + ',auto;border-color:' + c.frame; }) + '</div>' +
       '<div class="look-label">背景</div><div class="look-row">' +
-      row('bg', Daily.BGS, function(c) { return 'background:' + Daily.patternUrl(c.pat) + ',' + c.color + ';background-size:' + Daily.patternSize(c.pat, 0.6) + ',auto;border-color:rgba(232,184,75,0.4)'; }) + '</div></div>';
+      row('bg', (function() { var o = {}; Object.keys(Daily.BGS).forEach(function(id) { if (Daily.HIDDEN_BGS.indexOf(id) < 0) o[id] = Daily.BGS[id]; }); return o; })(), function(c) { return 'background:' + Daily.patternUrl(c.pat) + ',' + c.color + ';background-size:' + Daily.patternSize(c.pat, 0.6) + ',auto;border-color:rgba(232,184,75,0.4)'; }) + '</div></div>';
   },
 
   // ===== Battle Setup =====

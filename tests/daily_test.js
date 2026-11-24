@@ -78,7 +78,7 @@ check('牌のごほうびは出さない', Daily.REWARDS.every(function(r) { ret
 check('はじめからの見た目はいつでも使える', Daily.isUnlocked('table', 'default', 0));
 var r7 = Daily.rewardsBetween(6, 7).map(function(r) { return r.id; }).join(',');
 check('7日目は称号と星座の卓', r7 === '麻雀好き,seiza');
-check('次のごほうびが分かる', Daily.nextReward(3).days === 5 && Daily.nextReward(30).days === 33);
+check('次のごほうびが分かる', Daily.nextReward(3).days === 7 && Daily.nextReward(30).days === 40);
 
 // ログインしたときのまとめ方：日数の多い方を残し、間違えた問題は両方を合わせる
 var m = Daily.merge(
@@ -91,11 +91,11 @@ check('記録が無くても壊れない', Daily.merge(null, undefined).days ===
 
 // 牌の表・背景（2026-10-15に足した特典）
 check('牌は表と裏の色をセットで持つ', Object.keys(Daily.TILES).every(function(k) { var t = Daily.TILES[k]; return t.face && t.back && t.face.a && t.back.c; }));
-check('10日目で背景「紺」', Daily.isUnlocked('bg', 'navy', 10) && !Daily.isUnlocked('bg', 'navy', 9));
+check('10日目で背景「青海波」', Daily.isUnlocked('bg', 'nami', 10) && !Daily.isUnlocked('bg', 'nami', 9));
 check('50日目は称号', Daily.rewardsBetween(49, 50).map(function(r) { return r.id; }).join(',') === '麻雀の達人');
 check('100日目は称号と花火の卓', Daily.rewardsBetween(99, 100).map(function(r) { return r.id; }).join(',') === '百日の打ち手,hanabi' && Daily.nextReward(100) === null);
 // 2026-11-03に足した派手な特典。今の特典の日数は変えない（もらった人が失わないように）
-check('20日目は桜吹雪の卓（と千鳥の背景）、25日目までに牌は出ない', Daily.rewardsBetween(19, 25).map(function(r) { return r.id; }).join(',') === 'chidori,fubuki');
+check('20日目は桜吹雪の卓、25日目は桜吹雪の背景（牌は出ない）', Daily.rewardsBetween(19, 25).map(function(r) { return r.type + ':' + r.id; }).join(',') === 'table:fubuki,bg:fubuki');
 check('足した特典に名前がある', Daily.rewardName({ type: 'tile', id: 'jade' }) === '牌「翡翠」' && Daily.rewardName({ type: 'table', id: 'kokukin' }) === '卓「黒金の卓」' && Daily.rewardName({ type: 'bg', id: 'murasaki' }) === '背景「桜」');
 var sheetsOk = Object.keys(Daily.TILES).every(function(id) { var t = Daily.TILES[id]; return t.face && t.back && (t.sheet === null || /^\/static\/img\/mahjong-tiles-[a-z]+\.jpg$/.test(t.sheet)); });
 check('牌はどれも表と裏の色を持つ', sheetsOk);
@@ -104,7 +104,8 @@ check('特典の名前', Daily.rewardName({ type: 'tile', id: 'sakura' }) === '�
 var allLooks = [['tile', Daily.TILES], ['table', Daily.TABLES], ['bg', Daily.BGS]];
 check('定番以外はどれも模様を持つ', allLooks.every(function(x) { return Object.keys(x[1]).every(function(id) { var p = x[1][id].pat; return id === 'default' ? !p : !!(p && Daily.PATTERNS[p.name]); }); }));
 check('外した卓はもらえる一覧に出ず、残した卓は7種類', Daily.REWARDS.every(function(r) { return !(r.type === 'table' && Daily.HIDDEN_TABLES.indexOf(r.id) >= 0); }) && Object.keys(Daily.TABLES).filter(function(id) { return Daily.HIDDEN_TABLES.indexOf(id) < 0; }).length === 7);
-check('どの見た目にももらえる日数がある', allLooks.every(function(x) { return Object.keys(x[1]).every(function(id) { return id === 'default' || x[0] === 'tile' || (x[0] === 'table' && Daily.HIDDEN_TABLES.indexOf(id) >= 0) || Daily.requiredDays(x[0], id) > 0; }); }));
+check('背景は、深緑と新しい6つの7種類だけ出る', Object.keys(Daily.BGS).filter(function(id) { return Daily.HIDDEN_BGS.indexOf(id) < 0; }).length === 7 && Daily.REWARDS.every(function(r) { return !(r.type === 'bg' && Daily.HIDDEN_BGS.indexOf(r.id) >= 0); }));
+check('どの見た目にももらえる日数がある', allLooks.every(function(x) { return Object.keys(x[1]).every(function(id) { return id === 'default' || x[0] === 'tile' || (x[0] === 'table' && Daily.HIDDEN_TABLES.indexOf(id) >= 0) || (x[0] === 'bg' && Daily.HIDDEN_BGS.indexOf(id) >= 0) || Daily.requiredDays(x[0], id) > 0; }); }));
 var u = Daily.patternUrl(Daily.TILES.indigo.pat);
 check('模様はstyle属性に書ける形（引用符・かっこが中に無い）', /^url\(data:image\/svg\+xml,[^'"()]+\)$/.test(u) && Daily.patternUrl(null) === 'none');
 check('どの牌も表の色が変わる（画像を持つ）', Object.keys(Daily.TILES).every(function(id) { return id === 'default' || !!Daily.TILES[id].sheet; }));
@@ -152,7 +153,7 @@ var l4 = Daily.learn(l3.state, '2026-11-13');
 check('次の日のミニゲームで2日目', l4.counted && l4.state.days === 2);
 var legacy = Daily.normalize({ days: 5, last: '2026-11-12', lastKey: 'x', wrong: {} });
 check('前の記録（lastLearnが無い）でも、答えた日にはもう数えない', !Daily.learn(legacy, '2026-11-12').counted);
-check('ごほうびの日数をこえたら、ミニゲームでももらえる', Daily.learn({ days: 4, last: '2026-11-10', wrong: {} }, '2026-11-12').newRewards.some(function(r) { return r.days === 5; }));
+check('ごほうびの日数をこえたら、ミニゲームでももらえる', Daily.learn({ days: 6, last: '2026-11-10', wrong: {} }, '2026-11-12').newRewards.some(function(r) { return r.days === 7; }));
 check('ログインでまとめても学んだ日の最後は新しいほう', Daily.merge({ days: 3, lastLearn: '2026-11-10' }, { days: 2, lastLearn: '2026-11-12' }).lastLearn === '2026-11-12');
 // 間違えた問題から戻る先
 check('符の問題は第10章へ', Daily.sourceOf('f:4-3', fuData).chapter === 10);
