@@ -26,21 +26,39 @@ var Daily = (function() {
   var REWARDS = [
     { days: 1,   type: 'title', id: 'はじめの一歩' },
     { days: 3,   type: 'tile',  id: 'ivory' },
+    { days: 5,  type: 'tile',  id: 'neon' },
+    { days: 5,  type: 'table', id: 'neon' },
+    { days: 5,  type: 'bg',    id: 'neon' },
     { days: 7,   type: 'title', id: '麻雀好き' },
     { days: 7,   type: 'table', id: 'night' },
     { days: 10,  type: 'bg',    id: 'navy' },
+    { days: 12, type: 'tile',  id: 'latte' },
+    { days: 12, type: 'table', id: 'latte' },
+    { days: 12, type: 'bg',    id: 'latte' },
     { days: 14,  type: 'tile',  id: 'indigo' },
+    { days: 17, type: 'tile',  id: 'candy' },
+    { days: 17, type: 'table', id: 'candy' },
+    { days: 17, type: 'bg',    id: 'candy' },
     { days: 20,  type: 'table', id: 'crimson' },
     { days: 20,  type: 'bg',    id: 'chidori' },
     { days: 25,  type: 'tile',  id: 'gold' },
     { days: 30,  type: 'title', id: '麻雀の常連' },
     { days: 30,  type: 'table', id: 'wine' },
+    { days: 33, type: 'tile',  id: 'aqua' },
+    { days: 33, type: 'table', id: 'aqua' },
+    { days: 33, type: 'bg',    id: 'aqua' },
     { days: 40,  type: 'bg',    id: 'sumi' },
     { days: 45,  type: 'tile',  id: 'yagasuri' },
+    { days: 48, type: 'tile',  id: 'cosmic' },
+    { days: 48, type: 'table', id: 'cosmic' },
+    { days: 48, type: 'bg',    id: 'cosmic' },
     { days: 50,  type: 'tile',  id: 'sakura' },
     { days: 50,  type: 'title', id: '麻雀の達人' },
     { days: 55,  type: 'table', id: 'ichimatsu' },
     { days: 60,  type: 'bg',    id: 'murasaki' },
+    { days: 65, type: 'tile',  id: 'forest' },
+    { days: 65, type: 'table', id: 'forest' },
+    { days: 65, type: 'bg',    id: 'forest' },
     { days: 70,  type: 'tile',  id: 'jade' },
     { days: 80,  type: 'table', id: 'kokukin' },
     { days: 85,  type: 'bg',    id: 'hoshi' },
@@ -59,6 +77,18 @@ var Daily = (function() {
     sakura:   { w: 36, h: 36, svg: function(c) { return '<g fill="' + c + '">' + [[9, 9], [27, 27]].map(function(p) { return [0, 72, 144, 216, 288].map(function(a) { return '<ellipse cx="' + p[0] + '" cy="' + (p[1] - 3.6) + '" rx="2.4" ry="3.6" transform="rotate(' + a + ' ' + p[0] + ' ' + p[1] + ')"/>'; }).join(''); }).join('') + '</g>'; } },
     chidori:  { w: 32, h: 28, svg: function(c) { return '<path d="M4 14q5-8 12-4q4-6 10-4q-4 2-5 6q4 4 1 8q-3-4-8-3q-6 1-10-3z" fill="' + c + '" transform="scale(.8) translate(4 4)"/>'; } },
     hoshi:    { w: 34, h: 34, svg: function(c) { return '<g fill="' + c + '"><path d="M8 3L9.4 6.6L13 7L10.2 9.4L11 13L8 11L5 13L5.8 9.4L3 7L6.6 6.6Z"/><circle cx="25" cy="22" r="1.6"/><circle cx="18" cy="30" r="1"/><circle cx="29" cy="7" r="1.2"/></g>'; } },
+    // 2026-11-24：和柄以外の新しい見た目（ネオン・カフェラテ・アクア・キャンディ・コズミック・フォレスト）用の模様
+    diag:     { w: 16, h: 16, svg: function(c) { return '<path d="M-4 4L4 -4M0 16L16 0M12 20L20 12" stroke="' + c + '" stroke-width="2" fill="none"/>'; } },
+    grid:     { w: 24, h: 24, svg: function(c) { return '<path d="M0 .5H24M.5 0V24" stroke="' + c + '" stroke-width="1" fill="none"/>'; } },
+    dots:     { w: 10, h: 10, svg: function(c) { return '<circle cx="5" cy="5" r="1.4" fill="' + c + '"/>'; } },
+    wave:     { w: 28, h: 12, svg: function(c) { return '<path d="M0 6Q7 0 14 6T28 6" stroke="' + c + '" stroke-width="1.4" fill="none"/>'; } },
+    bubble:   { w: 40, h: 40, svg: function(c) { return '<g fill="none" stroke="' + c + '" stroke-width="1.3"><circle cx="10" cy="12" r="4"/><circle cx="28" cy="28" r="2.6"/><circle cx="31" cy="8" r="3.2"/></g>'; } },
+    orbit:    { w: 44, h: 44, svg: function(c) { return '<g fill="none" stroke="' + c + '" stroke-width="1.2"><circle cx="22" cy="22" r="6"/><circle cx="22" cy="22" r="13"/><circle cx="22" cy="22" r="20"/></g><circle cx="35" cy="22" r="2" fill="' + c + '"/>'; } },
+    mountain: { w: 28, h: 16, svg: function(c) { return '<path d="M0 14L7 4L14 14L21 4L28 14" stroke="' + c + '" stroke-width="1.5" fill="none"/>'; } },
+    plaid:    { w: 24, h: 24, svg: function(c) { return '<path d="M12 0V24M0 12H24" stroke="' + c + '" stroke-width="1.6" fill="none"/>'; } },
+    polka:    { w: 20, h: 20, svg: function(c) { return '<circle cx="5" cy="5" r="3" fill="' + c + '"/><circle cx="15" cy="15" r="3" fill="' + c + '"/>'; } },
+    vstripe:  { w: 12, h: 12, svg: function(c) { return '<rect width="3" height="12" fill="' + c + '"/>'; } },
+    tree:     { w: 32, h: 36, svg: function(c) { return '<path d="M16 4L26 22H6ZM16 16L28 34H4Z" fill="' + c + '"/>'; } },
   };
 
   // 模様をCSSの background-image に入れられる形にする。HTMLの style="" の中にも書けるよう、
@@ -106,6 +136,25 @@ var Daily = (function() {
     'hoshi':   { name: '銀', sheet: '/static/img/mahjong-tiles-silver.jpg',
       face: { a: '#f7f8fb', b: '#e2e6ee', c: '#c6ccd8' }, back: { a: '#2c4a8a', b: '#162a5a', c: '#0a1430' },
       pat: { name: 'hoshi', color: 'rgba(255,226,140,.85)' } },
+    // 2026-11-24：和柄以外の新しい牌（表の色が変わる画像つき。裏と縁は新しい色）
+    'neon':    { name: 'ネオン', sheet: '/static/img/mahjong-tiles-neon.jpg',
+      face: { a: '#effbff', b: '#d4eef9', c: '#b5dcec' }, back: { a: '#5cecff', b: '#00D9FF', c: '#A855F7' },
+      pat: { name: 'diag', color: 'rgba(23,36,61,.5)' } },
+    'latte':   { name: 'カフェラテ', sheet: '/static/img/mahjong-tiles-latte.jpg',
+      face: { a: '#fff7ec', b: '#f6e4cd', c: '#e2c7a6' }, back: { a: '#f7e3c8', b: '#F2D5B5', c: '#B88561' },
+      pat: { name: 'wave', color: 'rgba(184,133,97,.55)' } },
+    'aqua':    { name: 'アクア', sheet: '/static/img/mahjong-tiles-aqua.jpg',
+      face: { a: '#f2ffff', b: '#d6f4f8', c: '#b0e2ec' }, back: { a: '#a6f3fc', b: '#67E8F9', c: '#1594AE' },
+      pat: { name: 'bubble', color: 'rgba(255,255,255,.65)' } },
+    'candy':   { name: 'キャンディ', sheet: '/static/img/mahjong-tiles-candy.jpg',
+      face: { a: '#fff5fb', b: '#fbe0f0', c: '#efc2dc' }, back: { a: '#fbc3df', b: '#F9A8D4', c: '#C4B5FD' },
+      pat: { name: 'diag', color: 'rgba(255,240,246,.7)' } },
+    'cosmic':  { name: 'コズミック', sheet: '/static/img/mahjong-tiles-cosmic.jpg',
+      face: { a: '#f6f2ff', b: '#e2daf8', c: '#c9bdea' }, back: { a: '#c3b0ff', b: '#A78BFA', c: '#44306E' },
+      pat: { name: 'orbit', color: 'rgba(68,48,110,.6)' } },
+    'forest':  { name: 'フォレスト', sheet: '/static/img/mahjong-tiles-forest.jpg',
+      face: { a: '#fbf6e2', b: '#ebe0be', c: '#d3c596' }, back: { a: '#e7ae6f', b: '#D99A56', c: '#6A5036' },
+      pat: { name: 'mountain', color: 'rgba(106,80,54,.6)' } },
   };
   // アプリ全体の背景（color＝地の色、pat＝重ねる模様）
   var BGS = {
@@ -115,6 +164,13 @@ var Daily = (function() {
     'sumi':    { name: '麻の葉', color: '#1f2124', pat: { name: 'asanoha',  color: 'rgba(255,255,255,.06)' } },
     'murasaki':{ name: '桜',     color: '#2c1745', pat: { name: 'sakura',   color: 'rgba(255,190,210,.12)' } },
     'hoshi':   { name: '星空',   color: '#101a38', pat: { name: 'hoshi',    color: 'rgba(255,230,150,.3)' } },
+    // 2026-11-24：新しい背景。明るい色は文字が読めなくなるので、同じ色合いの暗い色にした
+    'neon':    { name: 'ネオンシティ', color: '#0B1020', pat: { name: 'grid',    color: 'rgba(38,59,96,.7)' } },
+    'latte':   { name: 'カフェラテ',   color: '#3b2b23', pat: { name: 'vstripe', color: 'rgba(201,175,148,.10)' } },
+    'aqua':    { name: 'アクアブルー', color: '#063a52', pat: { name: 'wave',    color: 'rgba(156,217,232,.14)' } },
+    'candy':   { name: 'キャンディ',   color: '#3a2358', pat: { name: 'polka',   color: 'rgba(244,167,197,.16)' } },
+    'cosmic':  { name: 'コズミック',   color: '#110D24', pat: { name: 'hoshi',   color: 'rgba(196,132,252,.4)' } },
+    'forest':  { name: 'フォレスト',   color: '#1e2b23', pat: { name: 'tree',    color: 'rgba(156,165,138,.13)' } },
   };
   var LOOK_TYPES = ['tile', 'table', 'bg'];
 
@@ -127,6 +183,13 @@ var Daily = (function() {
     'ichimatsu':{ name: '市松の卓', a: '#1e7040', b: '#124d2a', frame: '#5a3012', pat: { name: 'ichimatsu', color: 'rgba(0,0,0,.12)' } },
     'kokukin':  { name: '黒金の卓', a: '#34343a', b: '#0b0b0d', frame: '#e3b742', pat: { name: 'asanoha', color: 'rgba(227,183,66,.16)' } },
     'gold':     { name: '金の卓',   a: '#e2b043', b: '#8a5d0e', frame: '#3a1f05', pat: { name: 'seigaiha', color: 'rgba(58,31,5,.16)' } },
+    // 2026-11-24：新しい卓
+    'neon':     { name: 'ネオンの卓',     a: '#1d2f50', b: '#17243D', frame: '#00D9FF', pat: { name: 'diag',   color: 'rgba(38,59,96,.9)' } },
+    'latte':    { name: 'カフェラテの卓', a: '#6e503f', b: '#624638', frame: '#B88561', pat: { name: 'dots',   color: 'rgba(129,100,84,.9)' } },
+    'aqua':     { name: 'アクアの卓',     a: '#0a6c9c', b: '#075985', frame: '#bdf4fb', pat: { name: 'bubble', color: 'rgba(35,124,155,.7)' } },
+    'candy':    { name: 'キャンディの卓', a: '#664a88', b: '#594078', frame: '#F9A8D4', pat: { name: 'dots',   color: 'rgba(119,84,146,.9)' } },
+    'cosmic':   { name: 'コズミックの卓', a: '#33265a', b: '#281D46', frame: '#D8E5F0', pat: { name: 'orbit',  color: 'rgba(77,52,107,.9)' } },
+    'forest':   { name: 'フォレストの卓', a: '#2c4a39', b: '#253D30', frame: '#D99A56', pat: { name: 'plaid',  color: 'rgba(66,92,73,.7)' } },
   };
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }

@@ -77,7 +77,7 @@ check('3日目で牌「象牙」が使える', Daily.isUnlocked('tile', 'ivory',
 check('はじめからの見た目はいつでも使える', Daily.isUnlocked('table', 'default', 0));
 var r7 = Daily.rewardsBetween(6, 7).map(function(r) { return r.id; }).join(',');
 check('7日目は称号と夜の卓', r7 === '麻雀好き,night');
-check('次のごほうびが分かる', Daily.nextReward(3).days === 7 && Daily.nextReward(30).days === 40);
+check('次のごほうびが分かる', Daily.nextReward(3).days === 5 && Daily.nextReward(30).days === 33);
 
 // ログインしたときのまとめ方：日数の多い方を残し、間違えた問題は両方を合わせる
 var m = Daily.merge(
