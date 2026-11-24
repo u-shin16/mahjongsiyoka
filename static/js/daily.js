@@ -24,7 +24,7 @@ var Daily = (function() {
   // 2026-10-15：牌の表と裏を別々の特典にしていたが、ゆーしん「牌だけで一つのものにして」→
   // 表の色と裏の色をセットにした「牌」1つにまとめた
   // 2026-11-24：背景も同じように、これまでの11種類は画面に出さず、新しい6つ＋深緑にした
-  var HIDDEN_BGS = ['navy', 'chidori', 'sumi', 'murasaki', 'hoshi', 'neon', 'latte', 'aqua', 'candy', 'cosmic', 'forest'];
+  var HIDDEN_BGS = ['navy', 'chidori', 'sumi', 'murasaki', 'hoshi', 'neon', 'latte', 'aqua', 'candy', 'cosmic', 'forest', 'fubuki', 'nami', 'kikko', 'seiza', 'trump', 'hanabi'];
   var HIDDEN_TABLES = ['night', 'crimson', 'wine', 'ichimatsu', 'kokukin', 'gold', 'neon', 'latte', 'aqua', 'candy', 'cosmic', 'forest'];  // 2026-11-24：卓は「緑の卓＋新しい6つ」に差し替え。これまでの卓はすべて画面に出さない
   var REWARDS = [
     { days: 1,   type: 'title', id: 'はじめの一歩' },
@@ -32,16 +32,19 @@ var Daily = (function() {
     { days: 5,  type: 'tile',  id: 'neon' },
     { days: 5,  type: 'table', id: 'neon' },
     { days: 5,  type: 'bg',    id: 'neon' },
+    { days: 5,  type: 'bg',    id: 'confetti' },
     { days: 7,   type: 'title', id: '麻雀好き' },
     { days: 7,   type: 'table', id: 'night' },
     { days: 7,  type: 'table', id: 'seiza' },
     { days: 10,  type: 'bg',    id: 'navy' },
     { days: 10, type: 'bg',    id: 'nami' },
+    { days: 10, type: 'bg',    id: 'moon' },
     { days: 12, type: 'tile',  id: 'latte' },
     { days: 12, type: 'table', id: 'latte' },
     { days: 12, type: 'bg',    id: 'latte' },
     { days: 14,  type: 'tile',  id: 'indigo' },
     { days: 15, type: 'bg',    id: 'seiza' },
+    { days: 15, type: 'bg',    id: 'rain' },
     { days: 17, type: 'tile',  id: 'candy' },
     { days: 17, type: 'table', id: 'candy' },
     { days: 17, type: 'bg',    id: 'candy' },
@@ -50,32 +53,39 @@ var Daily = (function() {
     { days: 20, type: 'table', id: 'fubuki' },
     { days: 25,  type: 'tile',  id: 'gold' },
     { days: 25, type: 'bg',    id: 'fubuki' },
+    { days: 25, type: 'bg',    id: 'bamboo' },
     { days: 30,  type: 'title', id: '麻雀の常連' },
     { days: 30,  type: 'table', id: 'wine' },
     { days: 30, type: 'table', id: 'nami' },
     { days: 33, type: 'tile',  id: 'aqua' },
     { days: 33, type: 'table', id: 'aqua' },
     { days: 33, type: 'bg',    id: 'aqua' },
+    { days: 35, type: 'bg',    id: 'momiji' },
     { days: 40,  type: 'bg',    id: 'sumi' },
     { days: 40, type: 'bg',    id: 'trump' },
+    { days: 40, type: 'bg',    id: 'snow' },
     { days: 45,  type: 'tile',  id: 'yagasuri' },
     { days: 48, type: 'tile',  id: 'cosmic' },
     { days: 48, type: 'table', id: 'cosmic' },
     { days: 48, type: 'bg',    id: 'cosmic' },
     { days: 50,  type: 'tile',  id: 'sakura' },
     { days: 50,  type: 'title', id: '麻雀の達人' },
+    { days: 50, type: 'bg',    id: 'zuiun' },
     { days: 55,  type: 'table', id: 'ichimatsu' },
     { days: 55, type: 'table', id: 'trump' },
     { days: 60,  type: 'bg',    id: 'murasaki' },
     { days: 60, type: 'bg',    id: 'hanabi' },
+    { days: 60, type: 'bg',    id: 'tilebacks' },
     { days: 65, type: 'tile',  id: 'forest' },
     { days: 65, type: 'table', id: 'forest' },
     { days: 65, type: 'bg',    id: 'forest' },
     { days: 70,  type: 'tile',  id: 'jade' },
+    { days: 75, type: 'bg',    id: 'tenbo' },
     { days: 80,  type: 'table', id: 'kokukin' },
     { days: 80, type: 'table', id: 'kikko' },
     { days: 85,  type: 'bg',    id: 'hoshi' },
     { days: 85, type: 'bg',    id: 'kikko' },
+    { days: 85, type: 'bg',    id: 'cubes' },
     { days: 90,  type: 'tile',  id: 'hoshi' },
     { days: 100, type: 'title', id: '百日の打ち手' },
     { days: 100, type: 'table', id: 'gold' },
@@ -99,6 +109,17 @@ var Daily = (function() {
     return o + '</g><circle cx="' + cx + '" cy="' + cy + '" r="2" fill="' + c + '"/>';
   }
 
+  function rectSvg(x, y, w, h, r, c) { return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="1" fill="' + c + '" transform="rotate(' + r + ' ' + (x + w / 2) + ' ' + (y + h / 2) + ')"/>'; }
+  function leafSvg(cx, cy, k, c, r) {
+    var pts = [];
+    for (var i = 0; i < 10; i++) { var a = i * Math.PI / 5 - Math.PI / 2, rad = (i % 2 ? 4.2 : 10) * k; pts.push((cx + Math.cos(a) * rad).toFixed(1) + ',' + (cy + Math.sin(a) * rad).toFixed(1)); }
+    return '<polygon points="' + pts.join(' ') + '" fill="' + c + '" transform="rotate(' + r + ' ' + cx + ' ' + cy + ')"/><line x1="' + cx + '" y1="' + cy + '" x2="' + cx + '" y2="' + (cy + 12 * k) + '" stroke="' + c + '" stroke-width="1.2" transform="rotate(' + r + ' ' + cx + ' ' + cy + ')"/>';
+  }
+  function flakeSvg(cx, cy, r, c) {
+    var o = '<g stroke="' + c + '" stroke-width="1.3" stroke-linecap="round">';
+    for (var i = 0; i < 3; i++) { var a = i * Math.PI / 3; o += '<line x1="' + (cx - Math.cos(a) * r) + '" y1="' + (cy - Math.sin(a) * r) + '" x2="' + (cx + Math.cos(a) * r) + '" y2="' + (cy + Math.sin(a) * r) + '"/>'; }
+    return o + '</g>';
+  }
   // 模様（SVGを繰り返して敷く）。c＝線や塗りの色。w,h＝1マスの大きさ
   var PATTERNS = {
     seigaiha: { w: 40, h: 20, svg: function(c) { return '<g fill="none" stroke="' + c + '" stroke-width="1.6">' + [18, 13, 8, 3].map(function(r) { return '<circle cx="20" cy="20" r="' + r + '"/><circle cx="0" cy="10" r="' + r + '"/><circle cx="40" cy="10" r="' + r + '"/>'; }).join('') + '</g>'; } },
@@ -128,6 +149,17 @@ var Daily = (function() {
     seiza:    { w: 120, h: 120, svg: function() { return '<path d="M18 30L52 52L86 38L100 84" fill="none" stroke="rgba(255,230,150,.28)" stroke-width="1"/>' + starSvg(18, 30, 6, 'rgba(255,236,170,.95)') + starSvg(52, 52, 4, 'rgba(255,236,170,.8)') + starSvg(86, 38, 7, 'rgba(255,236,170,.95)') + starSvg(100, 84, 4, 'rgba(255,236,170,.8)') + '<circle cx="34" cy="96" r="1.6" fill="rgba(255,255,255,.7)"/><circle cx="70" cy="108" r="1.2" fill="rgba(255,255,255,.6)"/><circle cx="110" cy="14" r="1.4" fill="rgba(255,255,255,.65)"/><circle cx="8" cy="70" r="1.2" fill="rgba(255,255,255,.55)"/>'; } },
     suits:    { w: 64, h: 64, svg: function() { var f = 'font-family="Arial,sans-serif" font-size="24" text-anchor="middle"'; return '<text x="16" y="26" ' + f + ' fill="rgba(255,255,255,.34)">♠</text><text x="48" y="26" ' + f + ' fill="rgba(255,120,120,.5)">♥</text><text x="16" y="58" ' + f + ' fill="rgba(255,120,120,.5)">♦</text><text x="48" y="58" ' + f + ' fill="rgba(255,255,255,.34)">♣</text>'; } },
     hanabi:   { w: 150, h: 150, svg: function() { return burstSvg(40, 42, 26, 'rgba(255,205,110,.7)') + burstSvg(108, 104, 20, 'rgba(255,140,190,.65)') + '<circle cx="120" cy="30" r="1.6" fill="rgba(120,220,255,.7)"/><circle cx="20" cy="112" r="1.6" fill="rgba(120,220,255,.6)"/>'; } },
+    // 2026-11-24：背景用の柄（ゆーしん「卓と同じだとおもんない」→ モック12案から10案）
+    confetti: { w: 70, h: 70, svg: function() { return rectSvg(8, 10, 10, 4, 25, 'rgba(255,205,90,.7)') + rectSvg(44, 6, 8, 4, -30, 'rgba(255,140,190,.7)') + rectSvg(28, 30, 10, 4, 70, 'rgba(120,220,255,.7)') + rectSvg(56, 40, 9, 4, 10, 'rgba(255,255,255,.55)') + rectSvg(10, 50, 8, 4, -50, 'rgba(180,150,255,.7)') + '<circle cx="38" cy="58" r="2.4" fill="rgba(255,205,90,.7)"/><circle cx="62" cy="16" r="2" fill="rgba(120,220,255,.7)"/><circle cx="20" cy="30" r="2" fill="rgba(255,140,190,.65)"/>'; } },
+    bamboo:   { w: 64, h: 110, svg: function() { function st(x, c) { return '<rect x="' + x + '" y="0" width="12" height="110" rx="3" fill="' + c + '"/>' + [26, 62, 96].map(function(y) { return '<rect x="' + (x - 1) + '" y="' + y + '" width="14" height="3" rx="1.5" fill="rgba(0,0,0,.28)"/>'; }).join(''); } return st(8, 'rgba(130,200,130,.30)') + st(40, 'rgba(130,200,130,.20)') + '<path d="M20 26q16-14 30-8q-12 14-30 8z" fill="rgba(150,215,150,.3)"/>'; } },
+    momiji:   { w: 76, h: 76, svg: function() { return leafSvg(20, 22, 1.3, 'rgba(255,130,60,.55)', 20) + leafSvg(56, 56, 1.1, 'rgba(230,70,50,.55)', -25) + leafSvg(60, 14, .8, 'rgba(255,190,70,.5)', 40); } },
+    snow:     { w: 64, h: 64, svg: function() { return flakeSvg(18, 18, 9, 'rgba(255,255,255,.6)') + flakeSvg(48, 44, 6, 'rgba(190,225,255,.6)') + '<circle cx="46" cy="12" r="1.8" fill="rgba(255,255,255,.6)"/><circle cx="10" cy="50" r="1.6" fill="rgba(255,255,255,.5)"/>'; } },
+    rain:     { w: 34, h: 46, svg: function() { return '<g stroke="rgba(170,205,255,.5)" stroke-width="1.5" stroke-linecap="round"><line x1="8" y1="4" x2="3" y2="16"/><line x1="26" y1="22" x2="21" y2="34"/><line x1="16" y1="30" x2="12" y2="40" stroke-opacity=".6"/></g>'; } },
+    zuiun:    { w: 88, h: 54, svg: function() { return '<g fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.4" stroke-linecap="round"><path d="M10 38q0-12 12-12q9 0 11 8q10-8 20 2q12-2 12 10"/><path d="M18 38q2-6 8-5M52 38q2-6 8-5"/></g>'; } },
+    cubes:    { w: 56, h: 64, svg: function() { return '<path d="M28 4L50 16V40L28 52L6 40V16Z" fill="rgba(255,255,255,.12)"/><path d="M28 4L50 16L28 28L6 16Z" fill="rgba(255,255,255,.26)"/><path d="M6 16L28 28V52L6 40Z" fill="rgba(255,255,255,.06)"/>'; } },
+    tilebacks:{ w: 46, h: 60, svg: function() { function t(x, y) { return '<rect x="' + x + '" y="' + y + '" width="16" height="22" rx="3" fill="rgba(247,185,67,.55)"/><rect x="' + x + '" y="' + (y + 17) + '" width="16" height="5" rx="2" fill="rgba(143,63,10,.6)"/>'; } return t(4, 4) + t(26, 34); } },
+    tenbo:    { w: 70, h: 34, svg: function() { function st(x, y) { return '<rect x="' + x + '" y="' + y + '" width="44" height="9" rx="4.5" fill="rgba(255,255,255,.38)"/><circle cx="' + (x + 22) + '" cy="' + (y + 4.5) + '" r="2" fill="rgba(210,40,50,.9)"/>'; } return st(2, 4) + st(30, 22); } },
+    moon:     { w: 110, h: 110, svg: function() { return '<path d="M30 20a16 16 0 1 0 14 24a13 13 0 1 1 -14 -24z" fill="rgba(255,236,170,.75)"/><circle cx="78" cy="30" r="2" fill="rgba(255,255,255,.8)"/><circle cx="94" cy="64" r="1.5" fill="rgba(255,255,255,.7)"/><circle cx="64" cy="92" r="2" fill="rgba(255,236,170,.7)"/><circle cx="14" cy="88" r="1.4" fill="rgba(255,255,255,.65)"/><path d="M82 78l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="rgba(255,236,170,.8)"/>'; } },
   };
 
   // 模様をCSSの background-image に入れられる形にする。HTMLの style="" の中にも書けるよう、
@@ -221,6 +253,17 @@ var Daily = (function() {
     'seiza':    { name: '星座',   color: '#0a1026', pat: { name: 'seiza',  color: '#ffffff', zoom: 2.2, opacity: .8 } },
     'trump':    { name: 'トランプ', color: '#0b2a1b', pat: { name: 'suits', color: '#ffffff', zoom: 2, opacity: .42 } },
     'hanabi':   { name: '花火',   color: '#070a1f', pat: { name: 'hanabi', color: '#ffffff', zoom: 2.2, opacity: .6 } },
+    // 2026-11-24：ごほうびの背景（その2）。卓とは違う方向の10種類。柄は文字が読める濃さにしてある
+    'confetti': { name: '紙吹雪',   color: '#1b1433', pat: { name: 'confetti',  color: '#ffffff', zoom: 2.2, opacity: .8 } },
+    'bamboo':   { name: '竹林',     color: '#0d2a1d', pat: { name: 'bamboo',    color: '#ffffff', zoom: 2.2, opacity: .8 } },
+    'momiji':   { name: '紅葉',     color: '#2a1208', pat: { name: 'momiji',    color: '#ffffff', zoom: 2.2, opacity: .8 } },
+    'snow':     { name: '雪',       color: '#0c1c33', pat: { name: 'snow',      color: '#ffffff', zoom: 2.2, opacity: .8 } },
+    'rain':     { name: '雨',       color: '#111b2b', pat: { name: 'rain',      color: '#ffffff', zoom: 2.2, opacity: .8 } },
+    'zuiun':    { name: '瑞雲',     color: '#161f45', pat: { name: 'zuiun',     color: '#ffffff', zoom: 2.2, opacity: .8 } },
+    'cubes':    { name: '立方体',   color: '#14181f', pat: { name: 'cubes',     color: '#ffffff', zoom: 2.2, opacity: .8 } },
+    'tilebacks':{ name: '牌のうら', color: '#12382a', pat: { name: 'tilebacks', color: '#ffffff', zoom: 2.2, opacity: .8 } },
+    'tenbo':    { name: '点棒',     color: '#1a2230', pat: { name: 'tenbo',     color: '#ffffff', zoom: 2.2, opacity: .8 } },
+    'moon':     { name: '月と星',   color: '#0b1030', pat: { name: 'moon',      color: '#ffffff', zoom: 2.2, opacity: .8 } },
   };
   var LOOK_TYPES = ['tile', 'table', 'bg'];
 
