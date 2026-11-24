@@ -65,7 +65,9 @@ var Daily = (function() {
     { days: 90,  type: 'tile',  id: 'hoshi' },
     { days: 100, type: 'title', id: '百日の打ち手' },
     { days: 100, type: 'table', id: 'gold' },
-  ];
+  ].filter(function(r) { return r.type !== 'tile'; });
+  // 2026-11-24：ゆーしん「牌の色が変わるやつ全部消して」→ 牌のごほうびは出さない。
+  // 上の表と TILES は、もとに戻せるよう残してある（もらえる日数の一覧からだけ外している）
 
   // 模様（SVGを繰り返して敷く）。c＝線や塗りの色。w,h＝1マスの大きさ
   var PATTERNS = {

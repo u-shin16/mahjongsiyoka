@@ -325,7 +325,8 @@ function applyLook() {
   var look = Progress.getLook();
   var days = lookDays();
   var pick = function(type, list) { return Daily.isUnlocked(type, look[type], days) && list[look[type]] ? list[look[type]] : list['default']; };
-  var tile = pick('tile', Daily.TILES), table = pick('table', Daily.TABLES), bg = pick('bg', Daily.BGS);
+  // 2026-11-24：牌の色を変えるごほうびはやめた（牌はいつも定番）。選んだ記録は消さずに残す
+  var tile = Daily.TILES['default'], table = pick('table', Daily.TABLES), bg = pick('bg', Daily.BGS);
   var st = document.body.style;
   st.setProperty('--face-a', tile.face.a); st.setProperty('--face-b', tile.face.b); st.setProperty('--face-c', tile.face.c);
   st.setProperty('--back-a', tile.back.a); st.setProperty('--back-b', tile.back.b); st.setProperty('--back-c', tile.back.c);
@@ -2557,7 +2558,7 @@ var App = {
     rewards.forEach(function(r) { if (r.type !== 'title') got[r.type] = r.id; });
     if (!Object.keys(got).length) return '';
     var pick = function(type, list) { return list[got[type] || look[type]] || list['default']; };
-    var tile = pick('tile', Daily.TILES), table = pick('table', Daily.TABLES), bg = pick('bg', Daily.BGS);
+    var tile = Daily.TILES['default'], table = pick('table', Daily.TABLES), bg = pick('bg', Daily.BGS);
     // 牌の画像は window.MJ_TILE_SHEET で決まるので、見本を描く間だけ差し替える
     var saved = window.MJ_TILE_SHEET;
     window.MJ_TILE_SHEET = tile.sheet || null;
@@ -5608,15 +5609,7 @@ var App = {
       }).join('');
     };
     return '<div class="progress-card" id="lookCard"><h3>見た目（今日の1問のごほうび）</h3>' +
-      '<p class="look-note">学んだ日が合計' + days + '日（今日の1問に答えた日と、章のミニゲームをクリアした日を数えます）。日数がたまると、牌の色や卓・背景の模様が増えます。</p>' +
-      '<div class="look-label">牌（表の色・裏の模様）</div><div class="look-row">' +
-      row('tile', Daily.TILES, function(c) {
-        // 見本は表と裏を並べて見せる（左が表、右が裏）
-        // 見えるのは表なので表を広く（左64%）、右に裏の模様を少し見せる
-        return 'background:linear-gradient(90deg,' + c.face.a + ' 0%,' + c.face.b + ' 64%,transparent 64%),' +
-          Daily.patternUrl(c.pat) + ',linear-gradient(145deg,' + c.back.a + ',' + c.back.b + ');' +
-          'background-size:auto,' + Daily.patternSize(c.pat, 0.5) + ',auto;border-bottom-color:' + c.back.c;
-      }) + '</div>' +
+      '<p class="look-note">学んだ日が合計' + days + '日（今日の1問に答えた日と、章のミニゲームをクリアした日を数えます）。日数がたまると、卓・背景の模様が増えます。</p>' +
       '<div class="look-label">卓</div><div class="look-row">' +
       row('table', Daily.TABLES, function(c) { return 'background:' + Daily.patternUrl(c.pat) + ',radial-gradient(ellipse at 50% 50%,' + c.a + ' 0%,' + c.b + ' 100%);background-size:' + Daily.patternSize(c.pat, 0.6) + ',auto;border-color:' + c.frame; }) + '</div>' +
       '<div class="look-label">背景</div><div class="look-row">' +
