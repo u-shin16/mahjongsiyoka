@@ -80,7 +80,7 @@ var Daily = (function() {
     // 2026-11-24：和柄以外の新しい見た目（ネオン・カフェラテ・アクア・キャンディ・コズミック・フォレスト）用の模様
     diag:     { w: 16, h: 16, svg: function(c) { return '<path d="M-4 4L4 -4M0 16L16 0M12 20L20 12" stroke="' + c + '" stroke-width="2" fill="none"/>'; } },
     grid:     { w: 24, h: 24, svg: function(c) { return '<path d="M0 .5H24M.5 0V24" stroke="' + c + '" stroke-width="1" fill="none"/>'; } },
-    dots:     { w: 10, h: 10, svg: function(c) { return '<circle cx="5" cy="5" r="1.4" fill="' + c + '"/>'; } },
+    dots:     { w: 12, h: 12, svg: function(c) { return '<circle cx="6" cy="6" r="2.2" fill="' + c + '"/>'; } },
     wave:     { w: 28, h: 12, svg: function(c) { return '<path d="M0 6Q7 0 14 6T28 6" stroke="' + c + '" stroke-width="1.4" fill="none"/>'; } },
     bubble:   { w: 40, h: 40, svg: function(c) { return '<g fill="none" stroke="' + c + '" stroke-width="1.3"><circle cx="10" cy="12" r="4"/><circle cx="28" cy="28" r="2.6"/><circle cx="31" cy="8" r="3.2"/></g>'; } },
     orbit:    { w: 44, h: 44, svg: function(c) { return '<g fill="none" stroke="' + c + '" stroke-width="1.2"><circle cx="22" cy="22" r="6"/><circle cx="22" cy="22" r="13"/><circle cx="22" cy="22" r="20"/></g><circle cx="35" cy="22" r="2" fill="' + c + '"/>'; } },
@@ -165,12 +165,12 @@ var Daily = (function() {
     'murasaki':{ name: '桜',     color: '#2c1745', pat: { name: 'sakura',   color: 'rgba(255,190,210,.12)' } },
     'hoshi':   { name: '星空',   color: '#101a38', pat: { name: 'hoshi',    color: 'rgba(255,230,150,.3)' } },
     // 2026-11-24：新しい背景。明るい色は文字が読めなくなるので、同じ色合いの暗い色にした
-    'neon':    { name: 'ネオンシティ', color: '#0B1020', pat: { name: 'grid',    color: 'rgba(38,59,96,.7)' } },
-    'latte':   { name: 'カフェラテ',   color: '#3b2b23', pat: { name: 'vstripe', color: 'rgba(201,175,148,.10)' } },
-    'aqua':    { name: 'アクアブルー', color: '#063a52', pat: { name: 'wave',    color: 'rgba(156,217,232,.14)' } },
-    'candy':   { name: 'キャンディ',   color: '#3a2358', pat: { name: 'polka',   color: 'rgba(244,167,197,.16)' } },
-    'cosmic':  { name: 'コズミック',   color: '#110D24', pat: { name: 'hoshi',   color: 'rgba(196,132,252,.4)' } },
-    'forest':  { name: 'フォレスト',   color: '#1e2b23', pat: { name: 'tree',    color: 'rgba(156,165,138,.13)' } },
+    'neon':    { name: 'ネオンシティ', color: '#0B1020', pat: { name: 'grid',    color: 'rgba(0,217,255,.14)' } },
+    'latte':   { name: 'カフェラテ',   color: '#3b2b23', pat: { name: 'vstripe', color: 'rgba(242,213,181,.16)' } },
+    'aqua':    { name: 'アクアブルー', color: '#063a52', pat: { name: 'wave',    color: 'rgba(156,217,232,.26)' } },
+    'candy':   { name: 'キャンディ',   color: '#3a2358', pat: { name: 'polka',   color: 'rgba(244,167,197,.28)' } },
+    'cosmic':  { name: 'コズミック',   color: '#110D24', pat: { name: 'hoshi',   color: 'rgba(216,190,255,.55)' } },
+    'forest':  { name: 'フォレスト',   color: '#1e2b23', pat: { name: 'tree',    color: 'rgba(156,165,138,.25)' } },
   };
   var LOOK_TYPES = ['tile', 'table', 'bg'];
 
@@ -184,12 +184,12 @@ var Daily = (function() {
     'kokukin':  { name: '黒金の卓', a: '#34343a', b: '#0b0b0d', frame: '#e3b742', pat: { name: 'asanoha', color: 'rgba(227,183,66,.16)' } },
     'gold':     { name: '金の卓',   a: '#e2b043', b: '#8a5d0e', frame: '#3a1f05', pat: { name: 'seigaiha', color: 'rgba(58,31,5,.16)' } },
     // 2026-11-24：新しい卓
-    'neon':     { name: 'ネオンの卓',     a: '#1d2f50', b: '#17243D', frame: '#00D9FF', pat: { name: 'diag',   color: 'rgba(38,59,96,.9)' } },
-    'latte':    { name: 'カフェラテの卓', a: '#6e503f', b: '#624638', frame: '#B88561', pat: { name: 'dots',   color: 'rgba(129,100,84,.9)' } },
-    'aqua':     { name: 'アクアの卓',     a: '#0a6c9c', b: '#075985', frame: '#bdf4fb', pat: { name: 'bubble', color: 'rgba(35,124,155,.7)' } },
-    'candy':    { name: 'キャンディの卓', a: '#664a88', b: '#594078', frame: '#F9A8D4', pat: { name: 'dots',   color: 'rgba(119,84,146,.9)' } },
-    'cosmic':   { name: 'コズミックの卓', a: '#33265a', b: '#281D46', frame: '#D8E5F0', pat: { name: 'orbit',  color: 'rgba(77,52,107,.9)' } },
-    'forest':   { name: 'フォレストの卓', a: '#2c4a39', b: '#253D30', frame: '#D99A56', pat: { name: 'plaid',  color: 'rgba(66,92,73,.7)' } },
+    'neon':     { name: 'ネオンの卓',     a: '#1d2f50', b: '#17243D', frame: '#00D9FF', pat: { name: 'diag',   color: 'rgba(0,217,255,.24)' } },
+    'latte':    { name: 'カフェラテの卓', a: '#6e503f', b: '#624638', frame: '#B88561', pat: { name: 'dots',   color: 'rgba(255,235,210,.24)' } },
+    'aqua':     { name: 'アクアの卓',     a: '#0a6c9c', b: '#075985', frame: '#bdf4fb', pat: { name: 'bubble', color: 'rgba(255,255,255,.30)' } },
+    'candy':    { name: 'キャンディの卓', a: '#664a88', b: '#594078', frame: '#F9A8D4', pat: { name: 'dots',   color: 'rgba(255,255,255,.26)' } },
+    'cosmic':   { name: 'コズミックの卓', a: '#33265a', b: '#281D46', frame: '#D8E5F0', pat: { name: 'orbit',  color: 'rgba(196,160,255,.30)' } },
+    'forest':   { name: 'フォレストの卓', a: '#2c4a39', b: '#253D30', frame: '#D99A56', pat: { name: 'plaid',  color: 'rgba(231,213,172,.22)' } },
   };
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
