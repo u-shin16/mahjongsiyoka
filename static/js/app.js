@@ -334,7 +334,7 @@ function applyLook() {
   st.setProperty('--page-bg', bg.color);
   // 2026-11-11：模様（無地のものは none）。牌の裏は小さいので模様を半分の大きさで敷く
   st.setProperty('--back-pat', Daily.patternUrl(tile.pat)); st.setProperty('--back-pat-size', Daily.patternSize(tile.pat, 0.5));
-  st.setProperty('--felt-pat', Daily.patternUrl(table.pat)); st.setProperty('--felt-pat-size', Daily.patternSize(table.pat, 1));
+  st.setProperty('--felt-pat', Daily.patternUrl(table.pat)); st.setProperty('--felt-pat-size', Daily.patternSize(table.pat, Daily.patternZoom(table.pat)));
   st.setProperty('--page-pat', Daily.patternUrl(bg.pat)); st.setProperty('--page-pat-size', Daily.patternSize(bg.pat, 1));
   document.body.classList.toggle('has-back-pat', !!tile.pat);
   document.body.classList.toggle('has-page-pat', !!bg.pat);

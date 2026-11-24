@@ -23,7 +23,7 @@ var Daily = (function() {
   // 紅・金・紫・翡翠・黒金・金の卓を足した。日数が多いほど派手にしてある
   // 2026-10-15：牌の表と裏を別々の特典にしていたが、ゆーしん「牌だけで一つのものにして」→
   // 表の色と裏の色をセットにした「牌」1つにまとめた
-  var HIDDEN_TABLES = ['wine', 'ichimatsu', 'aqua', 'candy', 'cosmic', 'forest'];  // 七宝・市松・アクア・キャンディ・コズミック・フォレスト
+  var HIDDEN_TABLES = ['night', 'crimson', 'wine', 'ichimatsu', 'kokukin', 'gold', 'neon', 'latte', 'aqua', 'candy', 'cosmic', 'forest'];  // 2026-11-24：卓は「緑の卓＋新しい6つ」に差し替え。これまでの卓はすべて画面に出さない
   var REWARDS = [
     { days: 1,   type: 'title', id: 'はじめの一歩' },
     { days: 3,   type: 'tile',  id: 'ivory' },
@@ -32,6 +32,7 @@ var Daily = (function() {
     { days: 5,  type: 'bg',    id: 'neon' },
     { days: 7,   type: 'title', id: '麻雀好き' },
     { days: 7,   type: 'table', id: 'night' },
+    { days: 7,  type: 'table', id: 'seiza' },
     { days: 10,  type: 'bg',    id: 'navy' },
     { days: 12, type: 'tile',  id: 'latte' },
     { days: 12, type: 'table', id: 'latte' },
@@ -42,9 +43,11 @@ var Daily = (function() {
     { days: 17, type: 'bg',    id: 'candy' },
     { days: 20,  type: 'table', id: 'crimson' },
     { days: 20,  type: 'bg',    id: 'chidori' },
+    { days: 20, type: 'table', id: 'fubuki' },
     { days: 25,  type: 'tile',  id: 'gold' },
     { days: 30,  type: 'title', id: '麻雀の常連' },
     { days: 30,  type: 'table', id: 'wine' },
+    { days: 30, type: 'table', id: 'nami' },
     { days: 33, type: 'tile',  id: 'aqua' },
     { days: 33, type: 'table', id: 'aqua' },
     { days: 33, type: 'bg',    id: 'aqua' },
@@ -56,21 +59,37 @@ var Daily = (function() {
     { days: 50,  type: 'tile',  id: 'sakura' },
     { days: 50,  type: 'title', id: '麻雀の達人' },
     { days: 55,  type: 'table', id: 'ichimatsu' },
+    { days: 55, type: 'table', id: 'trump' },
     { days: 60,  type: 'bg',    id: 'murasaki' },
     { days: 65, type: 'tile',  id: 'forest' },
     { days: 65, type: 'table', id: 'forest' },
     { days: 65, type: 'bg',    id: 'forest' },
     { days: 70,  type: 'tile',  id: 'jade' },
     { days: 80,  type: 'table', id: 'kokukin' },
+    { days: 80, type: 'table', id: 'kikko' },
     { days: 85,  type: 'bg',    id: 'hoshi' },
     { days: 90,  type: 'tile',  id: 'hoshi' },
     { days: 100, type: 'title', id: '百日の打ち手' },
     { days: 100, type: 'table', id: 'gold' },
+    { days: 100, type: 'table', id: 'hanabi' },
   ].filter(function(r) { return r.type !== 'tile' && !(r.type === 'table' && HIDDEN_TABLES.indexOf(r.id) >= 0); });
   // 2026-11-24：ゆーしん「卓の種類多い」→ 13種類から7種類に減らした。外した卓は画面に出さず、もらえる一覧からも外す
   // （TABLES には残してあるので、戻すときは下の一覧から消す。すでに選んでいた人は、使えない扱いになり緑の卓になる）
   // 2026-11-24：ゆーしん「牌の色が変わるやつ全部消して」→ 牌のごほうびは出さない。
   // 上の表と TILES は、もとに戻せるよう残してある（もらえる日数の一覧からだけ外している）
+
+  // 新しい柄の部品
+  function petalSvg(cx, cy, c, k) {
+    return [0, 72, 144, 216, 288].map(function(a) { return '<ellipse cx="' + cx + '" cy="' + (cy - 4.2 * k) + '" rx="' + (2.8 * k) + '" ry="' + (4.2 * k) + '" transform="rotate(' + a + ' ' + cx + ' ' + cy + ')" fill="' + c + '"/>'; }).join('') + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (1.3 * k) + '" fill="#ffd36b"/>';
+  }
+  function starSvg(x, y, r, c) {
+    return '<path fill="' + c + '" d="M' + x + ' ' + (y - r) + 'L' + (x + r * .3) + ' ' + (y - r * .3) + 'L' + (x + r) + ' ' + y + 'L' + (x + r * .3) + ' ' + (y + r * .3) + 'L' + x + ' ' + (y + r) + 'L' + (x - r * .3) + ' ' + (y + r * .3) + 'L' + (x - r) + ' ' + y + 'L' + (x - r * .3) + ' ' + (y - r * .3) + 'Z"/>';
+  }
+  function burstSvg(cx, cy, r, c) {
+    var o = '<g stroke="' + c + '" stroke-width="1.4" stroke-linecap="round">';
+    for (var i = 0; i < 12; i++) { var a = i * Math.PI / 6; o += '<line x1="' + (cx + Math.cos(a) * r * .45) + '" y1="' + (cy + Math.sin(a) * r * .45) + '" x2="' + (cx + Math.cos(a) * r) + '" y2="' + (cy + Math.sin(a) * r) + '"/>'; }
+    return o + '</g><circle cx="' + cx + '" cy="' + cy + '" r="2" fill="' + c + '"/>';
+  }
 
   // 模様（SVGを繰り返して敷く）。c＝線や塗りの色。w,h＝1マスの大きさ
   var PATTERNS = {
@@ -94,6 +113,13 @@ var Daily = (function() {
     polka:    { w: 20, h: 20, svg: function(c) { return '<circle cx="5" cy="5" r="3" fill="' + c + '"/><circle cx="15" cy="15" r="3" fill="' + c + '"/>'; } },
     vstripe:  { w: 12, h: 12, svg: function(c) { return '<rect width="3" height="12" fill="' + c + '"/>'; } },
     tree:     { w: 32, h: 36, svg: function(c) { return '<path d="M16 4L26 22H6ZM16 16L28 34H4Z" fill="' + c + '"/>'; } },
+    // 2026-11-24：ごほうびの卓用の、はっきり見える柄（ゆーしん「今のままだと全然ごほうび感ない」→ モック12案から6つ）
+    fubuki:   { w: 64, h: 64, svg: function() { return petalSvg(16, 16, 'rgba(255,205,220,.62)', 1.5) + petalSvg(48, 48, 'rgba(255,255,255,.5)', 1.2) + petalSvg(48, 12, 'rgba(255,170,195,.4)', .9); } },
+    nami:     { w: 56, h: 28, svg: function() { return '<g fill="none" stroke="rgba(232,184,75,.6)" stroke-width="1.5">' + [12, 9, 6, 3].map(function(r) { return '<circle cx="28" cy="28" r="' + r + '"/><circle cx="0" cy="14" r="' + r + '"/><circle cx="56" cy="14" r="' + r + '"/>'; }).join('') + '</g>'; } },
+    kikko:    { w: 42, h: 72, svg: function() { return '<path fill="none" stroke="rgba(232,184,75,.6)" stroke-width="1.6" d="M21 0L42 12V36L21 48L0 36V12ZM21 48V72M0 36L-21 48M42 36L63 48M21 0V-12M0 12L-21 0M42 12L63 0"/>'; } },
+    seiza:    { w: 120, h: 120, svg: function() { return '<path d="M18 30L52 52L86 38L100 84" fill="none" stroke="rgba(255,230,150,.28)" stroke-width="1"/>' + starSvg(18, 30, 6, 'rgba(255,236,170,.95)') + starSvg(52, 52, 4, 'rgba(255,236,170,.8)') + starSvg(86, 38, 7, 'rgba(255,236,170,.95)') + starSvg(100, 84, 4, 'rgba(255,236,170,.8)') + '<circle cx="34" cy="96" r="1.6" fill="rgba(255,255,255,.7)"/><circle cx="70" cy="108" r="1.2" fill="rgba(255,255,255,.6)"/><circle cx="110" cy="14" r="1.4" fill="rgba(255,255,255,.65)"/><circle cx="8" cy="70" r="1.2" fill="rgba(255,255,255,.55)"/>'; } },
+    suits:    { w: 64, h: 64, svg: function() { var f = 'font-family="Arial,sans-serif" font-size="24" text-anchor="middle"'; return '<text x="16" y="26" ' + f + ' fill="rgba(255,255,255,.34)">♠</text><text x="48" y="26" ' + f + ' fill="rgba(255,120,120,.5)">♥</text><text x="16" y="58" ' + f + ' fill="rgba(255,120,120,.5)">♦</text><text x="48" y="58" ' + f + ' fill="rgba(255,255,255,.34)">♣</text>'; } },
+    hanabi:   { w: 150, h: 150, svg: function() { return burstSvg(40, 42, 26, 'rgba(255,205,110,.7)') + burstSvg(108, 104, 20, 'rgba(255,140,190,.65)') + '<circle cx="120" cy="30" r="1.6" fill="rgba(120,220,255,.7)"/><circle cx="20" cy="112" r="1.6" fill="rgba(120,220,255,.6)"/>'; } },
   };
 
   // 模様をCSSの background-image に入れられる形にする。HTMLの style="" の中にも書けるよう、
@@ -104,6 +130,8 @@ var Daily = (function() {
     var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + P.w + '" height="' + P.h + '">' + P.svg(pat.color) + '</svg>';
     return 'url(data:image/svg+xml,' + encodeURIComponent(svg).replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29') + ')';
   }
+  // 卓に敷く模様の拡大率（柄ごとの zoom）。対局画面の大きさに合わせる
+  function patternZoom(pat) { return pat && pat.zoom ? pat.zoom : 1; }
   // 模様1マスの大きさ（scale 倍）。牌の裏は小さいので半分にして使う
   function patternSize(pat, scale) {
     if (!pat || !PATTERNS[pat.name]) return 'auto';
@@ -195,6 +223,13 @@ var Daily = (function() {
     'candy':    { name: 'キャンディの卓', a: '#664a88', b: '#594078', frame: '#F9A8D4', pat: { name: 'dots',   color: 'rgba(255,255,255,.26)' } },
     'cosmic':   { name: 'コズミックの卓', a: '#33265a', b: '#281D46', frame: '#D8E5F0', pat: { name: 'orbit',  color: 'rgba(196,160,255,.30)' } },
     'forest':   { name: 'フォレストの卓', a: '#2c4a39', b: '#253D30', frame: '#D99A56', pat: { name: 'plaid',  color: 'rgba(231,213,172,.22)' } },
+    // 2026-11-24：ごほうびの卓。モック12案からゆーしんが選んだ6つ（柄の拡大 zoom は対局画面の大きさに合わせてある）
+    'fubuki':   { name: '桜吹雪の卓', a: '#a3173a', b: '#4f0a1e', frame: '#e8b84b', pat: { name: 'fubuki', color: '#ffffff', zoom: 2.4 } },
+    'nami':     { name: '青海波の卓', a: '#1a3a6e', b: '#0b1733', frame: '#e8b84b', pat: { name: 'nami',   color: '#ffffff', zoom: 2.4 } },
+    'kikko':    { name: '亀甲の卓',   a: '#26262c', b: '#0a0a0d', frame: '#e8b84b', pat: { name: 'kikko',  color: '#ffffff', zoom: 2.2 } },
+    'seiza':    { name: '星座の卓',   a: '#16265a', b: '#070d24', frame: '#cfd8ff', pat: { name: 'seiza',  color: '#ffffff', zoom: 2.6 } },
+    'trump':    { name: 'トランプの卓', a: '#0f6b3d', b: '#06371e', frame: '#c9a24a', pat: { name: 'suits', color: '#ffffff', zoom: 2.2 } },
+    'hanabi':   { name: '花火の卓',   a: '#0e1538', b: '#04061a', frame: '#ff9ec7', pat: { name: 'hanabi', color: '#ffffff', zoom: 2.6 } },
   };
 
   function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -419,7 +454,7 @@ var Daily = (function() {
 
   return {
     REWARDS: REWARDS, HIDDEN_TABLES: HIDDEN_TABLES, TILES: TILES, TABLES: TABLES, BGS: BGS, LOOK_TYPES: LOOK_TYPES,
-    PATTERNS: PATTERNS, patternUrl: patternUrl, patternSize: patternSize,
+    PATTERNS: PATTERNS, patternUrl: patternUrl, patternZoom: patternZoom, patternSize: patternSize,
     RETRY_AFTER_DAYS: RETRY_AFTER_DAYS,
     today: today, addDays: addDays, emptyState: emptyState, normalize: normalize,
     pickKey: pickKey, questionFor: questionFor, answer: answer, learn: learn, sourceOf: sourceOf, fuList: fuList,
